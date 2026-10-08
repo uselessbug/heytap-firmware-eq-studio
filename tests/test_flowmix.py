@@ -1,10 +1,11 @@
+import json
 import struct
 import urllib.request
 
 import pytest
 
 from heytap_eq.apk_config import dex_strings, measurement_authorization
-from heytap_eq.flowmix import SafeRedirect, endpoint
+from heytap_eq.flowmix import FlowmixClient, SafeRedirect, endpoint, index_entries
 
 
 def test_path_encoding_and_host_restriction():
@@ -35,3 +36,31 @@ def test_dex_bounds_and_unknown_apk(tmp_path):
     path.write_bytes(b"not the studied apk")
     with pytest.raises(ValueError):
         measurement_authorization(path)
+
+
+def test_observed_index_shapes_and_file_identifier():
+    sources = index_entries("sources", {"success": True, "count": 1,
+                              "data": [{"name": "synthetic", "displayName": "Synthetic"}]})
+    assert sources == [{"name": "synthetic", "display": "Synthetic"}]
+    assert index_entries("brands", {"success": True, "data": ["A/B"]})[0]["name"] == "A/B"
+    phones = index_entries("headphones", {"success": True, "data": [{"fileName": "File_ID", "originalName": "Display Name"}]})
+    assert phones[0]["name"] == "File_ID"
+    with pytest.raises(ValueError):
+        index_entries("sources", {"success": True, "count": 2, "data": []})
+
+
+def test_network_failure_uses_sanitized_numeric_cache(monkeypatch, tmp_path):
+    from heytap_eq import flowmix
+    payload = {"success": True, "data": {"sourceName": "synthetic", "lastUpdated": "2026-10-08",
+               "frequencyData": {"Original": {"title": "Synthetic", "frequencies": [20, 1000],
+               "spl_values": [80, 90], "measurement_id": "fixture-id", "content_version": "fixture-version"}}},
+               "untrusted_header_echo": "secret"}
+    monkeypatch.setattr(flowmix, "request_response", lambda *a: {"http_status": 200, "body": json.dumps(payload)})
+    client = FlowmixClient("Bearer secret", tmp_path)
+    first = client.measurements("source", "brand", "File_ID")
+    assert first[0].measurement_id == "fixture-id" and not client.from_cache
+    assert "secret" not in next(tmp_path.glob('*.json')).read_text()
+    def failed(*a):
+        raise OSError("synthetic offline")
+    monkeypatch.setattr(flowmix, "request_response", failed)
+    assert client.measurements("source", "brand", "File_ID") == first and client.from_cache

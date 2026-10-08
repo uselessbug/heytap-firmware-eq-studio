@@ -10,7 +10,7 @@
 - Actions https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37782348640 全部成功：Linux、Windows 各 21 项测试及 Ruff；源码 GUI 启动；Windows 便携包生成；真实冻结 EXE 启动。报告核对 frozen=true、Qt 6.8.3、正确源 SHA、5 个合成 RAW 点/1 PEQ/1 测量。
 - Windows 便携 ZIP 产物为 `HeyTapFirmwareEQStudio-windows-180c96236f77d341dc6f15aa0cda24c8a1e7f16e`，103,965,785 字节。已查看冻结启动截图：中文、图表、控件及表格正常显示。用户本机 Windows 操作仍待确认。
 - 未完成：桌面完整预设拟合/受限固件导出、同步版本与 getter 补丁、元数据写入、完整在线来源/品牌/型号浏览和缓存、测量随工程恢复、长期任务取消、实机验证。当前外部 EQ 编辑不等于已写入固件。保留 CLI 仍可按原 README 生成/校验计划。
-- Flowmix 新发现：测量拦截器使用 Authorization Bearer；UA 为 okhttp/5.3.2。原匿名请求不足以复现 APK 请求。当前环境使用 Bearer 仍返回 567；服务端成功响应未确认。本地诊断脚本临时读用户选定的哈希匹配 APK，不硬编码或保存令牌。执行与回传内容见 `docs/local-checks.md`。
+- Flowmix 新发现：测量拦截器使用 Authorization Bearer；UA 为 okhttp/5.3.2。原匿名请求不足以复现 APK 请求。完整复现 Bearer + 该 UA 后 sources、brands、headphones 和 Enco X4 测量均为 200；详细合同见 docs/flowmix-live-validation.json。本地诊断脚本临时读用户选定的哈希匹配 APK，不硬编码或保存令牌。执行与回传内容见 `docs/local-checks.md`。
 - 真实附件已经按完整路径重新下载：官方 112/116、RAR、Flowmix APK、ReaLab HAR。RAR 实际两份文件名/哈希与当前读取结果见 `docs/current-input-validation.json`。二进制原附件未提交。
 
 下一个阶段从本地诊断结果接入在线浏览；并复用/模块化原 CLI 的拟合计划与实际误差重算，构建受限导出。版本 getter 必须重新核对实际指令并建立仿真，不依据历史报告直接写入。
@@ -263,3 +263,7 @@ HAR HTML 的初始数据可提取五条 Enco X4 频响：丹拿原声 / 丹拿�
 RAR 解压实际名称和哈希已重新核对：113 的整包 SHA256 为 `ee8674177d6d709d310c66e41167f8765b0140ca6b788ae62ffc8886de1c615a`，101 为 `221a4c47da75dca349ec647434ed9447eed5af1f25524bcc571387870fafd6ea`；四样本均通过轻量完整性读取，详见 `docs/current-input-validation.json`。没有上传这些原始二进制。
 
 当前网络接口只提供脱敏诊断，GUI 在线来源浏览、缓存、拟合/导出后台取消及版本补丁仍未完成。当前已编辑文档属于外部修正目标，不能直接写入固件滤波槽。
+
+### 在线接口实现阶段
+
+已验证 sources 实际 data 为对象列表（name/displayName/description），品牌为字符串列表，型号为对象列表（fileName/originalName）；请求 Enco X4 用 OPPO_Enco_X4。测量五条各 127 点，附 measurement_id/content_version，原 HAR 五条各 957 点。新 FlowmixClient 按真实结构解析，凭据只在内存，缓存只存经验证的索引和测量数值。GUI 来源/品牌/型号选择放独立网络线程，离线文件任务可同时运行；新增合成合同、缓存回退、文件 ID 和线程独立性测试，CI 待对应新提交。固件写入与版本仍未开放。

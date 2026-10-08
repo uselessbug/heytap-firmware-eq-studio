@@ -9,9 +9,11 @@ import pyqtgraph as pg
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from heytap_eq.adapters import PRESETS, STATES, inspect_firmware
+from heytap_eq.apk_config import measurement_authorization
 from heytap_eq.discovery import discover
 from heytap_eq.dsp import correction, firmware_curve
 from heytap_eq.eq_formats import KINDS, Filter, dump_eq, load_eq
+from heytap_eq.flowmix import FlowmixClient
 from heytap_eq.measurements import load_measurements
 from heytap_eq.session import Session
 
@@ -82,6 +84,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.firmware = None
         self.measurements = []
         self.workers = set()
+        self.network_workers = set()
+        self.flowmix_client = None
         default_path = QtCore.QStandardPaths.writableLocation(
             QtCore.QStandardPaths.StandardLocation.AppDataLocation)
         self.auto_path = Path(auto_path) if auto_path else Path(default_path)/"recovery.heytap.json"
@@ -133,6 +137,21 @@ class MainWindow(QtWidgets.QMainWindow):
             selectors.addWidget(combo)
             combo.currentIndexChanged.connect(self.refresh)
         layout.addLayout(selectors)
+        online = QtWidgets.QHBoxLayout()
+        connect = QtWidgets.QPushButton("连接 Flowmix (APK)")
+        connect.clicked.connect(self.connect_flowmix)
+        self.source_combo = QtWidgets.QComboBox()
+        self.brand_combo = QtWidgets.QComboBox()
+        self.headphone_combo = QtWidgets.QComboBox()
+        load_online = QtWidgets.QPushButton("载入在线测量")
+        load_online.clicked.connect(self.load_online_measurements)
+        self.source_combo.activated.connect(self.load_online_brands)
+        self.brand_combo.activated.connect(self.load_online_headphones)
+        self.online_controls = [connect, self.source_combo, self.brand_combo,
+                                self.headphone_combo, load_online]
+        for widget in self.online_controls:
+            online.addWidget(widget)
+        layout.addLayout(online)
         split = QtWidgets.QSplitter()
         layout.addWidget(split, 1)
         self.tabs = QtWidgets.QTabWidget()
@@ -198,12 +217,17 @@ class MainWindow(QtWidgets.QMainWindow):
         method = QtWidgets.QFileDialog.getSaveFileName if save else QtWidgets.QFileDialog.getOpenFileName
         return method(self, title, "", pattern)[0]
 
-    def _task(self, fn, callback):
-        if self.workers:
+    def _task(self, fn, callback, network=False):
+        workers = self.network_workers if network else self.workers
+        if workers:
             self.statusBar().showMessage("正在读取文件，请等待当前任务完成。")
             return
         worker = Worker(fn, self)
-        self.workers.add(worker)
+        workers.add(worker)
+        result_box = []
+        if network:
+            for control in self.online_controls:
+                control.setEnabled(False)
         self.statusBar().showMessage("正在读取并验证…")
 
         def complete(result):
@@ -216,12 +240,70 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.statusBar().showMessage(f"未加载：{exc}")
 
         def finished():
-            self.workers.discard(worker)
+            workers.discard(worker)
             worker.deleteLater()
+            if network:
+                for control in self.online_controls:
+                    control.setEnabled(True)
+            if result_box:
+                complete(result_box[0])
 
-        worker.completed.connect(complete)
+        worker.completed.connect(lambda result: result_box.append(result))
         worker.finished.connect(finished)
         worker.start()
+
+    def connect_flowmix(self):
+        path = self._choose("选择 Flowmix Beta 5-10 APK", "APK (*.apk)")
+        if path:
+            def connected(auth):
+                self.flowmix_client = FlowmixClient(auth, self.auto_path.parent/"flowmix-cache")
+                self._task(self.flowmix_client.sources, self.set_online_sources, network=True)
+            self._task(lambda: measurement_authorization(path), connected)
+
+    def fill_online(self, combo, entries, preferred=None):
+        combo.clear()
+        for entry in entries:
+            combo.addItem(entry["display"], entry["name"])
+        index = combo.findData(preferred) if preferred else -1
+        if index >= 0:
+            combo.setCurrentIndex(index)
+
+    def set_online_sources(self, entries):
+        self.fill_online(self.source_combo, entries, "realab")
+        self.load_online_brands()
+
+    def load_online_brands(self, *_):
+        source = self.source_combo.currentData()
+        if self.flowmix_client and source:
+            self.brand_combo.clear()
+            self.headphone_combo.clear()
+            self._task(lambda: self.flowmix_client.brands(source), self.set_online_brands, network=True)
+
+    def set_online_brands(self, entries):
+        self.fill_online(self.brand_combo, entries, "OPPO")
+        self.load_online_headphones()
+
+    def load_online_headphones(self, *_):
+        source, brand = self.source_combo.currentData(), self.brand_combo.currentData()
+        if self.flowmix_client and source and brand:
+            self.headphone_combo.clear()
+            self._task(lambda: self.flowmix_client.headphones(source, brand), self.set_online_headphones, network=True)
+
+    def set_online_headphones(self, entries):
+        self.fill_online(self.headphone_combo, entries, "OPPO_Enco_X4")
+        origin = "离线缓存" if self.flowmix_client.from_cache else "在线"
+        self.statusBar().showMessage(f"{origin}型号索引已载入；选择型号后载入测量。")
+
+    def load_online_measurements(self):
+        source, brand = self.source_combo.currentData(), self.brand_combo.currentData()
+        name = self.headphone_combo.currentData()
+        if self.flowmix_client and source and brand and name:
+            def received(curves):
+                self.set_measurements(curves)
+                self.tabs.setCurrentIndex(1)
+                origin = "离线缓存" if self.flowmix_client.from_cache else "在线"
+                self.statusBar().showMessage(f"已载入{origin}测量 {len(curves)} 条；采样点数与原 HAR 可能不同。")
+            self._task(lambda: self.flowmix_client.measurements(source, brand, name), received, network=True)
 
     def open_firmware(self):
         path = self._choose("打开固件")
@@ -267,10 +349,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._task(lambda: load_measurements(path), self.set_measurements)
 
     def set_measurements(self, curves):
-        self.measurements = curves
+        for curve in curves:
+            if curve not in self.measurements:
+                self.measurements.append(curve)
         self.measurement_combo.blockSignals(True)
         self.measurement_combo.clear()
-        self.measurement_combo.addItems([c.title for c in curves])
+        self.measurement_combo.addItems([c.title+" · "+c.source for c in self.measurements])
+        self.measurement_combo.setCurrentIndex(self.measurements.index(curves[0]) if curves else -1)
         self.measurement_combo.blockSignals(False)
         self.refresh()
         self.statusBar().showMessage(f"已导入 {len(curves)} 条实测；离线功能可独立使用。")
@@ -424,7 +509,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                     pen="#d8a650", name="修改后估计 · 实测 + 当前修正")
 
     def closeEvent(self, event):
-        if self.workers:
+        if self.workers or self.network_workers:
             self.statusBar().showMessage("正在读取文件，完成后即可关闭窗口。")
             event.ignore()
         else:

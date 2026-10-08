@@ -17,6 +17,8 @@ class Measurement:
     source: str = "Offline file"
     date: str | None = None
     firmware_version: str | None = None
+    measurement_id: str | None = None
+    content_version: str | int | None = None
 
     def validate(self):
         if len(self.frequencies) != len(self.spl_values) or len(self.frequencies) < 2:
@@ -47,6 +49,7 @@ def parse_json(data):
             str(condition.get("title", name)), [float(v) for v in condition["frequencies"]],
             [float(v) for v in condition["spl_values"]], str(data.get("sourceName", "Offline file")),
             data.get("lastUpdated"), data.get("firmware_version"),
+            condition.get("measurement_id"), condition.get("content_version"),
         ).validate())
     return results
 

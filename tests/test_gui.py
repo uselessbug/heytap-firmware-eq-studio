@@ -57,3 +57,63 @@ def test_raw_mouse_drag_is_one_undo_step(tmp_path):
     window.undo()
     assert window.session.document.raw[1][1] == 1
     window.close()
+
+
+def test_online_selection_uses_file_id_without_network(tmp_path):
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow(recover=False, auto_path=tmp_path/"online.json")
+    calls = []
+    class Client:
+        from_cache = False
+        def brands(self, source):
+            return [{"name": "OPPO", "display": "OPPO"}]
+        def headphones(self, source, brand):
+            return [{"name": "File_ID", "display": "Display name"}]
+        def measurements(self, source, brand, headphone):
+            calls.append((source, brand, headphone))
+            return [Measurement("Synthetic", [20, 1000], [80, 90]).validate()]
+    window.flowmix_client = Client()
+    window.set_online_sources([{"name": "fixture", "display": "Fixture"}])
+    for _ in range(100):
+        app.processEvents()
+        if window.headphone_combo.currentData() == "File_ID" and not window.network_workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert window.headphone_combo.currentData() == "File_ID"
+    window.load_online_measurements()
+    for _ in range(100):
+        app.processEvents()
+        if window.measurements and not window.network_workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert calls == [("fixture", "OPPO", "File_ID")]
+    assert len(window.measurements) == 1
+    window.close()
+
+
+def test_pending_network_does_not_block_offline_file_task(tmp_path):
+    import threading
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    window = MainWindow(recover=False, auto_path=tmp_path/"independent.json")
+    release = threading.Event()
+    def slow_network():
+        release.wait(timeout=3)
+        return []
+    window._task(slow_network, lambda result: None, network=True)
+    try:
+        window._task(lambda: parse_text("GraphicEQ: 20 1; 20000 0"), window.set_document)
+        for _ in range(100):
+            app.processEvents()
+            if window.session.document.raw and not window.workers:
+                break
+            QtTest.QTest.qWait(10)
+        assert window.session.document.raw[0] == [20, 1]
+        assert window.network_workers
+    finally:
+        release.set()
+        for _ in range(100):
+            app.processEvents()
+            if not window.network_workers:
+                break
+            QtTest.QTest.qWait(10)
+        window.close()
