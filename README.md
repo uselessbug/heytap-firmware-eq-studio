@@ -39,7 +39,11 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 
 计划生成、应用、原输入要求和验证命令见 CLI 的 README。原厂固件未包含在仓库中。当前 CLI 不修改版本号，只支持附件所用的连续编号 Peak PEQ。
 
-## 当前验证
+## 当前桌面验证
+
+最新功能提交 `180c962` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37782348640) 已成功：Linux / Windows 各 21 项测试与 Ruff、源码启动，以及 Windows 便携包和真实冻结 EXE 启动。对应 [验证记录](docs/desktop-validation.json)。冻结截图已检查；本机操作见 [本地验证步骤](docs/local-checks.md)。
+
+## 恢复 CLI 的历史验证
 
 恢复后重新跑通两个脚本：112 / 116 各修改 72 条记录并验证重新封包；四个固件样本共 135 个块通过完整性、字节一致回包、指针和隔离修改检查。新输出保持原版本，尚未实机刷写。
 

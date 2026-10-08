@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-08",
+  "source_commit": "180c96236f77d341dc6f15aa0cda24c8a1e7f16e",
+  "workflow_run_id": 37782348640,
+  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37782348640",
+  "github_actions": "success",
+  "static_checks": {
+    "Linux": "passed",
+    "Windows": "passed"
+  },
+  "pytest": {
+    "Linux": {
+      "passed": 21,
+      "seconds": 0.73
+    },
+    "Windows": {
+      "passed": 21,
+      "seconds": 5.91
+    }
+  },
+  "source_gui_startup": {
+    "Linux": "passed",
+    "Windows": "passed"
+  },
+  "windows_frozen_startup": {
+    "status": "passed",
+    "frozen": true,
+    "qt": "6.8.3",
+    "qt_binding": "PySide6",
+    "sha": "180c96236f77d341dc6f15aa0cda24c8a1e7f16e",
+    "window_visible": true,
+    "screenshot": "frozen-startup.png",
+    "raw_points": 5,
+    "peq_filters": 1,
+    "measurements": 1,
+    "executable_sha256": "6d216cd49a800892c00bd4dab3b22528d00d303472b5d57b4eeaa9257edf7dec"
+  },
+  "windows_package": {
+    "artifact_id": 11552908234,
+    "size_bytes": 103965785,
+    "type": "portable zip",
+    "source_sha_file": "SOURCE_SHA.txt"
+  },
+  "visual_qa": "Frozen Windows screenshot inspected; CJK text, table and synthetic preview rendered. User machine operation pending.",
+  "firmware_write_enabled_in_gui": false,
+  "version_patch_revalidated": false,
+  "flowmix_successful_response_verified": false,
+  "device_test": false,
+  "historical_32_tests_not_used": true
+}

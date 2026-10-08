@@ -2,7 +2,20 @@
 
 更新时间：2026-10-08（Asia/Shanghai）。此文档可直接交给后续对话继续开发。
 
-## 1. 当前事实与交接入口
+## 当前桌面交付状态（2026-10-08）
+
+最新功能提交：`180c96236f77d341dc6f15aa0cda24c8a1e7f16e`。所有源码均通过连接器保存在 `feat/python-desktop-studio`，沿用草稿 PR #1；main 未合并。
+
+- 已实现：独立 OPKG 核心及完整性检查、已知 Enco X4 完整代码指纹/四表识别、只读固件 EQ 和元数据、通用 Wavelet/Flowmix 八类型与稀疏 ID、RAW/PEQ 拖动、滤波器表、撤销重做、绑定输入 SHA 的原子工程/自动恢复、未知布局候选扫描、CSV/JSON/ReaLab HAR、数字/实测/估计曲线分开展示。
+- Actions https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37782348640 全部成功：Linux、Windows 各 21 项测试及 Ruff；源码 GUI 启动；Windows 便携包生成；真实冻结 EXE 启动。报告核对 frozen=true、Qt 6.8.3、正确源 SHA、5 个合成 RAW 点/1 PEQ/1 测量。
+- Windows 便携 ZIP 产物为 `HeyTapFirmwareEQStudio-windows-180c96236f77d341dc6f15aa0cda24c8a1e7f16e`，103,965,785 字节。已查看冻结启动截图：中文、图表、控件及表格正常显示。用户本机 Windows 操作仍待确认。
+- 未完成：桌面完整预设拟合/受限固件导出、同步版本与 getter 补丁、元数据写入、完整在线来源/品牌/型号浏览和缓存、测量随工程恢复、长期任务取消、实机验证。当前外部 EQ 编辑不等于已写入固件。保留 CLI 仍可按原 README 生成/校验计划。
+- Flowmix 新发现：测量拦截器使用 Authorization Bearer；UA 为 okhttp/5.3.2。原匿名请求不足以复现 APK 请求。当前环境使用 Bearer 仍返回 567；服务端成功响应未确认。本地诊断脚本临时读用户选定的哈希匹配 APK，不硬编码或保存令牌。执行与回传内容见 `docs/local-checks.md`。
+- 真实附件已经按完整路径重新下载：官方 112/116、RAR、Flowmix APK、ReaLab HAR。RAR 实际两份文件名/哈希与当前读取结果见 `docs/current-input-validation.json`。二进制原附件未提交。
+
+下一个阶段从本地诊断结果接入在线浏览；并复用/模块化原 CLI 的拟合计划与实际误差重算，构建受限导出。版本 getter 必须重新核对实际指令并建立仿真，不依据历史报告直接写入。
+
+## 1. 恢复时事实与交接入口（当前桌面状态见文首）
 
 - 仓库：https://github.com/uselessbug/heytap-firmware-eq-studio
 - 工作分支：`feat/python-desktop-studio`。
@@ -16,7 +29,7 @@
 
 此前对话报告过“32 项 pytest、Ruff 通过”及“修改版本 123 的固件验证通过”，但相关源码、测试文件、GUI 截图和新拟合结果未找到。`docs/local-validation.json` 保留这些历史记录，并标注不可从当前源码复现。**当前可重跑结果请看 `docs/recovered-validation.json`，不要把两阶段结果混为一套验证。**
 
-当前可运行部分是 CLI 研究原型。GUI、通用 Flowmix 解析器、元数据编辑、候选表发现、工程保存和 Actions 配置仍需恢复或重建。目前没有 Windows 安装包或成功的 GitHub CI。
+恢复时可运行部分是 CLI 研究原型。之后已重建桌面只读固件检查、通用 EQ、候选扫描、工程保存、GUI 和 Actions；当前写入/版本/在线浏览仍待完成。
 
 ## 2. 用户目标与已决定的技术方向
 
@@ -72,7 +85,7 @@
 
 原固件、APK、HAR 需要从用户原附件取得；不包含在 GitHub 源码中。旧工作环境的固件输入位于 `/workspace/scratch/74819c2fd648/inputs/Enco X4/`，这个路径不是新对话必然可访问的备份。
 
-## 5. 两份 EQ 的准确含义与当前解析限制
+## 5. 两份 EQ 的含义与恢复 CLI 的解析限制
 
 `Technics-AZ80.txt` 含 127 个 `GraphicEQ` 点，是以 Enco X4 丹拿原声为基线拟合 AZ80 频响的修正。
 
@@ -88,7 +101,7 @@
 
 `PEQ_COUNT: 5`、`RAW_BANDS: 127`；`SELECTED_PEQ: 0` 仅为界面选择，五个滤波器都参与响应。
 
-当前恢复的 CLI 能处理这两个具体附件，但只支持从 1 连续编号的 PEAK / PK PEQ。它不支持稀疏 ID、省略类型、全部 Flowmix 类型或通用 EQ 编辑 / 导出。通用解析器还要支持 PEAK、LS、HS、LP、HP、NOTCH、BAND_PASS、ALL_PASS，验证重复 ID、数量声明和非法数值。无类型的三参数行计划按 Peak 处理。
+保留的研究 CLI 能处理这两个具体附件，但只支持从 1 连续编号的 PEAK / PK PEQ。它不支持稀疏 ID、省略类型、全部 Flowmix 类型或通用 EQ 编辑 / 导出。桌面通用解析器现已支持 PEAK、LS、HS、LP、HP、NOTCH、BAND_PASS、ALL_PASS，验证重复 ID、数量声明和非法数值。无类型的三参数行计划按 Peak 处理。
 
 不能把 127 个点直接写到固件；要拟合到最多 18 个固件滤波器槽。目标是幅度近似，没有验证 Wavelet / Flowmix 的实际 DSP、相位或逐采样等价。
 
