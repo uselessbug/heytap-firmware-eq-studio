@@ -45,6 +45,9 @@ def test_observed_index_shapes_and_file_identifier():
     assert index_entries("brands", {"success": True, "data": ["A/B"]})[0]["name"] == "A/B"
     phones = index_entries("headphones", {"success": True, "data": [{"fileName": "File_ID", "originalName": "Display Name"}]})
     assert phones[0]["name"] == "File_ID"
+    targets = index_entries("targets", {"success": True, "data":
+                           [{"fileName": "Target_ID", "name": "Target display"}]})
+    assert targets == [{"name": "Target_ID", "display": "Target display"}]
     with pytest.raises(ValueError):
         index_entries("sources", {"success": True, "count": 2, "data": []})
 

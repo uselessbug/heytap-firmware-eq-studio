@@ -1,0 +1,85 @@
+{
+  "sources": [
+    {
+      "name": "realab",
+      "brands": 106,
+      "sample_brand": "ANKER_安克创新",
+      "sample_headphone": "ANKER_安克创新_AeroClip_2",
+      "curve_count": 7,
+      "points": [
+        127,
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ]
+    },
+    {
+      "name": "huihifi",
+      "brands": 265,
+      "sample_brand": "64Audio",
+      "sample_headphone": "64audio_Volur_网友ID：五识送测",
+      "curve_count": 7,
+      "points": [
+        127,
+        127,
+        127,
+        127,
+        127,
+        127,
+        127
+      ]
+    },
+    {
+      "name": "woodenears",
+      "brands": 205,
+      "sample_brand": "1MORE",
+      "sample_headphone": "1MORE_ComfoBuds_Mini",
+      "curve_count": 1,
+      "points": [
+        127
+      ]
+    },
+    {
+      "name": "hangoutaudio5128",
+      "brands": 138,
+      "sample_brand": "634ears",
+      "sample_headphone": "Loak2_TS_Closed",
+      "curve_count": 1,
+      "points": [
+        127
+      ]
+    },
+    {
+      "name": "hangoutaudio711",
+      "brands": 261,
+      "sample_brand": "1Custom",
+      "sample_headphone": "SA02",
+      "curve_count": 1,
+      "points": [
+        127
+      ]
+    },
+    {
+      "name": "hobbytalk",
+      "brands": 68,
+      "sample_brand": "1_Custom",
+      "sample_headphone": "PM-01",
+      "curve_count": 1,
+      "points": [
+        127
+      ]
+    }
+  ],
+  "target_sample": {
+    "identifier": "JM-1_Target_(4128)",
+    "count": 21,
+    "data_keys": [
+      "name",
+      "lastUpdated",
+      "frequencyData"
+    ]
+  }
+}

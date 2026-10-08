@@ -1,4 +1,4 @@
-"""Bounded read-only measurement transport; server payloads remain unconfirmed."""
+"""Read-only measurement transport and numeric caches for the live Flowmix API."""
 
 import argparse
 import hashlib
@@ -76,6 +76,8 @@ def index_entries(kind, payload):
             name = display = item
         elif kind == "headphones" and isinstance(item, dict):
             name, display = item.get("fileName"), item.get("originalName")
+        elif kind == "targets" and isinstance(item, dict):
+            name, display = item.get("fileName"), item.get("name")
         else:
             raise ValueError("Invalid Flowmix index entry")
         if not isinstance(name, str) or not name or not isinstance(display, str):
@@ -144,13 +146,21 @@ class FlowmixClient:
     def headphones(self, source, brand):
         return self._index("headphones", ("sources", source, "brands", brand, "headphones"))
 
+    def targets(self):
+        return self._index("targets", ("targets",))
+
+    def target(self, name):
+        return self._curves(("targets", name))
+
     def measurements(self, source, brand, headphone):
+        return self._curves(("sources", source, "brands", brand, "headphones", headphone))
+
+    def _curves(self, parts):
         def restore(data):
             if not isinstance(data, list):
                 raise ValueError("Invalid Flowmix measurement cache")
             return [Measurement(**v).validate() for v in data]
-        return self._load(("sources", source, "brands", brand, "headphones", headphone),
-                          parse_json, restore)
+        return self._load(parts, parse_json, restore)
 
 
 def main(argv=None):

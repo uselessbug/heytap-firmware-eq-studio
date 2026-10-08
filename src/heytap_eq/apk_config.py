@@ -32,10 +32,15 @@ def dex_strings(data):
 
 
 def measurement_authorization(path):
-    raw = Path(path).read_bytes()
+    return authorization_from_bytes(Path(path).read_bytes())
+
+
+def authorization_from_bytes(raw):
+    import io
+
     if hashlib.sha256(raw).hexdigest() != KNOWN_APK_SHA256:
         raise ValueError("Only the studied Flowmix Beta 5-10 APK is supported")
-    with zipfile.ZipFile(path) as apk:
+    with zipfile.ZipFile(io.BytesIO(raw)) as apk:
         strings = list(dex_strings(apk.read("classes.dex")))
     # This exact APK has one full Bearer constant; Lnw0.b adds it as Authorization.
     values = [s for s in strings if s.startswith("Bearer ") and len(s) > 7]

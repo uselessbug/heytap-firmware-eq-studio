@@ -2,6 +2,10 @@
 
 更新时间：2026-10-08（Asia/Shanghai）。此文档可直接交给后续对话继续开发。
 
+## 2026-10-08 通用测量阶段（进行中）
+
+已抽样验证六个在线测量来源（包含 Woodenears）及 21 条目标索引。新增独立测量拟合核心、目标接口、通用选择记忆、工程 v2 的测量/目标恢复，以及从哈希匹配的官方公开分发准备内置连接配置。来源动态读取，首次使用不默认 OPPO。GUI 接入与 Actions 仍待完成；详见 measurement-fitting.md 和 flowmix-source-validation.json。
+
 ## 当前桌面交付状态（2026-10-08）
 
 最新功能提交：`546ea97fa20255a0f368a6e2b593b076df002809`。所有源码均通过连接器保存在 `feat/python-desktop-studio`，沿用草稿 PR #1；main 未合并。

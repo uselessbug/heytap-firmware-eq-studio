@@ -14,3 +14,4 @@ inputs/
 *.opkg
 *.rar
 *.heytap.json
+_flowmix_profile.json
