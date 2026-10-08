@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-08",
+  "kind": "lightweight_actual_sample_reads",
+  "third_party_files": [
+    {
+      "name": "1_all_113_0_oppo_enco_x4_06EC10(6).bin",
+      "sha256": "ee8674177d6d709d310c66e41167f8765b0140ca6b788ae62ffc8886de1c615a",
+      "raw_sha256": "110f5c792583f46cdb2edb1f138890f7c6f97f54d666a7ab436a29e403ed3093",
+      "version": "113",
+      "blocks": 34
+    },
+    {
+      "name": "1_all_101_0_oppo_enco_x4_06EC10(7).bin",
+      "sha256": "221a4c47da75dca349ec647434ed9447eed5af1f25524bcc571387870fafd6ea",
+      "raw_sha256": "11a8ec34bd66408c8a34a9d4088fd27a7d39fd193a780eec605c8de750a413ca",
+      "version": "101",
+      "blocks": 34
+    }
+  ],
+  "gui_and_ci_not_implied": true,
+  "source_commit": "49a758f878cb3623e6fa5fe0ad243bff607d1b3c",
+  "official_files": [
+    {
+      "name": "sAnN-16128-1_all_112_0",
+      "sha256": "ffa7443f9c8a349a952176ad231fff73850d4e6be5a65ec2b97e9bbe13798729",
+      "raw_sha256": "d201b0bc4474209e3da46057d2a6a6fa15f761ee513d247034a14e07e44ca774",
+      "code_fingerprints_match": true,
+      "pointer_table_count": 4,
+      "profile_count": 184
+    },
+    {
+      "name": "sAnN-16128-1_all_116_0",
+      "sha256": "e34a6f0982f45b855b2d7f3372080664dd1c47bbc9918f4dae2b818acd3b4680",
+      "raw_sha256": "0924bfe293f7d0b40dffb012eb4fdf4014374e4cc60c85b32a36fe7716802f24",
+      "code_fingerprints_match": true,
+      "pointer_table_count": 4,
+      "profile_count": 184
+    }
+  ],
+  "flowmix_apk_sha256": "79777621b8dd6643f7ab2c0c0c7e77f846a2cb2d6c4ed23b59ac8858798412e2",
+  "realab_curves": [
+    {
+      "title": "丹拿原声_ANC on（B&K 5128）",
+      "point_count": 957
+    },
+    {
+      "title": "丹拿高解析_ANC on（B&K 5128）",
+      "point_count": 957
+    },
+    {
+      "title": "纯享人声_ANC on（B&K 5128）",
+      "point_count": 957
+    },
+    {
+      "title": "清亮高音_ANC on（B&K 5128）",
+      "point_count": 957
+    },
+    {
+      "title": "澎湃低音_ANC on（B&K 5128）",
+      "point_count": 957
+    }
+  ]
+}

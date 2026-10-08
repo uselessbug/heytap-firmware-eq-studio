@@ -40,6 +40,12 @@ class EQDocument:
     source_sha256: str | None = None
 
     def validate(self):
+        if not isinstance(self.name, str) or not isinstance(self.metadata, dict):
+            raise ValueError("Invalid EQ name or metadata")
+        if any(not isinstance(k, str) or not re.fullmatch(r"[A-Z_0-9]+", k)
+               or not isinstance(v, str) or "\n" in v or "\r" in v
+               for k, v in self.metadata.items()):
+            raise ValueError("Invalid EQ metadata fields")
         if len(self.raw) == 1:
             raise ValueError("GraphicEQ needs at least two points")
         previous = 0
@@ -131,6 +137,8 @@ def load_eq(path):
 
 def dump_eq(doc):
     doc.validate()
+    if not doc.raw and not doc.filters:
+        raise ValueError("No EQ points or filters to export")
     if any(not f.enabled for f in doc.filters):
         raise ValueError("Flowmix text has no confirmed disabled-filter syntax; enable or remove filters")
     graphic = "; ".join(f"{f:.9g} {g:.9g}" for f, g in doc.raw)

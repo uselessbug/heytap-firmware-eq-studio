@@ -12,6 +12,8 @@ def main(argv=None):
     parser.add_argument("--smoke-test", action="store_true")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args(argv)
+    if args.smoke_test and args.report is None:
+        parser.error("--smoke-test requires --report")
     os.environ["PYQTGRAPH_QT_LIB"] = "PySide6"
     from PySide6 import QtCore, QtWidgets
 
@@ -20,12 +22,18 @@ def main(argv=None):
     app = QtWidgets.QApplication([sys.argv[0]])
     app.setApplicationName("HeyTap Firmware EQ Studio")
     app.setOrganizationName("HeyTapEQStudio")
-    window = MainWindow(recover=not args.smoke_test)
+    auto_path = args.report.parent/"smoke-project.json" if args.smoke_test else None
+    window = MainWindow(recover=not args.smoke_test, auto_path=auto_path)
     window.show()
     result = 0
     if args.smoke_test:
-        if args.report is None:
-            parser.error("--smoke-test requires --report")
+        from heytap_eq.eq_formats import Filter, parse_text
+        from heytap_eq.measurements import Measurement
+
+        preview = parse_text("GraphicEQ: 20 0; 100 -1; 1000 2; 5000 -2; 20000 0", "Synthetic preview")
+        preview.filters.append(Filter(1, 1000, 2, .7))
+        window.set_document(preview)
+        window.set_measurements([Measurement("Synthetic test fixture", [20, 1000, 20000], [80, 90, 80]).validate()])
 
         def probe():
             nonlocal result
@@ -39,7 +47,9 @@ def main(argv=None):
                     "status": "passed", "frozen": bool(getattr(sys, "frozen", False)),
                     "qt": QtCore.qVersion(), "qt_binding": "PySide6",
                     "sha": os.environ.get("HEYTAP_BUILD_SHA"), "window_visible": True,
-                    "screenshot": image.name,
+                    "screenshot": image.name, "raw_points": len(window.session.document.raw),
+                    "peq_filters": len(window.session.document.filters),
+                    "measurements": len(window.measurements),
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
                 result = 1

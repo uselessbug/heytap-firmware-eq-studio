@@ -242,3 +242,11 @@ HAR HTML 的初始数据可提取五条 Enco X4 频响：丹拿原声 / 丹拿�
 必要的轻量读取已核对原官方 112/116 的完整文件 SHA、原始数据 SHA、代码指纹、四张表和 184 条记录；优化 EQ 为 127 RAW + 5 PEQ；原 HAR 提取五条各 957 点。新 GUI 测试与冻结程序结果以本阶段 Actions 为准。
 
 本地测量接口与 Windows 操作协助见 `docs/local-checks.md`。已确认 APK 的实际 OkHttp UA 是 `okhttp/5.3.2`；本地脚本同时复现 Bearer 和这个 UA，不将令牌写入仓库。
+
+### 界面补充与诊断验证
+
+`49a758f878cb3623e6fa5fe0ad243bff607d1b3c` 的 Actions https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37781426278 已产生 Windows 便携包及冻结启动报告。后续新增绿色 PEQ 控制点拖动、未知布局只读候选扫描、真实鼠标事件的 RAW 拖动撤销测试、带合成 EQ/测量的启动截图，以及 PowerShell 诊断语法检查。这些补充以最新 Actions 为准。
+
+RAR 解压实际名称和哈希已重新核对：113 的整包 SHA256 为 `ee8674177d6d709d310c66e41167f8765b0140ca6b788ae62ffc8886de1c615a`，101 为 `221a4c47da75dca349ec647434ed9447eed5af1f25524bcc571387870fafd6ea`；四样本均通过轻量完整性读取，详见 `docs/current-input-validation.json`。没有上传这些原始二进制。
+
+当前网络接口只提供脱敏诊断，GUI 在线来源浏览、缓存、拟合/导出后台取消及版本补丁仍未完成。当前已编辑文档属于外部修正目标，不能直接写入固件滤波槽。

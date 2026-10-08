@@ -6,6 +6,7 @@ import pytest
 
 from heytap_eq import opkg
 from heytap_eq.adapters import inspect_firmware
+from heytap_eq.discovery import discover
 from heytap_eq.dsp import coefficients, correction, filter_response
 from heytap_eq.eq_formats import EQDocument, Filter, dump_eq, load_eq, parse_text
 from heytap_eq.measurements import parse_har, parse_json
@@ -98,3 +99,14 @@ def test_measurements_do_not_keep_har_credentials():
         parse_json({"success": False, "data": {}})
     with pytest.raises(ValueError):
         parse_json({"frequencies": [100, 20], "spl_values": [1, 2]})
+
+
+def test_discovery_never_grants_write_access():
+    import struct
+    raw = bytearray(600)
+    struct.pack_into("<ffIIfff", raw, 16, -1, 1, 1, 1, 3, 1000, .7)
+    struct.pack_into("<I", raw, 500, 0x10028000+16)
+    result = discover(bytes(raw))
+    assert result["writable"] is False
+    candidate = next(c for c in result["candidates"] if c["raw_offset"] == 16)
+    assert candidate["possible_pointer_words_at_base_0x10028000"] == [500]

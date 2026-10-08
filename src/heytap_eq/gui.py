@@ -9,6 +9,7 @@ import pyqtgraph as pg
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from heytap_eq.adapters import PRESETS, STATES, inspect_firmware
+from heytap_eq.discovery import discover
 from heytap_eq.dsp import correction, firmware_curve
 from heytap_eq.eq_formats import KINDS, Filter, dump_eq, load_eq
 from heytap_eq.measurements import load_measurements
@@ -32,10 +33,11 @@ class Worker(QtCore.QThread):
 class DragNodes(pg.GraphItem):
     moved = QtCore.Signal(object)
 
-    def __init__(self):
+    def __init__(self, peq=False):
         super().__init__()
         self.positions = np.empty((0, 2))
         self.drag_index = None
+        self.peq = peq
 
     def set_points(self, points):
         self.positions = np.array(points, dtype=float).reshape(-1, 2)
@@ -43,7 +45,8 @@ class DragNodes(pg.GraphItem):
 
     def refresh(self):
         self.setData(pos=self.positions, data=np.arange(len(self.positions)),
-                     symbol="o", size=7, pxMode=True, brush="#d8a650", pen=None)
+                     symbol="d" if self.peq else "o", size=9 if self.peq else 7,
+                     pxMode=True, brush="#85c997" if self.peq else "#d8a650", pen=None)
 
     def mouseDragEvent(self, event):
         if event.button() != QtCore.Qt.MouseButton.LeftButton:
@@ -59,11 +62,14 @@ class DragNodes(pg.GraphItem):
             event.ignore()
             return
         index = self.drag_index
+        if self.peq:
+            self.positions[index, 0] = np.clip(event.pos().x(), np.log10(20), np.log10(20000))
         self.positions[index, 1] = np.clip(event.pos().y(), -60, 60)
         self.refresh()
         event.accept()
         if event.isFinish():
-            self.moved.emit((index, float(self.positions[index, 1])))
+            change = (index, 10**float(self.positions[index, 0]), float(self.positions[index, 1])) if self.peq else (index, float(self.positions[index, 1]))
+            self.moved.emit(change)
             self.drag_index = None
 
 
@@ -103,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
                           ("导入测量", self.import_measurements), ("打开工程", self.open_project)):
             self._action(toolbar, label, fn)
         self._action(toolbar, "保存工程", self.save_project, "Ctrl+S")
+        self._action(toolbar, "候选结构扫描", self.scan_candidates)
         self.undo_action = self._action(toolbar, "撤销", self.undo, "Ctrl+Z")
         self.redo_action = self._action(toolbar, "重做", self.redo, "Ctrl+Shift+Z")
         body = QtWidgets.QWidget()
@@ -160,7 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
             button.clicked.connect(fn)
             buttons.addWidget(button)
         side_layout.addLayout(buttons)
-        side_layout.addWidget(QtWidgets.QLabel("类型："+", ".join(KINDS)+"\nRAW 节点可上下拖动；一次拖动可一次撤销。"))
+        side_layout.addWidget(QtWidgets.QLabel("类型："+", ".join(KINDS)+"\n黄色圆点：RAW 增益；绿色菱形：PEQ 频率/增益。\nQ 在表格编辑；一次拖动可一次撤销。"))
         self.firmware_table = QtWidgets.QTableWidget(0, 4)
         self.firmware_table.setHorizontalHeaderLabels(["固件类型", "增益 dB", "频率 Hz", "Q"])
         self.firmware_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -171,6 +178,9 @@ class MainWindow(QtWidgets.QMainWindow):
         split.setSizes([850, 530])
         self.nodes = DragNodes()
         self.nodes.moved.connect(self.edit_raw)
+        self.peq_nodes = DragNodes(peq=True)
+        self.peq_nodes.moved.connect(self.edit_peq)
+        self._peq_map = []
         self.statusBar().showMessage("本地编辑 · 固件只读；拟合、封包和版本写入待后续验证")
 
     def _plot(self, label):
@@ -232,6 +242,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.metadata_text.setPlainText(json.dumps(firmware.package["summary"], ensure_ascii=False, indent=2))
         self._changed()
         self.statusBar().showMessage(firmware.recognition)
+
+    def scan_candidates(self):
+        if self.firmware:
+            self._task(lambda: discover(self.firmware.package["raw"]), self.show_candidates)
+
+    def show_candidates(self, result):
+        self.metadata_text.setPlainText(json.dumps(result, ensure_ascii=False, indent=2))
+        self.tabs.setCurrentWidget(self.metadata_text)
+        self.statusBar().showMessage("仅显示候选参数和可能指针；没有赋予名称或写入权限。")
 
     def import_eq(self):
         path = self._choose("导入 EQ", "EQ 文本 (*.txt);;所有文件 (*)")
@@ -324,6 +343,14 @@ class MainWindow(QtWidgets.QMainWindow):
         doc.raw[index][1] = gain
         self.set_document(doc)
 
+    def edit_peq(self, change):
+        index, frequency, gain = change
+        doc = copy.deepcopy(self.session.document)
+        f = doc.filters[self._peq_map[index]]
+        f.frequency = frequency
+        f.gain = gain
+        self.set_document(doc)
+
     def undo(self):
         self.session.undo()
         self._changed()
@@ -350,6 +377,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                pen=pg.mkPen("#d8a650", width=2), name="当前修正 RAW + PEQ")
         self.nodes.set_points([[np.log10(f), g] for f, g in doc.raw])
         self.digital_plot.addItem(self.nodes)
+        self._peq_map = [i for i, f in enumerate(doc.filters) if f.enabled]
+        self.peq_nodes.set_points([[np.log10(doc.filters[i].frequency), doc.filters[i].gain] for i in self._peq_map])
+        self.digital_plot.addItem(self.peq_nodes)
         record = None
         if self.firmware and self.firmware.profiles and self.path_combo.currentIndex() >= 0:
             bank = self.firmware.profiles
