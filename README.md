@@ -1,40 +1,45 @@
 # HeyTap Firmware EQ Studio
 
-面向 OPPO / HeyTap 耳机固件的本地 EQ 研究与编辑项目，首个适配对象为 Enco X4。
+面向 OPPO / HeyTap 耳机固件的本地 EQ 编辑项目，首个研究对象为 Enco X4。
 
-计划采用 **Python + PySide6 + pyqtgraph**：一个本地桌面程序，解析、拟合、可视化和封包均在同一 Python 工程中完成。
+当前可运行部分为 **Python CLI 研究原型**：支持两个给定 EQ 的解析、拟合计划、72 条记录替换及 OPKG 重新封包。恢复出的 11 个 Python 源文件、示例、映射、验证脚本和两个完整工具包已提交。
 
-## 当前提交状态
+桌面方向已确定为 **Python + PySide6 + pyqtgraph**。此前完整 GUI 源码、32 项 pytest 和 Actions 配置未恢复，需继续重建。目前没有桌面安装包。
 
-本分支首先保存已确认的格式、映射、接口和本地验证记录。完整桌面程序源码、测试源码、示例 EQ 及 Actions 配置尚未包含在此提交中；当前仓库内容不能直接启动 GUI 或生成修改后的固件。
+## 接手开发
 
-本地已完成桌面实现和核心验证，但上传前执行环境离线，无法读取源码或继续完成打包检查。后续提交应以源码、可重跑测试和成功的 CI 为交付依据。
+请先阅读 [交接文档](docs/handoff.md) 和 [恢复文件清单](research/recovery-manifest.json)。
 
-## 已确认的研究结果
+- [EQ CLI 与说明](research/enco_x4_eq_toolkit/README.txt)
+- [OPKG 结构工具](research/enco_x4_structure/README.txt)
+- [全部恢复源码](research)
+- [完整 EQ 工具包](research/archives/enco_x4_eq_toolkit.zip)
+- [完整结构工具包](research/archives/enco_x4_structure_toolkit.zip)
 
-- Enco X4 112 / 116 的 OPKG 结构、EQ 参数区、四组指针表、预设名称和选择映射。
-- Wavelet GraphicEQ 与 Flowmix RAW + PEQ 两种输入的用途与转换边界。
-- Flowmix APK 中的公开测量服务域名、七个只读接口和响应模型。
-- 原始测量频响、数字 EQ 增益和修改后的估计声学频响需要分别显示。
-- 本地 32 项测试，以及 112 / 116 上两个目标 EQ 共 72 条记录的修改和重新封包验证。
+## 快速检查
 
-## 文档
+```bash
+cd research/enco_x4_eq_toolkit
+python -m pip install -r requirements.txt
+python eq_tool.py mapping
+python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
+```
 
-- [固件结构、名称映射与编辑边界](docs/firmware-format.md)
-- [EQ 输入和频响处理](docs/eq-formats.md)
+计划生成、应用、原输入要求和验证命令见 CLI 的 README。原厂固件未包含在仓库中。当前 CLI 不修改版本号，只支持附件所用的连续编号 Peak PEQ。
+
+## 当前验证
+
+恢复后重新跑通两个脚本：112 / 116 各修改 72 条记录并验证重新封包；四个固件样本共 135 个块通过完整性、字节一致回包、指针和隔离修改检查。新输出保持原版本，尚未实机刷写。
+
+- [当前可重跑验证](docs/recovered-validation.json)
+- [前一阶段桌面实现的历史记录](docs/local-validation.json)（源码未恢复，不能当作当前 CI 结果）
+
+## 研究文档
+
+- [固件结构与名称映射](docs/firmware-format.md)
+- [EQ 格式与频响](docs/eq-formats.md)
 - [Flowmix 测量接口](docs/flowmix-api.md)
 - [相关开源项目](docs/related-projects.md)
-- [本地验证记录](docs/local-validation.json)
 
-## 桌面工具的实现目标
+未来桌面工具需要补齐通用 EQ 导入 / 编辑、测量叠加、元数据修改、工程保存、未知布局只读发现，以及 Linux / Windows CI 和打包。原厂固件、完整 APK / HAR 和访问令牌不提交到本公开仓库。
 
-- 导入固件、扫描已有 EQ、显示预设名称和数字滤波响应。
-- 导入 GraphicEQ 和 Flowmix RAW + PEQ；拖动曲线节点、编辑 PEQ 参数、撤销/重做。
-- 在四组输出路径及九个内部状态上拟合替换 EQ，检查容量、稳定性和拟合误差。
-- 导入 ReaLab HAR / HTML、CSV / JSON 测量数据，显示原始测量与 EQ 叠加估计。
-- 编辑已确认的版本和文本元数据；未知、自动计算或布局相关字段保留为只读。
-- 保存与输入固件 SHA 绑定的工程文件；导出新固件和修改报告。
-- 对未知机型或变化后的布局扫描候选表；未经验证的选择逻辑保持只读。
-- Linux / Windows CI、GUI 启动检查和 Windows 打包。
-
-原厂固件、完整 APK、HAR 以及凭据不应提交到此公开仓库。

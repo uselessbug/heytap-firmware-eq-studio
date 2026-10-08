@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "date": "2026-10-08",
-  "status": "local_results_only_source_and_ci_pending",
-  "notice": "完整源码和可重跑测试尚未上传。本记录来自上传前的本地执行，未经过 GitHub CI 或实际耳机刷写验证。",
+  "status": "historical_desktop_results_source_not_recovered",
+  "notice": "这是此前桌面实现的历史本地结果。其源码和 32 项 pytest 未恢复，不能从当前仓库复现，也不是 CI 结果。恢复后的旧 CLI 保持原版本；本次可重跑验证见 docs/recovered-validation.json。",
   "local_checks": {
     "pytest": {
       "passed": 32
@@ -68,5 +68,9 @@
     "embedded_credential_request": "rejected by automatic approval review; not retried"
   },
   "device_flash": "not tested",
-  "vendor_binary_files_committed": false
+  "vendor_binary_files_committed": false,
+  "desktop_source_recovered": false,
+  "previous_32_test_suite_recovered": false,
+  "current_validation": "docs/recovered-validation.json"
 }
+
