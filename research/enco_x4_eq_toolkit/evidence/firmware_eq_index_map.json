@@ -1,0 +1,336 @@
+{
+  "112": {
+    "eq_index_function": "0x10058e78",
+    "anc_getter": "0x100ec69c",
+    "log_function": "0x10140308",
+    "rows": [
+      {
+        "anc_internal_id": 0,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 1,
+        "table_indices": {
+          "0": 0,
+          "1": 9,
+          "2": 18,
+          "3": 27,
+          "7": 36
+        }
+      },
+      {
+        "anc_internal_id": 2,
+        "table_indices": {
+          "0": 1,
+          "1": 10,
+          "2": 19,
+          "3": 28,
+          "7": 37
+        }
+      },
+      {
+        "anc_internal_id": 3,
+        "table_indices": {
+          "0": 2,
+          "1": 11,
+          "2": 20,
+          "3": 29,
+          "7": 38
+        }
+      },
+      {
+        "anc_internal_id": 4,
+        "table_indices": {
+          "0": 2,
+          "1": 11,
+          "2": 20,
+          "3": 29,
+          "7": 38
+        }
+      },
+      {
+        "anc_internal_id": 5,
+        "table_indices": {
+          "0": 3,
+          "1": 12,
+          "2": 21,
+          "3": 30,
+          "7": 39
+        }
+      },
+      {
+        "anc_internal_id": 6,
+        "table_indices": {
+          "0": 4,
+          "1": 13,
+          "2": 22,
+          "3": 31,
+          "7": 40
+        }
+      },
+      {
+        "anc_internal_id": 7,
+        "table_indices": {
+          "0": 5,
+          "1": 14,
+          "2": 23,
+          "3": 32,
+          "7": 41
+        }
+      },
+      {
+        "anc_internal_id": 8,
+        "table_indices": {
+          "0": 7,
+          "1": 16,
+          "2": 25,
+          "3": 34,
+          "7": 43
+        }
+      },
+      {
+        "anc_internal_id": 9,
+        "table_indices": {
+          "0": 6,
+          "1": 15,
+          "2": 24,
+          "3": 33,
+          "7": 42
+        }
+      },
+      {
+        "anc_internal_id": 10,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 11,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 12,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 13,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 14,
+        "table_indices": {
+          "0": 8,
+          "1": 17,
+          "2": 26,
+          "3": 35,
+          "7": 44
+        }
+      },
+      {
+        "anc_internal_id": 15,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      }
+    ]
+  },
+  "116": {
+    "eq_index_function": "0x10058e78",
+    "anc_getter": "0x100eda74",
+    "log_function": "0x10142cc8",
+    "rows": [
+      {
+        "anc_internal_id": 0,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 1,
+        "table_indices": {
+          "0": 0,
+          "1": 9,
+          "2": 18,
+          "3": 27,
+          "7": 36
+        }
+      },
+      {
+        "anc_internal_id": 2,
+        "table_indices": {
+          "0": 1,
+          "1": 10,
+          "2": 19,
+          "3": 28,
+          "7": 37
+        }
+      },
+      {
+        "anc_internal_id": 3,
+        "table_indices": {
+          "0": 2,
+          "1": 11,
+          "2": 20,
+          "3": 29,
+          "7": 38
+        }
+      },
+      {
+        "anc_internal_id": 4,
+        "table_indices": {
+          "0": 2,
+          "1": 11,
+          "2": 20,
+          "3": 29,
+          "7": 38
+        }
+      },
+      {
+        "anc_internal_id": 5,
+        "table_indices": {
+          "0": 3,
+          "1": 12,
+          "2": 21,
+          "3": 30,
+          "7": 39
+        }
+      },
+      {
+        "anc_internal_id": 6,
+        "table_indices": {
+          "0": 4,
+          "1": 13,
+          "2": 22,
+          "3": 31,
+          "7": 40
+        }
+      },
+      {
+        "anc_internal_id": 7,
+        "table_indices": {
+          "0": 5,
+          "1": 14,
+          "2": 23,
+          "3": 32,
+          "7": 41
+        }
+      },
+      {
+        "anc_internal_id": 8,
+        "table_indices": {
+          "0": 7,
+          "1": 16,
+          "2": 25,
+          "3": 34,
+          "7": 43
+        }
+      },
+      {
+        "anc_internal_id": 9,
+        "table_indices": {
+          "0": 6,
+          "1": 15,
+          "2": 24,
+          "3": 33,
+          "7": 42
+        }
+      },
+      {
+        "anc_internal_id": 10,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 11,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 12,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 13,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      },
+      {
+        "anc_internal_id": 14,
+        "table_indices": {
+          "0": 8,
+          "1": 17,
+          "2": 26,
+          "3": 35,
+          "7": 44
+        }
+      },
+      {
+        "anc_internal_id": 15,
+        "table_indices": {
+          "0": 8,
+          "1": 8,
+          "2": 8,
+          "3": 8,
+          "7": 8
+        }
+      }
+    ]
+  }
+}

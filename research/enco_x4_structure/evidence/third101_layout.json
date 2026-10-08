@@ -1,0 +1,517 @@
+{
+  "file_size": 4693664,
+  "file_sha256": "221a4c47da75dca349ec647434ed9447eed5af1f25524bcc571387870fafd6ea",
+  "protocol_version": 1,
+  "header_body_length": 55,
+  "section_body_length": 140,
+  "hash_id": 3,
+  "pkg_length": 4693618,
+  "pkg_type": 1,
+  "product_id": "06EC10",
+  "manufacturer": 0,
+  "hardware_version": "01",
+  "section_count": 1,
+  "section_id": 1,
+  "section_name": "ap.bin",
+  "version_digits": "101",
+  "build_time": "",
+  "payload_offset": 208,
+  "payload_size": 4693456,
+  "raw_size": 8717764,
+  "raw_sha256": "11a8ec34bd66408c8a34a9d4088fd27a7d39fd193a780eec605c8de750a413ca",
+  "compressed_content_sha256": "355a57ba322aa56cf7a8264b3a9626326adf77427126e6be99f6a4fd53fcaa18",
+  "header_extension_hex": "000000000000000000",
+  "section_extension_hex": "01000000",
+  "checks": {
+    "pkg_length": true,
+    "pkg_sha256": true,
+    "raw_sha256": true,
+    "compressed_sha256": true,
+    "all_block_crc32": true,
+    "all_lzma_sizes": true
+  },
+  "blocks": [
+    {
+      "index": 1,
+      "package_offset": 208,
+      "raw_offset": 0,
+      "raw_size": 262144,
+      "compressed_size": 151123,
+      "block_size": 151159,
+      "crc32": "08321e6e",
+      "raw_sha256": "9e45fef4a5e85a82a41d4752ffd7d48ffc444580fc0cd18298032652072ed8b0",
+      "block_sha256": "ae9903086b3522d11b5a53fbb91558e34ab144495f5a1ee98337652d360bc7c7"
+    },
+    {
+      "index": 2,
+      "package_offset": 151367,
+      "raw_offset": 262144,
+      "raw_size": 262144,
+      "compressed_size": 158794,
+      "block_size": 158830,
+      "crc32": "32d86bb7",
+      "raw_sha256": "70b3ae1cc3433e8e263c4416a037fc9402f738622ec8f655503efe0a3a106dfe",
+      "block_sha256": "276961d7ad6d1da4bae651c54c31a53362250b7960560e91cf03d1b52c17a2df"
+    },
+    {
+      "index": 3,
+      "package_offset": 310197,
+      "raw_offset": 524288,
+      "raw_size": 262144,
+      "compressed_size": 136853,
+      "block_size": 136889,
+      "crc32": "9fd96e13",
+      "raw_sha256": "ae3cf2e6b18296909aebfd625001b75f92b8766c1232cdffee7ec4022d0b5543",
+      "block_sha256": "28df18b9ed8a4f8d79bed0ac7393ecce5e3680b0e92ca6ac62533d119944ac9b"
+    },
+    {
+      "index": 4,
+      "package_offset": 447086,
+      "raw_offset": 786432,
+      "raw_size": 262144,
+      "compressed_size": 168775,
+      "block_size": 168811,
+      "crc32": "24f164f0",
+      "raw_sha256": "68db128e4e28246b83affc3d7c8903265cf85f7320a1e29cdb6d776d6c99ee2b",
+      "block_sha256": "1ec71db2159e800b305b36ec39d64c67779ffec43aa80f37dff07b2554b2a81a"
+    },
+    {
+      "index": 5,
+      "package_offset": 615897,
+      "raw_offset": 1048576,
+      "raw_size": 262144,
+      "compressed_size": 149399,
+      "block_size": 149435,
+      "crc32": "8bff5163",
+      "raw_sha256": "fb05cf737c1346d557649de0d0a1fc3c7be442086b04f1ba21eea702d52f54d6",
+      "block_sha256": "35adf964e7a0a2e60e800fec5a3976066d85f66cfe28fbd82b6d8786b5f0deca"
+    },
+    {
+      "index": 6,
+      "package_offset": 765332,
+      "raw_offset": 1310720,
+      "raw_size": 262144,
+      "compressed_size": 146059,
+      "block_size": 146095,
+      "crc32": "512dd042",
+      "raw_sha256": "85a24b9c3cb2fa41343a406fa7c915eaff9c9207b15cf2ffedc9895f772111b8",
+      "block_sha256": "db2007cd39a16587d310a69ef534394f60b0c5e5a9a6553839fc7760172b7fd8"
+    },
+    {
+      "index": 7,
+      "package_offset": 911427,
+      "raw_offset": 1572864,
+      "raw_size": 262144,
+      "compressed_size": 163327,
+      "block_size": 163363,
+      "crc32": "0f03cfaa",
+      "raw_sha256": "c76d36a446a133db9097f453ef8634e7d4eb4c05e169f0e306c42c045466dd34",
+      "block_sha256": "beff9b951ce8d151a77ee5051fd7082e560fbe1cba0cc4218c5e81da693a6e33"
+    },
+    {
+      "index": 8,
+      "package_offset": 1074790,
+      "raw_offset": 1835008,
+      "raw_size": 262144,
+      "compressed_size": 160200,
+      "block_size": 160236,
+      "crc32": "5ecc1302",
+      "raw_sha256": "f4675116c0bbd2ef57cfbedcc31d7c934be9fc3063c146cc551e20f6a73ed86c",
+      "block_sha256": "a70d336b5b4c5ff037e6d37d426b36322c3073acfa80c4ef0bd597e9c846044b"
+    },
+    {
+      "index": 9,
+      "package_offset": 1235026,
+      "raw_offset": 2097152,
+      "raw_size": 262144,
+      "compressed_size": 165104,
+      "block_size": 165140,
+      "crc32": "569558e7",
+      "raw_sha256": "8cf50ccb5923829ef4747ecba858c85c333d43bfc4ffb3707e1102145672574c",
+      "block_sha256": "54cffda3b3caac6ba55e74374dc84764ade297c53020e75491c89f7383eaffbf"
+    },
+    {
+      "index": 10,
+      "package_offset": 1400166,
+      "raw_offset": 2359296,
+      "raw_size": 262144,
+      "compressed_size": 162339,
+      "block_size": 162375,
+      "crc32": "8fa115ee",
+      "raw_sha256": "cbdf7168357e8c221e893cbf1bb471b09c5d256c7289d655f049b98d9e5c5c6e",
+      "block_sha256": "ab5fb5931f0242e0b85b91b6403f06d956ef325710ce8c03e244ffb0bef0d116"
+    },
+    {
+      "index": 11,
+      "package_offset": 1562541,
+      "raw_offset": 2621440,
+      "raw_size": 262144,
+      "compressed_size": 160452,
+      "block_size": 160488,
+      "crc32": "ba76b51c",
+      "raw_sha256": "e78cfadd0941c9379f478361a58d9f3b34a603f8d34600df8f5ae10858095ac2",
+      "block_sha256": "b6320ddf541b6cbd51b39232ce960f620e3e53094555605b0d788e33b79d977b"
+    },
+    {
+      "index": 12,
+      "package_offset": 1723029,
+      "raw_offset": 2883584,
+      "raw_size": 262144,
+      "compressed_size": 142790,
+      "block_size": 142826,
+      "crc32": "6ed44cf0",
+      "raw_sha256": "53c4389f6f3223abd87acac20cc8cbd3f4112941e0999d42a63533a617a3d27e",
+      "block_sha256": "37645cf8bd3605e8ec4b1e064d08e800151addb2db9c00c5372439eccc843e85"
+    },
+    {
+      "index": 13,
+      "package_offset": 1865855,
+      "raw_offset": 3145728,
+      "raw_size": 262144,
+      "compressed_size": 153633,
+      "block_size": 153669,
+      "crc32": "6e03d740",
+      "raw_sha256": "c5f47456733929fddd4cc90b5bf23b4efd27167fcc36285fe3c231523c48cafc",
+      "block_sha256": "3ae52036e18340031feebfcab88cffa59e1d9cb9b9fb5c74311f9e1dd8bd5ea6"
+    },
+    {
+      "index": 14,
+      "package_offset": 2019524,
+      "raw_offset": 3407872,
+      "raw_size": 262144,
+      "compressed_size": 155965,
+      "block_size": 156001,
+      "crc32": "2a64396a",
+      "raw_sha256": "a06dcea574e070bfc82c625c50d00134844622fe6ae6dd878f72f77b0ac05694",
+      "block_sha256": "af3fade7bcb3351bd401a0c4a003c998cba513c2d227d50c9c17cb66a0448da9"
+    },
+    {
+      "index": 15,
+      "package_offset": 2175525,
+      "raw_offset": 3670016,
+      "raw_size": 262144,
+      "compressed_size": 194039,
+      "block_size": 194075,
+      "crc32": "138ecf71",
+      "raw_sha256": "738cb52a3f58f4659b9b6ee9d893cb6ab494290f360580c2fa470ee1ec2ee78d",
+      "block_sha256": "87b2ed99c6c37140929f7316dfa7ddc69d551339ba5451a9d4b3fed2246c86cf"
+    },
+    {
+      "index": 16,
+      "package_offset": 2369600,
+      "raw_offset": 3932160,
+      "raw_size": 262144,
+      "compressed_size": 249288,
+      "block_size": 249324,
+      "crc32": "27b87248",
+      "raw_sha256": "534aa66414fdc80a464fc44739a89124eda5c4f97d867afe2fb126b38201cda4",
+      "block_sha256": "25c19617de429087b01ef5fe800ff661d125c62c935a39855bb2dc6d10763248"
+    },
+    {
+      "index": 17,
+      "package_offset": 2618924,
+      "raw_offset": 4194304,
+      "raw_size": 262144,
+      "compressed_size": 208302,
+      "block_size": 208338,
+      "crc32": "d9662d44",
+      "raw_sha256": "0e01084a40acb0d927ee74d16c108a89f5cd10dd3893ac2df084a085d6d55587",
+      "block_sha256": "689c4bbbb5f4d45182a4fca79695d67dac636dcfeefdbceb790c52ac77fbb9e5"
+    },
+    {
+      "index": 18,
+      "package_offset": 2827262,
+      "raw_offset": 4456448,
+      "raw_size": 262144,
+      "compressed_size": 138383,
+      "block_size": 138419,
+      "crc32": "2b99c256",
+      "raw_sha256": "492e185f2ad3588c45116f23864f8a484f0d04347f11faeb2b57650eb4c556bf",
+      "block_sha256": "0680f4c6123759d5162d0447e9302f213df6ff6b5085cfb3672054fdc24c5ce5"
+    },
+    {
+      "index": 19,
+      "package_offset": 2965681,
+      "raw_offset": 4718592,
+      "raw_size": 262144,
+      "compressed_size": 148488,
+      "block_size": 148524,
+      "crc32": "b453cb29",
+      "raw_sha256": "a99efbd50cf68c7872a7080aeb4326d1038b7dac6fd3ad6d632820a6a7a3bc98",
+      "block_sha256": "fecf30eb3e92d1fb29263c4f1b78126274aa5bf4628659c8ccc02c2a6b894f04"
+    },
+    {
+      "index": 20,
+      "package_offset": 3114205,
+      "raw_offset": 4980736,
+      "raw_size": 262144,
+      "compressed_size": 164444,
+      "block_size": 164480,
+      "crc32": "9de2a1b1",
+      "raw_sha256": "80ab6dd78ef3bdc7beb54fdc8ba9166e1118d6bb59ba374709a39617dcb742a4",
+      "block_sha256": "05fa8475154cde82b566d423cef648aea346f1a31428bac5ae16c0860aca7b16"
+    },
+    {
+      "index": 21,
+      "package_offset": 3278685,
+      "raw_offset": 5242880,
+      "raw_size": 262144,
+      "compressed_size": 121418,
+      "block_size": 121454,
+      "crc32": "cd0242aa",
+      "raw_sha256": "90f47781001cec7ba229f794675dc30c94fc59938bd853f1c26a4b13d888c476",
+      "block_sha256": "dbfd00824652be90e2ce37c761fc47c54eb40c03da415ed5e24589a99c90b416"
+    },
+    {
+      "index": 22,
+      "package_offset": 3400139,
+      "raw_offset": 5505024,
+      "raw_size": 262144,
+      "compressed_size": 125323,
+      "block_size": 125359,
+      "crc32": "edba618a",
+      "raw_sha256": "d010da31c059c4b6af7fb74c96a7666969a93ea9eb4ba3f7a9333058ec80134e",
+      "block_sha256": "964edcdcb7d6ac03b919088d4c46c4b143703cc6558b3c540adaff36ee16ce2b"
+    },
+    {
+      "index": 23,
+      "package_offset": 3525498,
+      "raw_offset": 5767168,
+      "raw_size": 262144,
+      "compressed_size": 166482,
+      "block_size": 166518,
+      "crc32": "fef9a5a5",
+      "raw_sha256": "d9d97003a9631b74e36d431e446906066f7d571257ee2ad2e181e89f64c7820e",
+      "block_sha256": "9aa465bd0a6c22597255a2b8008eba3582369d66a33f5501e180980715fb8d96"
+    },
+    {
+      "index": 24,
+      "package_offset": 3692016,
+      "raw_offset": 6029312,
+      "raw_size": 262144,
+      "compressed_size": 164515,
+      "block_size": 164551,
+      "crc32": "877f2d3d",
+      "raw_sha256": "0c630f51c9530660330b3d6d73e2fcb5da5c8ff6f4dcf0a925db450533bb81e6",
+      "block_sha256": "a7c8f7188d17f172d8d4897acc320ea81f35014e00d132fb2a2441b442f4dad2"
+    },
+    {
+      "index": 25,
+      "package_offset": 3856567,
+      "raw_offset": 6291456,
+      "raw_size": 262144,
+      "compressed_size": 142356,
+      "block_size": 142392,
+      "crc32": "35bb0f11",
+      "raw_sha256": "c6e2fb34568f120a6f203fe86789cb8e5553170a5032d15000881c7ff9972cac",
+      "block_sha256": "62f9a5e39a986ee9164e96abc89d2fc0ca9ac56dd17758fd97d7104bcd39f46a"
+    },
+    {
+      "index": 26,
+      "package_offset": 3998959,
+      "raw_offset": 6553600,
+      "raw_size": 262144,
+      "compressed_size": 48223,
+      "block_size": 48259,
+      "crc32": "74a20ecd",
+      "raw_sha256": "5dc4916b45472189b0205c9f04a4ac4a630d2be24dfb6131ad573ae68bb584cc",
+      "block_sha256": "919d61c6e537f809f1384c24ed64c4a3cc18f93399b23468d586d20819b4c12f"
+    },
+    {
+      "index": 27,
+      "package_offset": 4047218,
+      "raw_offset": 6815744,
+      "raw_size": 262144,
+      "compressed_size": 72474,
+      "block_size": 72510,
+      "crc32": "8fda2e7d",
+      "raw_sha256": "3c5d22f3c0360f706ea51914e1893c864968b41703e7d92c40963d71735863a9",
+      "block_sha256": "08d06f8aa66a35dd4e4b7a9dc43d8a0b394c2b1cb39c8845d47db71913181000"
+    },
+    {
+      "index": 28,
+      "package_offset": 4119728,
+      "raw_offset": 7077888,
+      "raw_size": 262144,
+      "compressed_size": 32040,
+      "block_size": 32076,
+      "crc32": "d2f09e73",
+      "raw_sha256": "68899982db6bdc01ed0a814eaeebcca8679cbbcee56b41e7f27b2c651473ed24",
+      "block_sha256": "75c27a545154ff5463f88e6d60d85ec7482a4f32220cbd75c63ca171ce967969"
+    },
+    {
+      "index": 29,
+      "package_offset": 4151804,
+      "raw_offset": 7340032,
+      "raw_size": 262144,
+      "compressed_size": 65411,
+      "block_size": 65447,
+      "crc32": "fe93922d",
+      "raw_sha256": "e09560074c48a7f86bbe860a0ea679c3181f34a01f8323167cf39bae4f8f7074",
+      "block_sha256": "fc64537a9ffe83df7674347c012405009b2d06af433c056eaf8001e99734b7c2"
+    },
+    {
+      "index": 30,
+      "package_offset": 4217251,
+      "raw_offset": 7602176,
+      "raw_size": 262144,
+      "compressed_size": 87024,
+      "block_size": 87060,
+      "crc32": "ff81376e",
+      "raw_sha256": "ef757cb24ee3264447ddebafb6f88c6376ad4d094cc51f47f362926214c54305",
+      "block_sha256": "f3c9f1a5ec286f90296320602bbeca7be2a2d81c1b08731c7e4f9635f829795b"
+    },
+    {
+      "index": 31,
+      "package_offset": 4304311,
+      "raw_offset": 7864320,
+      "raw_size": 262144,
+      "compressed_size": 73350,
+      "block_size": 73386,
+      "crc32": "cf9b83ea",
+      "raw_sha256": "d33c4bf771241efafef84f07a4baf39af24bcd9556d7e1369c1ecac849bc2b6c",
+      "block_sha256": "cb7ca8197b0b2ad5137a73ca6a90c244dcbb9215096a2befb1b127137955f2e6"
+    },
+    {
+      "index": 32,
+      "package_offset": 4377697,
+      "raw_offset": 8126464,
+      "raw_size": 262144,
+      "compressed_size": 98687,
+      "block_size": 98723,
+      "crc32": "06f3d178",
+      "raw_sha256": "aa306aaf441f8b450988837165935ea39d1c2804ba1dfa9bf7ed82571ee60b92",
+      "block_sha256": "28927ca9d3fd0afe10edccc8ccc2fd0e8e561b5a5078d5f00d213f0691414c06"
+    },
+    {
+      "index": 33,
+      "package_offset": 4476420,
+      "raw_offset": 8388608,
+      "raw_size": 262144,
+      "compressed_size": 176022,
+      "block_size": 176058,
+      "crc32": "f7a232a8",
+      "raw_sha256": "2d829d882238d8e155c88fcb69eb8db2d1449c259154e750c98a4a8c1125f4e7",
+      "block_sha256": "93c460ee39ca97267545b76ccbce0332e94f49a733ca93ba5086bdb85b8958d7"
+    },
+    {
+      "index": 34,
+      "package_offset": 4652478,
+      "raw_offset": 8650752,
+      "raw_size": 67012,
+      "compressed_size": 41150,
+      "block_size": 41186,
+      "crc32": "2acc7a15",
+      "raw_sha256": "2e43bc9f8c944cd517717bd76306459746e66c380bcf4468b203827c9b83e0a5",
+      "block_sha256": "8c5aadc6d256c0f08109fc128b0ddc012193c3860969fba4b32a6411e1ab5584"
+    }
+  ],
+  "embedded_build_metadata": [
+    {
+      "raw_offset": 3206284,
+      "fields": {
+        "CHIP": "best1702",
+        "CHIP_ROLE": "CP",
+        "KERNEL": "RTX5",
+        "FLASH_BASE": "0x10000000",
+        "FLASH_NC_BASE": "0x30000000",
+        "FLASH_SIZE": "0x100000",
+        "BUILD_DATE": "Aug 19 2026 09:28:35",
+        "REV_INFO": "159a9e8:cp_subsys"
+      }
+    },
+    {
+      "raw_offset": 3555484,
+      "fields": {
+        "CHIP": "best1702",
+        "CHIP_ROLE": "CP",
+        "KERNEL": "RTX5",
+        "FLASH_BASE": "0x10000000",
+        "FLASH_NC_BASE": "0x30000000",
+        "FLASH_SIZE": "0x100000",
+        "BUILD_DATE": "Aug 19 2026 09:28:47",
+        "REV_INFO": "159a9e8:cp_subsys1"
+      }
+    },
+    {
+      "raw_offset": 4395540,
+      "fields": {
+        "CHIP": "best1702",
+        "CHIP_ROLE": "CP",
+        "KERNEL": "RTX5",
+        "FLASH_BASE": "0x10000000",
+        "FLASH_NC_BASE": "0x30000000",
+        "FLASH_SIZE": "0x200000",
+        "BUILD_DATE": "Aug 19 2026 09:30:55",
+        "REV_INFO": "159a9e8:cp_subsys2"
+      }
+    },
+    {
+      "raw_offset": 5068172,
+      "fields": {
+        "CHIP": "best1702",
+        "CHIP_ROLE": "CP",
+        "KERNEL": "RTX5",
+        "FLASH_BASE": "0x10000000",
+        "FLASH_NC_BASE": "0x30000000",
+        "FLASH_SIZE": "0x100000",
+        "BUILD_DATE": "Aug 19 2026 09:31:07",
+        "REV_INFO": "159a9e8:cp_subsys2"
+      }
+    },
+    {
+      "raw_offset": 5679976,
+      "fields": {
+        "CHIP": "best1702",
+        "CHIP_ROLE": "CP",
+        "KERNEL": "RTX5",
+        "FLASH_BASE": "0x10000000",
+        "FLASH_NC_BASE": "0x30000000",
+        "FLASH_SIZE": "0x200000",
+        "BUILD_DATE": "Aug 19 2026 09:33:16",
+        "REV_INFO": "159a9e8:cp_subsys2"
+      }
+    },
+    {
+      "raw_offset": 7186484,
+      "fields": {
+        "CHIP": "best1702",
+        "KERNEL": "1",
+        "HIFI4_ITCM_BASE": "(0x00B00000 - 0x00B00000 + 0x00B00000)",
+        "HIFI4_ITCM_SIZE": "0x0",
+        "HIFI4_DTCM_BASE": "(0x20B00000 - 0x20B00000 + 0x20B00000)",
+        "HIFI4_DTCM_SIZE": "0x00040000",
+        "HIFI4_SRAM_BASE": "0x02460000",
+        "HIFI4_SRAM_SIZE": "0x000E0000",
+        "BUILD_DATE": "Jul  8 2026 09:37:25",
+        "REV_INFO": "5e30e80:best1702_dsp",
+        "XTENSA_CORE": "hifi5s_bes_asic_dtcmbank2"
+      }
+    },
+    {
+      "raw_offset": 8717308,
+      "fields": {
+        "CHIP": "best1702",
+        "KERNEL": "RTX5",
+        "SW_VER": "101",
+        "FLASH_BASE": "0x10000000",
+        "FLASH_NC_BASE": "0x30000000",
+        "FLASH_SIZE": "0x1000000",
+        "OTA_CODE_OFFSET": "0x28000",
+        "NV_REC_DEV_VER": "2",
+        "__userdata_start": "0x30FFC000",
+        "USER_SEC_SIZE": "0x1000",
+        "__aud_start": "0x30FEA000",
+        "AUD_SEC_SIZE": "0x10000",
+        "__factory_start": "0x30FFF000",
+        "FACT_SEC_SIZE": "0x1000",
+        "ANC_FF_NUM": "4",
+        "ANC_FB_NUM": "2",
+        "__ota_boot_info_start": "0x30020000",
+        "OTA_BOOT_INFO_SECTION_SIZE": "0x1000",
+        "BUILD_DATE": "Aug 19 2026 09:33:55",
+        "REV_INFO": "159a9e8:best1702_ibrt"
+      }
+    }
+  ]
+}

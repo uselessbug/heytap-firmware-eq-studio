@@ -1,0 +1,42 @@
+{
+  "class": "LAb/h0;",
+  "source": "DisplayContentUtils.java",
+  "method": "d(Context,int,String)",
+  "rows": [
+    {
+      "mode_type": 42,
+      "protocol_id": 0,
+      "display_name": "丹拿原声",
+      "resource_id": "0x7f1207b6",
+      "dex_method_offset": "0x72"
+    },
+    {
+      "mode_type": 43,
+      "protocol_id": 7,
+      "display_name": "丹拿高解析",
+      "resource_id": "0x7f1207b2",
+      "dex_method_offset": "0x62"
+    },
+    {
+      "mode_type": 28,
+      "protocol_id": 2,
+      "display_name": "纯享人声",
+      "resource_id": "0x7f1207cc",
+      "dex_method_offset": "0xf6"
+    },
+    {
+      "mode_type": 46,
+      "protocol_id": 1,
+      "display_name": "清亮高音",
+      "resource_id": "0x7f1207a4",
+      "dex_method_offset": "0x32"
+    },
+    {
+      "mode_type": 29,
+      "protocol_id": 3,
+      "display_name": "澎湃低音",
+      "resource_id": "0x7f1207ca",
+      "dex_method_offset": "0xe6"
+    }
+  ]
+}
