@@ -41,7 +41,7 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 
 ## 当前桌面验证
 
-最新功能提交 `180c962` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37782348640) 已成功：Linux / Windows 各 21 项测试与 Ruff、源码启动，以及 Windows 便携包和真实冻结 EXE 启动。对应 [验证记录](docs/desktop-validation.json)。冻结截图已检查；本机操作见 [本地验证步骤](docs/local-checks.md)。
+最新功能提交 `546ea97` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37785516338) 已成功：Linux / Windows 各 25 项测试与 Ruff、源码启动，以及 Windows 便携包和真实冻结 EXE 启动。对应 [验证记录](docs/desktop-validation.json)。冻结截图已检查；本机操作见 [本地验证步骤](docs/local-checks.md)。
 
 ## 恢复 CLI 的历史验证
 
@@ -57,6 +57,6 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 - [Flowmix 测量接口](docs/flowmix-api.md)
 - [相关开源项目](docs/related-projects.md)
 
-后续需要补齐完整预设拟合/受限导出、元数据修改、未知布局候选发现，以及真实在线接口浏览。原厂固件、完整 APK / HAR 和访问令牌不提交到本公开仓库。
+后续需要补齐完整预设拟合/受限导出、元数据修改、未知机型语义验证，以及其他在线源/目标曲线验证。原厂固件、完整 APK / HAR 和访问令牌不提交到本公开仓库。
 
 

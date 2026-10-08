@@ -1,8 +1,8 @@
 {
   "date": "2026-10-08",
-  "source_commit": "180c96236f77d341dc6f15aa0cda24c8a1e7f16e",
-  "workflow_run_id": 37782348640,
-  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37782348640",
+  "source_commit": "546ea97fa20255a0f368a6e2b593b076df002809",
+  "workflow_run_id": 37785516338,
+  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37785516338",
   "github_actions": "success",
   "static_checks": {
     "Linux": "passed",
@@ -10,12 +10,12 @@
   },
   "pytest": {
     "Linux": {
-      "passed": 21,
-      "seconds": 0.73
+      "passed": 25,
+      "seconds": 1.64
     },
     "Windows": {
-      "passed": 21,
-      "seconds": 5.91
+      "passed": 25,
+      "seconds": 4.57
     }
   },
   "source_gui_startup": {
@@ -27,24 +27,26 @@
     "frozen": true,
     "qt": "6.8.3",
     "qt_binding": "PySide6",
-    "sha": "180c96236f77d341dc6f15aa0cda24c8a1e7f16e",
+    "sha": "546ea97fa20255a0f368a6e2b593b076df002809",
     "window_visible": true,
     "screenshot": "frozen-startup.png",
     "raw_points": 5,
     "peq_filters": 1,
     "measurements": 1,
-    "executable_sha256": "6d216cd49a800892c00bd4dab3b22528d00d303472b5d57b4eeaa9257edf7dec"
+    "executable_sha256": "f7d439e2ea2567deec8a3cf85582d7bca7ae796301f72b5b1212bc940e1b05ba"
   },
   "windows_package": {
-    "artifact_id": 11552908234,
-    "size_bytes": 103965785,
+    "artifact_id": 11553334600,
+    "size_bytes": 103978146,
     "type": "portable zip",
     "source_sha_file": "SOURCE_SHA.txt"
   },
   "visual_qa": "Frozen Windows screenshot inspected; CJK text, table and synthetic preview rendered. User machine operation pending.",
   "firmware_write_enabled_in_gui": false,
   "version_patch_revalidated": false,
-  "flowmix_successful_response_verified": false,
+  "flowmix_successful_response_verified": true,
   "device_test": false,
-  "historical_32_tests_not_used": true
+  "historical_32_tests_not_used": true,
+  "flowmix_verified_scope": "sources, realab brands, OPPO headphones and Enco X4 five 127-point measurements",
+  "network_cache_and_offline_task_independence_verified": true
 }
