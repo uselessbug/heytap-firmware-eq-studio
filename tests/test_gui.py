@@ -74,11 +74,24 @@ def test_online_selection_uses_file_id_without_network(tmp_path, qt_app):
             return [Measurement("Synthetic", [20, 1000], [80, 90]).validate()]
     window.flowmix_client = Client()
     window.set_online_sources([{"name": "fixture", "display": "Fixture"}])
+    assert window.source_combo.currentIndex() == -1
+    window.source_combo.setCurrentIndex(0)
+    window.source_chosen()
     for _ in range(100):
         app.processEvents()
-        if window.headphone_combo.currentData() == "File_ID" and not window.network_workers:
+        if window.brand_combo.count() and not window.network_workers:
             break
         QtTest.QTest.qWait(10)
+    assert window.brand_combo.currentIndex() == -1
+    window.brand_combo.setCurrentIndex(0)
+    window.brand_chosen()
+    for _ in range(100):
+        app.processEvents()
+        if window.headphone_combo.count() and not window.network_workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert window.headphone_combo.currentIndex() == -1
+    window.headphone_combo.setCurrentIndex(0)
     assert window.headphone_combo.currentData() == "File_ID"
     window.load_online_measurements()
     for _ in range(100):
@@ -117,3 +130,27 @@ def test_pending_network_does_not_block_offline_file_task(tmp_path, qt_app):
                 break
             QtTest.QTest.qWait(10)
         window.close()
+
+
+def test_target_fit_and_project_curve_recovery(tmp_path, qt_app):
+    path = tmp_path/"fit.json"
+    window = MainWindow(recover=False, auto_path=path)
+    original = Measurement("Flat", [20, 1000, 20000], [80, 80, 80])
+    target = Measurement("Target", [20, 1000, 20000], [2, 0, -1])
+    window.set_measurements([original])
+    window.set_targets([target])
+    assert len(window.acoustic_plot.listDataItems()) == 3
+    from heytap_eq.fitting import FitOptions
+    window.fit_measurements(original, target, "RAW", FitOptions(smoothing_octaves=0))
+    for _ in range(100):
+        qt_app.processEvents()
+        if window.fit_report and not window.workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert window.fit_report and len(window.session.document.raw) == 127
+    window.close()
+    restored = MainWindow(recover=True, auto_path=path)
+    assert restored.measurements == [original] and restored.targets == [target]
+    assert restored.target_combo.currentIndex() == 0
+    assert restored.digital_plot.getViewBox().viewRange()[1] == [-24., 24.]
+    restored.close()

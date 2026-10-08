@@ -35,6 +35,9 @@ def main(argv=None):
         window.set_document(preview)
         window.set_measurements([Measurement("Synthetic test fixture", [20, 1000, 20000], [80, 90, 80]).validate()])
 
+        window.set_targets([Measurement("Synthetic target", [20, 1000, 20000], [83, 90, 78]).validate()])
+        window.tabs.setCurrentIndex(1)
+
         def probe():
             nonlocal result
             try:
@@ -49,7 +52,9 @@ def main(argv=None):
                     "sha": os.environ.get("HEYTAP_BUILD_SHA"), "window_visible": True,
                     "screenshot": image.name, "raw_points": len(window.session.document.raw),
                     "peq_filters": len(window.session.document.filters),
-                    "measurements": len(window.measurements),
+                    "measurements": len(window.measurements), "targets": len(window.targets),
+                    "apk_dependency": False,
+                    "service_configured": __import__("heytap_eq.service_profile", fromlist=["builtin_authorization"]).builtin_authorization() is not None,
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
                 result = 1

@@ -2,6 +2,7 @@
 
 import copy
 import json
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -9,12 +10,15 @@ import pyqtgraph as pg
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from heytap_eq.adapters import PRESETS, STATES, inspect_firmware
-from heytap_eq.apk_config import measurement_authorization
 from heytap_eq.discovery import discover
 from heytap_eq.dsp import correction, firmware_curve
 from heytap_eq.eq_formats import KINDS, Filter, dump_eq, load_eq
+from heytap_eq.fitting import FitOptions, fit_response
 from heytap_eq.flowmix import FlowmixClient
 from heytap_eq.measurements import load_measurements
+from heytap_eq.plot import DARK_STYLE, ResponsePlot
+from heytap_eq.preferences import BrowserMemory, device_identity
+from heytap_eq.service_profile import builtin_authorization
 from heytap_eq.session import Session
 
 
@@ -84,12 +88,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.session = Session()
         self.firmware = None
         self.measurements = []
+        self.targets = []
+        self.sources = []
+        self.device = None
+        self.fit_cancel = threading.Event()
+        self.edit_generation = 0
+        self.fit_report = None
         self.workers = set()
         self.network_workers = set()
         self.flowmix_client = None
         default_path = QtCore.QStandardPaths.writableLocation(
             QtCore.QStandardPaths.StandardLocation.AppDataLocation)
         self.auto_path = Path(auto_path) if auto_path else Path(default_path)/"recovery.heytap.json"
+        self.memory = BrowserMemory(self.auto_path.parent/"browser-memory.json")
+        self.desired_selection = self.memory.selection()
         self._setup()
         if recover and self.auto_path.exists():
             try:
@@ -97,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.statusBar().showMessage("已恢复上次 EQ 工程；重新打开原固件后会核对 SHA-256。")
             except (ValueError, OSError, KeyError, TypeError) as exc:
                 self.statusBar().showMessage(f"恢复文件未加载：{exc}")
+        self.restore_curves()
         self.refresh()
 
     def _action(self, toolbar, label, fn, shortcut=None):
@@ -108,7 +121,9 @@ class MainWindow(QtWidgets.QMainWindow):
         return action
 
     def _setup(self):
+        self.setStyleSheet(DARK_STYLE)
         toolbar = self.addToolBar("文件与编辑")
+        toolbar.setMovable(False)
         for label, fn in (("新建工程", self.new_project), ("打开固件", self.open_firmware),
                           ("导入 EQ", self.import_eq), ("导出 EQ", self.export_eq),
                           ("导入测量", self.import_measurements), ("打开工程", self.open_project)):
@@ -139,20 +154,48 @@ class MainWindow(QtWidgets.QMainWindow):
             combo.currentIndexChanged.connect(self.refresh)
         layout.addLayout(selectors)
         online = QtWidgets.QHBoxLayout()
-        connect = QtWidgets.QPushButton("连接 Flowmix (APK)")
+        connect = QtWidgets.QPushButton("获取在线测量")
         connect.clicked.connect(self.connect_flowmix)
         self.source_combo = QtWidgets.QComboBox()
         self.brand_combo = QtWidgets.QComboBox()
         self.headphone_combo = QtWidgets.QComboBox()
         load_online = QtWidgets.QPushButton("载入在线测量")
         load_online.clicked.connect(self.load_online_measurements)
-        self.source_combo.activated.connect(self.load_online_brands)
-        self.brand_combo.activated.connect(self.load_online_headphones)
+        self.source_combo.activated.connect(self.source_chosen)
+        self.brand_combo.activated.connect(self.brand_chosen)
+        self.headphone_combo.activated.connect(self.remember_browser)
         self.online_controls = [connect, self.source_combo, self.brand_combo,
                                 self.headphone_combo, load_online]
         for widget in self.online_controls:
             online.addWidget(widget)
+        for combo, placeholder in ((self.source_combo, "选择数据源"),
+                                   (self.brand_combo, "搜索品牌"),
+                                   (self.headphone_combo, "搜索型号")):
+            combo.setPlaceholderText(placeholder)
+            combo.setEditable(True)
+            combo.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
+            combo.completer().setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
+            combo.completer().setCompletionMode(QtWidgets.QCompleter.CompletionMode.PopupCompletion)
         layout.addLayout(online)
+        presets = QtWidgets.QHBoxLayout()
+        self.preset_buttons = {}
+        for name in PRESETS:
+            button = QtWidgets.QPushButton(name)
+            button.setCheckable(True)
+            button.clicked.connect(lambda checked=False, n=name: self.preset_combo.setCurrentText(n))
+            self.preset_buttons[name] = button
+            presets.addWidget(button)
+        presets.addStretch()
+        self.eq_range_combo = QtWidgets.QComboBox()
+        self.eq_range_combo.addItems(["±12 dB", "±24 dB", "±48 dB"])
+        self.eq_range_combo.setCurrentIndex(1)
+        self.eq_range_combo.currentIndexChanged.connect(self.reset_plots)
+        presets.addWidget(QtWidgets.QLabel("EQ 范围"))
+        presets.addWidget(self.eq_range_combo)
+        reset = QtWidgets.QPushButton("复位视图")
+        reset.clicked.connect(self.reset_plots)
+        presets.addWidget(reset)
+        layout.addLayout(presets)
         split = QtWidgets.QSplitter()
         layout.addWidget(split, 1)
         self.tabs = QtWidgets.QTabWidget()
@@ -162,12 +205,43 @@ class MainWindow(QtWidgets.QMainWindow):
         acoustic = QtWidgets.QWidget()
         acoustic_layout = QtWidgets.QVBoxLayout(acoustic)
         self.measurement_combo = QtWidgets.QComboBox()
-        self.measurement_combo.currentIndexChanged.connect(self.refresh)
-        acoustic_layout.addWidget(self.measurement_combo)
+        self.measurement_combo.currentIndexChanged.connect(self.curve_selection_changed)
+        acoustic_controls = QtWidgets.QGridLayout()
+        acoustic_controls.addWidget(QtWidgets.QLabel("原始频响"), 0, 0)
+        acoustic_controls.addWidget(self.measurement_combo, 0, 1, 1, 5)
+        self.target_combo = QtWidgets.QComboBox()
+        self.target_combo.setPlaceholderText("选择目标频响")
+        self.target_combo.currentIndexChanged.connect(self.curve_selection_changed)
+        acoustic_controls.addWidget(QtWidgets.QLabel("目标频响"), 1, 0)
+        acoustic_controls.addWidget(self.target_combo, 1, 1, 1, 5)
+        for column, title, fn in ((0, "目标曲线库", self.browse_targets),
+                                  (1, "导入目标", self.import_target),
+                                  (2, "当前实测设为目标", self.measurement_as_target),
+                                  (3, "生成修正 EQ", self.start_fit),
+                                  (4, "取消拟合", self.cancel_fit)):
+            button = QtWidgets.QPushButton(title)
+            button.clicked.connect(fn)
+            acoustic_controls.addWidget(button, 2, column)
+        self.relative_check = QtWidgets.QCheckBox("1 kHz 对齐显示")
+        self.relative_check.setChecked(True)
+        self.relative_check.toggled.connect(self.reset_plots)
+        acoustic_controls.addWidget(self.relative_check, 2, 5)
+        acoustic_layout.addLayout(acoustic_controls)
+        visibility = QtWidgets.QHBoxLayout()
+        self.curve_checks = {}
+        for key, title in (("original", "原始实测"), ("estimated", "修改后估计"), ("target", "目标频响")):
+            check = QtWidgets.QCheckBox(title)
+            check.setChecked(True)
+            check.toggled.connect(self.refresh)
+            self.curve_checks[key] = check
+            visibility.addWidget(check)
+        visibility.addStretch()
+        acoustic_layout.addLayout(visibility)
         self.acoustic_plot = self._plot("人工耳 SPL dB")
         acoustic_layout.addWidget(self.acoustic_plot)
-        acoustic_layout.addWidget(QtWidgets.QLabel(
-            "估计 = 所选实测 + 当前修正；请选丹拿原声测量。固件版本 / 内部状态未确认时，不代表实测结果。"))
+        self.quality_label = QtWidgets.QLabel("选择原始与目标频响，生成 RAW 或 PEQ 修正。估计 = 原始实测 + 当前修正。")
+        self.quality_label.setWordWrap(True)
+        acoustic_layout.addWidget(self.quality_label)
         self.tabs.addTab(acoustic, "人工耳实测与估计")
         self.metadata_text = QtWidgets.QPlainTextEdit()
         self.metadata_text.setReadOnly(True)
@@ -180,6 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.filters_table.setHorizontalHeaderLabels(["启用", "ID", "类型", "频率 Hz", "增益 dB", "Q"])
         self.filters_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.filters_table.itemChanged.connect(self.edit_filter)
+        self.filters_table.setMinimumHeight(170)
         side_layout.addWidget(self.filters_table)
         buttons = QtWidgets.QHBoxLayout()
         for title, fn in (("增加 PEQ", self.add_filter), ("删除 PEQ", self.remove_filter)):
@@ -195,24 +270,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.gains_label = QtWidgets.QLabel()
         side_layout.addWidget(self.gains_label)
         split.addWidget(side)
-        split.setSizes([850, 530])
+        split.setSizes([1050, 330])
         self.nodes = DragNodes()
         self.nodes.moved.connect(self.edit_raw)
         self.peq_nodes = DragNodes(peq=True)
         self.peq_nodes.moved.connect(self.edit_peq)
         self._peq_map = []
-        self.statusBar().showMessage("本地编辑 · 固件只读；拟合、封包和版本写入待后续验证")
+        self.reset_plots()
+        self.statusBar().showMessage("通用频响与 EQ 编辑 · 固件写入待接入")
 
     def _plot(self, label):
-        plot = pg.PlotWidget(background="#171b22")
-        plot.addLegend()
-        plot.showGrid(x=True, y=True, alpha=.15)
-        plot.setLabel("left", label)
-        plot.setLabel("bottom", "频率 Hz · 对数轴")
-        ticks = [(np.log10(f), str(f)) for f in (20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000)]
-        plot.getAxis("bottom").setTicks([ticks])
-        plot.setXRange(np.log10(20), np.log10(20000), padding=.01)
-        return plot
+        return ResponsePlot(label)
+
+    def reset_plots(self, *_):
+        if not hasattr(self, "acoustic_plot"):
+            return
+        span = (12, 24, 48)[self.eq_range_combo.currentIndex()]
+        self.digital_plot.reset_range(-span, span, span/4)
+        if self.relative_check.isChecked():
+            self.acoustic_plot.reset_range(-24, 24, 6)
+            self.acoustic_plot.setLabel("left", "相对声压 (dB · 1 kHz = 0)")
+        else:
+            values = [v for m in self.measurements+self.targets for v in m.spl_values]
+            low = np.floor(min(values)/5)*5 if values else 60
+            high = max(low+50, np.ceil(max(values)/5)*5) if values else 110
+            self.acoustic_plot.reset_range(low, high, 5)
+            self.acoustic_plot.setLabel("left", "声压 SPL (dB)")
+        self.refresh()
 
     def _choose(self, title, pattern="所有文件 (*)", save=False):
         method = QtWidgets.QFileDialog.getSaveFileName if save else QtWidgets.QFileDialog.getOpenFileName
@@ -256,24 +340,71 @@ class MainWindow(QtWidgets.QMainWindow):
             worker.deleteLater()
 
     def connect_flowmix(self):
-        path = self._choose("选择 Flowmix Beta 5-10 APK", "APK (*.apk)")
-        if path:
-            def connected(auth):
-                self.flowmix_client = FlowmixClient(auth, self.auto_path.parent/"flowmix-cache")
-                self._task(self.flowmix_client.sources, self.set_online_sources, network=True)
-            self._task(lambda: measurement_authorization(path), connected)
+        def connected(auth):
+            self.flowmix_client = FlowmixClient(auth, self.auto_path.parent/"flowmix-cache")
+            self._task(self.flowmix_client.sources, self.set_online_sources, network=True)
+        def prepare():
+            auth = builtin_authorization(self.auto_path.parent)
+            if not auth:
+                raise ValueError("此包尚未配置测量接口认证；离线导入与拟合可直接使用。")
+            return auth
+        self._task(prepare, connected, network=True)
 
     def fill_online(self, combo, entries, preferred=None):
+        combo.blockSignals(True)
         combo.clear()
         for entry in entries:
             combo.addItem(entry["display"], entry["name"])
-        index = combo.findData(preferred) if preferred else -1
-        if index >= 0:
-            combo.setCurrentIndex(index)
+        combo.setCurrentIndex(combo.findData(preferred) if preferred else -1)
+        combo.blockSignals(False)
+
+    def remember_browser(self, *_):
+        selection = {"source": self.source_combo.currentData(),
+                     "brand": self.brand_combo.currentData(),
+                     "headphone": self.headphone_combo.currentData()}
+        self.desired_selection = selection
+        self.session.online_selection = selection
+        try:
+            self.memory.remember(selection, self.device["key"] if self.device else None)
+        except OSError as exc:
+            self.statusBar().showMessage(f"选择未保存：{exc}")
+        self._changed()
+
+    def source_chosen(self, *_):
+        self.brand_combo.clear()
+        self.headphone_combo.clear()
+        self.remember_browser()
+        self.load_online_brands()
+
+    def brand_chosen(self, *_):
+        self.headphone_combo.clear()
+        self.remember_browser()
+        self.load_online_headphones()
 
     def set_online_sources(self, entries):
-        self.fill_online(self.source_combo, entries, "realab")
-        self.load_online_brands()
+        self.sources = entries
+        self.fill_online(self.source_combo, entries, self.desired_selection.get("source"))
+        if self.source_combo.currentData():
+            self.load_online_brands()
+        elif self.device and "model" in self.device and not self.desired_selection:
+            self.match_firmware_device()
+        else:
+            self.statusBar().showMessage("在线来源已载入；请选择来源、品牌与型号。")
+
+    def match_firmware_device(self):
+        if not self.flowmix_client or not self.device or "model" not in self.device:
+            return
+        identity = dict(self.device)
+        def matched(selection):
+            if not self.device or self.device["key"] != identity["key"]:
+                return
+            if selection:
+                self.desired_selection = selection
+                self.fill_online(self.source_combo, self.sources, selection["source"])
+                self.load_online_brands()
+            else:
+                self.statusBar().showMessage("未找到唯一的精确型号匹配，请手动选择测量。")
+        self._task(lambda: self.flowmix_client.match_device(identity, self.sources), matched, network=True)
 
     def load_online_brands(self, *_):
         source = self.source_combo.currentData()
@@ -283,8 +414,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._task(lambda: self.flowmix_client.brands(source), self.set_online_brands, network=True)
 
     def set_online_brands(self, entries):
-        self.fill_online(self.brand_combo, entries, "OPPO")
-        self.load_online_headphones()
+        self.fill_online(self.brand_combo, entries, self.desired_selection.get("brand"))
+        if self.brand_combo.currentData():
+            self.load_online_headphones()
 
     def load_online_headphones(self, *_):
         source, brand = self.source_combo.currentData(), self.brand_combo.currentData()
@@ -293,7 +425,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._task(lambda: self.flowmix_client.headphones(source, brand), self.set_online_headphones, network=True)
 
     def set_online_headphones(self, entries):
-        self.fill_online(self.headphone_combo, entries, "OPPO_Enco_X4")
+        self.fill_online(self.headphone_combo, entries, self.desired_selection.get("headphone"))
+        if self.headphone_combo.currentData():
+            self.remember_browser()
         origin = "离线缓存" if self.flowmix_client.from_cache else "在线"
         self.statusBar().showMessage(f"{origin}型号索引已载入；选择型号后载入测量。")
 
@@ -301,12 +435,133 @@ class MainWindow(QtWidgets.QMainWindow):
         source, brand = self.source_combo.currentData(), self.brand_combo.currentData()
         name = self.headphone_combo.currentData()
         if self.flowmix_client and source and brand and name:
+            self.remember_browser()
             def received(curves):
                 self.set_measurements(curves)
                 self.tabs.setCurrentIndex(1)
                 origin = "离线缓存" if self.flowmix_client.from_cache else "在线"
-                self.statusBar().showMessage(f"已载入{origin}测量 {len(curves)} 条；采样点数与原 HAR 可能不同。")
+                self.statusBar().showMessage(f"已载入{origin}测量 {len(curves)} 条。")
             self._task(lambda: self.flowmix_client.measurements(source, brand, name), received, network=True)
+        else:
+            self.statusBar().showMessage("请先选择来源、品牌与型号。")
+
+    def browse_targets(self):
+        if not self.flowmix_client:
+            self.statusBar().showMessage("先点击获取在线测量以连接数据服务。")
+            return
+        def choose(entries):
+            if not entries:
+                return
+            display, ok = QtWidgets.QInputDialog.getItem(self, "在线目标曲线", "选择目标",
+                                                        [e["display"] for e in entries], 0, False)
+            if ok:
+                identifier = next(e["name"] for e in entries if e["display"] == display)
+                self._task(lambda: self.flowmix_client.target(identifier), self.set_targets, network=True)
+        self._task(self.flowmix_client.targets, choose, network=True)
+
+    def import_target(self):
+        path = self._choose("导入目标频响", "测量 (*.csv *.json *.har)")
+        if path:
+            self._task(lambda: load_measurements(path), self.set_targets)
+
+    def measurement_as_target(self):
+        index = self.measurement_combo.currentIndex()
+        if index >= 0:
+            self.set_targets([copy.deepcopy(self.measurements[index])])
+
+    def set_targets(self, curves):
+        for curve in curves:
+            if curve not in self.targets:
+                self.targets.append(curve)
+        self.fill_curves(self.target_combo, self.targets,
+                         self.targets.index(curves[0]) if curves else -1)
+        self.curve_selection_changed()
+        self.tabs.setCurrentIndex(1)
+
+    def fill_curves(self, combo, curves, index):
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItems([c.title+" · "+c.source for c in curves])
+        combo.setCurrentIndex(index)
+        combo.blockSignals(False)
+
+    def restore_curves(self):
+        self.measurements = self.session.measurements
+        self.targets = self.session.targets
+        self.fill_curves(self.measurement_combo, self.measurements, self.session.measurement_index)
+        self.fill_curves(self.target_combo, self.targets, self.session.target_index)
+        if self.session.online_selection:
+            self.desired_selection = dict(self.session.online_selection)
+
+    def curve_selection_changed(self, *_):
+        self._changed()
+        self.reset_plots()
+
+    def cancel_fit(self):
+        self.fit_cancel.set()
+        self.statusBar().showMessage("正在取消拟合…")
+
+    def start_fit(self):
+        a, b = self.measurement_combo.currentIndex(), self.target_combo.currentIndex()
+        if a < 0 or b < 0:
+            self.statusBar().showMessage("请选择原始频响与目标频响。")
+            return
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("频响生成修正 EQ")
+        form = QtWidgets.QFormLayout(dialog)
+        mode = QtWidgets.QComboBox()
+        mode.addItems(["RAW", "PEQ"])
+        low, high = QtWidgets.QDoubleSpinBox(), QtWidgets.QDoubleSpinBox()
+        for spin, value in ((low, 20), (high, 20000)):
+            spin.setRange(20, 20000)
+            spin.setValue(value)
+        count = QtWidgets.QSpinBox()
+        count.setRange(1, 20)
+        count.setValue(8)
+        strength = QtWidgets.QSpinBox()
+        strength.setRange(1, 100)
+        strength.setValue(100)
+        boost = QtWidgets.QDoubleSpinBox()
+        boost.setRange(.1, 60)
+        boost.setValue(12)
+        align = QtWidgets.QCheckBox("按 1 kHz 对齐整体电平")
+        align.setChecked(True)
+        for title, widget in (("模式", mode), ("起始 Hz", low), ("结束 Hz", high),
+                               ("PEQ 数量", count), ("强度 %", strength), ("最大提升 dB", boost)):
+            form.addRow(title, widget)
+        form.addRow(align)
+        note = QtWidgets.QLabel("生成结果替换当前修正 EQ，可撤销；不需要打开固件。")
+        note.setWordWrap(True)
+        form.addRow(note)
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok |
+                                             QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+        if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        options = FitOptions(low.value(), high.value(), 1000 if align.isChecked() else None,
+                             strength.value()/100, max_boost=boost.value(), filters=count.value())
+        self.fit_measurements(self.measurements[a], self.targets[b], mode.currentText(), options)
+
+    def fit_measurements(self, original, target, mode, options):
+        if self.workers:
+            return
+        generation = self.edit_generation
+        original, target = copy.deepcopy(original), copy.deepcopy(target)
+        self.fit_cancel = threading.Event()
+        def received(result):
+            if generation != self.edit_generation:
+                self.statusBar().showMessage("拟合期间输入发生变化，结果未覆盖当前编辑。")
+                return
+            doc, report = result
+            self.set_document(doc)
+            self.fit_report = report
+            text = " · ".join(f"{rate} Hz: RMS {v['rms_db']:.3f} / 最大 {v['max_db']:.3f} dB"
+                               for rate, v in report["rates"].items())
+            self.quality_label.setText("相对于平滑/限幅后的期望修正："+text)
+            self.tabs.setCurrentIndex(1)
+        self._task(lambda: fit_response(original, target, mode, options, self.fit_cancel), received)
 
     def open_firmware(self):
         path = self._choose("打开固件")
@@ -316,6 +571,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def set_firmware(self, firmware):
         if self.session.firmware_sha256 not in (None, firmware.sha256):
             raise ValueError("工程绑定另一个固件；请打开原固件，或新建工程后切换。")
+        bound_selection = dict(self.session.online_selection) if self.session.firmware_sha256 == firmware.sha256 else {}
         self.firmware = firmware
         self.session.firmware_sha256 = firmware.sha256
         self.session.firmware_path = firmware.path
@@ -325,8 +581,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.path_combo.addItems([t["name"] for t in firmware.profiles["tables"]])
         self.path_combo.blockSignals(False)
         self.metadata_text.setPlainText(json.dumps(firmware.package["summary"], ensure_ascii=False, indent=2))
+        self.device = device_identity(firmware)
+        self.desired_selection = self.memory.selection(self.device["key"]) or bound_selection
         self._changed()
         self.statusBar().showMessage(firmware.recognition)
+        if self.flowmix_client:
+            self.set_online_sources(self.sources)
+        else:
+            self.connect_flowmix()
 
     def scan_candidates(self):
         if self.firmware:
@@ -355,19 +617,18 @@ class MainWindow(QtWidgets.QMainWindow):
         for curve in curves:
             if curve not in self.measurements:
                 self.measurements.append(curve)
-        self.measurement_combo.blockSignals(True)
-        self.measurement_combo.clear()
-        self.measurement_combo.addItems([c.title+" · "+c.source for c in self.measurements])
-        self.measurement_combo.setCurrentIndex(self.measurements.index(curves[0]) if curves else -1)
-        self.measurement_combo.blockSignals(False)
-        self.refresh()
-        self.statusBar().showMessage(f"已导入 {len(curves)} 条实测；离线功能可独立使用。")
+        self.fill_curves(self.measurement_combo, self.measurements,
+                         self.measurements.index(curves[0]) if curves else -1)
+        self.curve_selection_changed()
+        self.statusBar().showMessage(f"已导入 {len(curves)} 条实测。")
 
     def new_project(self):
         if self.workers:
             return
         self.session = Session()
         self.firmware = None
+        self.device = None
+        self.restore_curves()
         self.path_combo.clear()
         self.metadata_text.clear()
         self._changed()
@@ -377,7 +638,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if path:
             try:
                 self.session.restore(path, self.firmware.sha256 if self.firmware else None)
+                self.restore_curves()
                 self._changed()
+                self.reset_plots()
             except (ValueError, OSError, KeyError, TypeError) as exc:
                 self.statusBar().showMessage(f"工程未加载：{exc}")
 
@@ -448,6 +711,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._changed()
 
     def _changed(self):
+        self.edit_generation += 1
+        self.fit_report = None
+        self.quality_label.setText("估计 = 原始实测 + 当前修正；拟合指标在重新生成后更新。")
+        self.session.measurements, self.session.targets = self.measurements, self.targets
+        self.session.measurement_index = self.measurement_combo.currentIndex()
+        self.session.target_index = self.target_combo.currentIndex()
         self.refresh()
         try:
             self.session.save(self.auto_path)
@@ -460,7 +729,8 @@ class MainWindow(QtWidgets.QMainWindow):
         doc = self.session.document
         frequency = np.geomspace(20, 20000, 800)
         fs = int(self.rate_combo.currentText())
-        self.digital_plot.clear()
+        self.digital_plot.clear_curves()
+        self.digital_plot.zero_line()
         self.digital_plot.plot(np.log10(frequency), correction(doc, frequency, fs),
                                pen=pg.mkPen("#d8a650", width=2), name="当前修正 RAW + PEQ")
         self.nodes.set_points([[np.log10(f), g] for f, g in doc.raw])
@@ -477,9 +747,13 @@ class MainWindow(QtWidgets.QMainWindow):
             record = bank["profiles"][table["profile_indices"][index]]
             self.digital_plot.plot(np.log10(frequency), firmware_curve(record, frequency, fs),
                                    pen="#67afd1", name="固件滤波链 · 不含整体增益")
-        label = "未打开固件"
+        for name, button in self.preset_buttons.items():
+            button.setChecked(name == self.preset_combo.currentText())
+            button.setEnabled(self.firmware is not None and self.firmware.profiles is not None)
+        label = "未打开固件 · 可直接导入频响或编辑 EQ"
         if self.firmware:
-            label = f"{self.firmware.path}\nSHA-256 {self.firmware.sha256}\n{self.firmware.recognition}"
+            label = f"{Path(self.firmware.path).name} · {self.firmware.recognition}"
+            self.firmware_label.setToolTip(f"{self.firmware.path}\nSHA-256 {self.firmware.sha256}")
         elif self.session.firmware_sha256:
             label += f" · 工程绑定 {self.session.firmware_sha256}"
         self.firmware_label.setText(label)
@@ -503,13 +777,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.filters_table.blockSignals(False)
         self.undo_action.setEnabled(bool(self.session._undo))
         self.redo_action.setEnabled(bool(self.session._redo))
-        self.acoustic_plot.clear()
+        self.acoustic_plot.clear_curves()
+        relative = self.relative_check.isChecked()
+        if relative:
+            self.acoustic_plot.zero_line()
+        def displayed(curve):
+            values = np.asarray(curve.spl_values)
+            if relative and curve.frequencies[0] <= 1000 <= curve.frequencies[-1]:
+                values = values-np.interp(np.log(1000), np.log(curve.frequencies), values)
+            return values
         if self.measurements and self.measurement_combo.currentIndex() >= 0:
             m = self.measurements[self.measurement_combo.currentIndex()]
             x = np.asarray(m.frequencies)
-            self.acoustic_plot.plot(np.log10(x), m.spl_values, pen="#67afd1", name="人工耳实测 · "+m.source)
-            self.acoustic_plot.plot(np.log10(x), np.asarray(m.spl_values)+correction(doc, x, fs),
-                                    pen="#d8a650", name="修改后估计 · 实测 + 当前修正")
+            values = displayed(m)
+            if self.curve_checks["original"].isChecked():
+                self.acoustic_plot.plot(np.log10(x), values, pen=pg.mkPen("#759ecb", width=2), name="原始实测")
+            if self.curve_checks["estimated"].isChecked():
+                self.acoustic_plot.plot(np.log10(x), values+correction(doc, x, fs),
+                                        pen=pg.mkPen("#32cbb9", width=2), name="修改后估计")
+        if self.targets and self.target_combo.currentIndex() >= 0 and self.curve_checks["target"].isChecked():
+            target = self.targets[self.target_combo.currentIndex()]
+            self.acoustic_plot.plot(np.log10(target.frequencies), displayed(target),
+                pen=pg.mkPen("#e3ad55", width=2, style=QtCore.Qt.PenStyle.DashLine), name="目标频响")
 
     def closeEvent(self, event):
         if self.workers or self.network_workers:

@@ -4,7 +4,7 @@
 
 ## 2026-10-08 通用测量阶段（进行中）
 
-已抽样验证六个在线测量来源（包含 Woodenears）及 21 条目标索引。新增独立测量拟合核心、目标接口、通用选择记忆、工程 v2 的测量/目标恢复，以及从哈希匹配的官方公开分发准备内置连接配置。来源动态读取，首次使用不默认 OPPO。GUI 接入与 Actions 仍待完成；详见 measurement-fitting.md 和 flowmix-source-validation.json。
+已抽样验证六个在线测量来源（包含 Woodenears）及 21 条目标索引。新增独立测量拟合核心、目标接口、通用选择记忆、工程 v2 的测量/目标恢复，以及独立 HTTP 请求配置。已按用户纠正移除自动下载/读取 APK 步骤，运行和构建均不依赖 APK。来源动态读取，首次使用不默认 OPPO。GUI 已接入：目标库、耳机实测设为目标、RAW/PEQ 拟合与取消、测量工程恢复、逐固件精确匹配和稳定音频坐标/深色大图。Actions 验证仍待完成；详见 measurement-fitting.md 和 flowmix-source-validation.json。
 
 ## 当前桌面交付状态（2026-10-08）
 

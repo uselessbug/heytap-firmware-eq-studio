@@ -150,7 +150,27 @@ class FlowmixClient:
         return self._index("targets", ("targets",))
 
     def target(self, name):
-        return self._curves(("targets", name))
+        curves = self._curves(("targets", name))
+        for curve in curves:
+            curve.source = "Flowmix targets"
+        return curves
+
+    def match_device(self, identity, sources, cancelled=None):
+        from heytap_eq.preferences import unique_match
+
+        for source in sources:
+            if cancelled and cancelled.is_set():
+                raise InterruptedError("Device matching cancelled")
+            try:
+                brand = unique_match(self.brands(source["name"]), identity["brand"])
+                if not brand:
+                    continue
+                phone = unique_match(self.headphones(source["name"], brand), identity["model"])
+                if phone:
+                    return {"source": source["name"], "brand": brand, "headphone": phone}
+            except (OSError, ValueError, urllib.error.URLError):
+                continue
+        return {}
 
     def measurements(self, source, brand, headphone):
         return self._curves(("sources", source, "brands", brand, "headphones", headphone))

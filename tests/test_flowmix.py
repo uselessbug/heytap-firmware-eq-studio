@@ -67,3 +67,13 @@ def test_network_failure_uses_sanitized_numeric_cache(monkeypatch, tmp_path):
         raise OSError("synthetic offline")
     monkeypatch.setattr(flowmix, "request_response", failed)
     assert client.measurements("source", "brand", "File_ID") == first and client.from_cache
+
+
+def test_device_matching_searches_dynamic_sources_without_a_fixed_default(monkeypatch):
+    client = FlowmixClient()
+    monkeypatch.setattr(client, "brands", lambda source: [{"name": "Brand", "display": "Brand"}])
+    monkeypatch.setattr(client, "headphones", lambda source, brand:
+                        [{"name": "Brand_Model", "display": "Brand Model"}] if source == "new-source" else [])
+    result = client.match_device({"brand": ["Brand"], "model": ["Brand Model"]},
+                                 [{"name": "old-source"}, {"name": "new-source"}])
+    assert result == {"source": "new-source", "brand": "Brand", "headphone": "Brand_Model"}
