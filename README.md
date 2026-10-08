@@ -2,9 +2,21 @@
 
 面向 OPPO / HeyTap 耳机固件的本地 EQ 编辑项目，首个研究对象为 Enco X4。
 
-当前可运行部分为 **Python CLI 研究原型**：支持两个给定 EQ 的解析、拟合计划、72 条记录替换及 OPKG 重新封包。恢复出的 11 个 Python 源文件、示例、映射、验证脚本和两个完整工具包已提交。
+当前有 **PySide6 + pyqtgraph 本地桌面工程** 与原 **Python CLI 研究原型**。桌面提供固件校验/只读查看、通用 Wavelet 与 Flowmix EQ 导入编辑、RAW 拖动、撤销重做、工程自动恢复，以及人工耳测量/估计展示。原 CLI 保留拟合和重新封包能力。
 
-桌面方向已确定为 **Python + PySide6 + pyqtgraph**。此前完整 GUI 源码、32 项 pytest 和 Actions 配置未恢复，需继续重建。目前没有桌面安装包。
+桌面采用 **Python + PySide6 + pyqtgraph**，核心独立于 Qt。源码和 Windows 便携 ZIP 由 GitHub Actions 检查/构建；每个产物记录源 SHA，并实际启动冻结 EXE。桌面固件写入和版本修改尚未开放。此前 32 项测试属于源码未恢复的历史结果。
+
+## 桌面启动
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate；Linux: source .venv/bin/activate
+python -m pip install -r requirements-ci.txt
+python -m pip install --no-deps --no-build-isolation -e .
+python -m heytap_eq.app
+```
+
+Windows 可下载当前工作分支 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions) 的便携程序。详细操作与 Flowmix 本地诊断见 [本地验证步骤](docs/local-checks.md)。
 
 ## 接手开发
 
@@ -41,5 +53,6 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 - [Flowmix 测量接口](docs/flowmix-api.md)
 - [相关开源项目](docs/related-projects.md)
 
-未来桌面工具需要补齐通用 EQ 导入 / 编辑、测量叠加、元数据修改、工程保存、未知布局只读发现，以及 Linux / Windows CI 和打包。原厂固件、完整 APK / HAR 和访问令牌不提交到本公开仓库。
+后续需要补齐完整预设拟合/受限导出、元数据修改、未知布局候选发现，以及真实在线接口浏览。原厂固件、完整 APK / HAR 和访问令牌不提交到本公开仓库。
+
 

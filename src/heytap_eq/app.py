@@ -20,7 +20,7 @@ def main(argv=None):
     app = QtWidgets.QApplication([sys.argv[0]])
     app.setApplicationName("HeyTap Firmware EQ Studio")
     app.setOrganizationName("HeyTapEQStudio")
-    window = MainWindow()
+    window = MainWindow(recover=not args.smoke_test)
     window.show()
     result = 0
     if args.smoke_test:

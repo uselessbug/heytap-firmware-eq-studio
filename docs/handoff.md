@@ -234,3 +234,11 @@ HAR HTML 的初始数据可提取五条 Enco X4 频响：丹拿原声 / 丹拿�
 - `a46fab8c80d10131bebfbb70e33933088993d1d4`：最小工程与 Actions。运行 https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37778955089 三个 job 均成功，包括 Linux / Windows 源码启动、Windows 便携包生成和实际冻结 EXE 启动。此时仅有最小窗口，不能将其当作功能完成。
 - 下一阶段引入独立 OPKG 核心、完整代码指纹识别、通用 EQ 导入、三采样率响应、数值测量导入、原子工程保存与恢复、撤销重做。桌面固件当前只读。当前新增测试尚待对应 Actions，不沿用旧验证结果。
 - Flowmix Beta 5-10 APK 的 SHA256 为 `79777621b8dd6643f7ab2c0c0c7e77f846a2cb2d6c4ed23b59ac8858798412e2`。已找到混淆后的 FrTokenInterceptor（Lnw0）：请求使用 Authorization Bearer，fr-token 为可选自定义头。当前环境匿名和按 APK Bearer 请求 /api/sources 都得到 567 HTML；令牌值未写入仓库。服务端合同仍未确认。
+
+### 当前桌面功能阶段
+
+已保存独立核心提交 `9abce3514ee7e909a433e5c44ce5759bf49c13d9`；Actions https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37780065614 已成功。随后接入 Qt/pyqtgraph 界面、EQ 导入和编辑、RAW 拖动、撤销重做、原子工程自动恢复、离线测量、数字/实测/估计曲线分开展示，以及安全的 Flowmix 诊断工具。当前 GUI 不写固件；读写拟合链、版本 getter 补丁、未知布局扫描、完整在线浏览和打包视觉 QA 尚待继续。
+
+必要的轻量读取已核对原官方 112/116 的完整文件 SHA、原始数据 SHA、代码指纹、四张表和 184 条记录；优化 EQ 为 127 RAW + 5 PEQ；原 HAR 提取五条各 957 点。新 GUI 测试与冻结程序结果以本阶段 Actions 为准。
+
+本地测量接口与 Windows 操作协助见 `docs/local-checks.md`。已确认 APK 的实际 OkHttp UA 是 `okhttp/5.3.2`；本地脚本同时复现 Bearer 和这个 UA，不将令牌写入仓库。
