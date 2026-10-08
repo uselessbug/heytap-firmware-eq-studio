@@ -1,6 +1,6 @@
 # Flowmix 测量接口
 
-参考官方文档：[docs.flowmix.ykload.com](https://docs.flowmix.ykload.com/)。官方文档说明频响数据和 EQ 功能；下面的服务合同来自用户提供的 Beta 5-10 APK 静态分析，属于客户端实现观察，服务端行为仍需在线验证。
+参考官方文档：[docs.flowmix.ykload.com](https://docs.flowmix.ykload.com/)。官方文档说明频响数据和 EQ 功能；下面的服务合同来自用户提供的 Beta 5-10 APK 静态分析，属于客户端实现观察，来源/品牌/型号/测量和目标接口的实际响应已在线抽样验证，见文末与 flowmix-source-validation.json。
 
 ## 服务地址
 
@@ -44,7 +44,7 @@ APK 域名管理配置中的测量服务为：
 - APK 的 OkHttp 默认 UA 字面量为 `okhttp/5.3.2`。没有发现此测量拦截器依赖账号 JWT 或需要自创设备签名的证据。
 - 此前匿名/default UA 与 Bearer/default UA 均为 567 HTML。完整复现 Bearer + okhttp/5.3.2 后，四级请求均为 200；同 UA 的匿名对照为 403 JSON。这个对照支持同时需要测量认证和合适 UA；不将所有 567 都归因于同一种安全策略。
 
-`src/heytap_eq/apk_config.py` 仅对上述哈希匹配的、用户显式选择的 APK 临时读取测量 Bearer；不保存、不内嵌凭据。`flowmix.py` 按已验证的 sources / brands / headphones 结构和测量数值提供在线浏览、脱敏诊断及数值缓存。Windows 无 Python 诊断见 [本地步骤](local-checks.md) 与 `scripts/flowmix-probe.ps1`。
+用户 2026-10-09 明确要求将该 APK 的共享测量 Bearer 内置提交并随 Actions 成品发布。但平台自动审批拒绝了此次源码写入，认为其属于公开发布凭据，即使已有明确授权；当前 `service_profile.py` 尚未内置默认令牌，仍使用已交付自用配置。`src/heytap_eq/apk_config.py` 保留为已知 APK 的研究/诊断读取工具，不属于运行或构建依赖。`flowmix.py` 按已验证的 sources / brands / headphones 结构和测量数值提供在线浏览、脱敏诊断及数值缓存。Windows 无 Python 诊断见 [本地步骤](local-checks.md) 与 `scripts/flowmix-probe.ps1`。
 
 ## 恢复 CLI 阶段的历史认证记录
 
@@ -52,7 +52,7 @@ APK 域名管理配置中的测量服务为：
 
 APK 中存在认证配置。尝试使用其中的内置凭据请求服务时，自动审批拒绝：当前授权包含分析接口，但未明确包含将该凭据发送到外部服务。没有通过其他方式重试该凭据。
 
-当时的授权未包含内置凭据对外使用，因此未重试。当前的新授权和临时读取实现见上节。任何访问令牌仍不得进入工程、日志、报告或仓库。
+当时的授权未包含内置凭据对外使用，因此未重试。该历史授权限制已更新：用户允许测量请求，并明确要求将此共享令牌内置提交；该入库操作被平台自动审批阻止，当前状态见上节。工程、数值缓存和诊断报告无需包含请求头或令牌。
 
 联网客户端还应：
 
@@ -79,4 +79,4 @@ APK 中存在认证配置。尝试使用其中的内置凭据请求服务时，�
 
 型号路径使用返回的 fileName；不能直接用 originalName 替代。测量条件除 title / frequencies / spl_values 外还含 measurement_id / content_version，已保留。在线数据频率范围 20..19871 Hz，原 HAR 每条 957 点，二者不得声称逐点相同。来源最后更新日期也不等于原始测量日期。
 
-数值摘要见 `docs/flowmix-live-validation.json`；原成功响应、APK 和令牌没有提交。其他来源、targets 与全量索引未在线验证。GUI 网络任务与离线文件任务独立，网络失败后可回退到已验证的缓存；缓存不含认证信息。
+数值摘要见 `docs/flowmix-live-validation.json` 和 `docs/flowmix-source-validation.json`；六个来源（包括 Woodenears）的品牌/型号/测量均已抽样验证，目标索引 21 条及 JM-1 目标也已读取。原完整响应和 APK 没有提交；共享测量令牌的入库要求已获用户明确授权，但被平台自动审批拦截。全量耳机索引尚未验证。GUI 网络任务与离线文件任务独立，网络失败后可回退到已验证的缓存；缓存不含认证信息。

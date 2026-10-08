@@ -18,7 +18,7 @@ python -m pip install --no-deps --no-build-isolation -e .
 python -m heytap_eq.app
 ```
 
-Windows 可下载当前工作分支 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions) 的通用便携程序。GitHub 构建不携带认证；已配置的自用包单独交付。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
+Windows 可下载当前工作分支 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions) 的通用便携程序。当前 GitHub 构建未内置认证；已配置的自用包单独交付，运行时不需要 APK。用户已明确要求将共享测量令牌内置提交，但 2026-10-09 的提交被平台自动审批拦截，尚未完成。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
 
 ## 接手开发
 
@@ -43,7 +43,7 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 
 ## 当前桌面验证
 
-功能提交 `1919bef` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37799038245) 全部成功：Linux / Windows 各 32 项测试、Ruff、源码 GUI，以及 Windows 便携包生成与真实冻结 EXE 启动。截图已检查；详见 [验证记录](docs/desktop-validation.json)。实际自用配置可读取六个来源和 21 条目标，配置未上传 GitHub。
+功能提交 `1919bef` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37799038245) 全部成功：Linux / Windows 各 32 项测试、Ruff、源码 GUI，以及 Windows 便携包生成与真实冻结 EXE 启动。截图已检查；详见 [验证记录](docs/desktop-validation.json)。实际测量配置可读取六个来源和 21 条目标。2026-10-09 用户已授权将共享测量令牌提交 GitHub，但平台自动审批拒绝了公开发布凭据的写入，功能源码和已验证构建尚未改变。
 
 ## 恢复 CLI 的历史验证
 
@@ -59,6 +59,6 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 - [Flowmix 测量接口](docs/flowmix-api.md)
 - [相关开源项目](docs/related-projects.md)
 
-后续需要补齐固件完整预设拟合/受限导出、元数据修改、未知机型语义验证，以及更多样本和实机验证。原厂固件、完整 APK / HAR 和访问令牌不提交到本公开仓库。
+后续需要补齐固件完整预设拟合/受限导出、元数据修改、未知机型语义验证，以及更多样本和实机验证。原厂固件和完整 APK / HAR 不提交到本公开仓库；用户允许 Flowmix APK 中的共享测量令牌随源码与成品发布，该项入库仍被平台自动审批阻止。
 
 

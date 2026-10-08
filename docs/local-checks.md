@@ -1,6 +1,6 @@
-# 通用测量与拟合新版（功能提交 1919bef）
+# 通用测量与拟合新版（2026-10-09）
 
-已配置的自用便携包解压后直接运行 EXE，保持 `_internal` 完整；点击“获取在线测量”，不需要 APK、手机或手填认证。GitHub 通用构建不携带认证，不能把它当作已配置的自用包。
+已配置的自用便携包解压后运行 EXE，保持 `_internal` 完整；点击“获取在线测量”，不需要 APK、手机或手填认证。当前 GitHub 通用构建未内置认证：用户 2026-10-09 已明确授权提交共享令牌，但平台自动审批拒绝公开发布凭据，提交尚未成功。功能版本仍为 1919bef；没有新构建。
 
 1. 首次进入来源/品牌/型号应为空。选择 Woodenears 或任一服务返回来源，搜索型号并载入测量。
 2. 可以从“目标曲线库”读取在线目标，或导入目标 CSV/JSON/HAR；另一副耳机的测量可点“当前实测设为目标”。
@@ -32,7 +32,7 @@
 
 ## Flowmix 567 诊断（无需 Python）
 
-已从这个 APK 确认：`Lnw0.b` 添加 Authorization Bearer；`Lnw0.a` 将请求限制到 `fr-api.ykload`，检查已有 Authorization / fr-token / frToken，支持四种认证枚举。依赖的默认 User-Agent 为 `okhttp/5.3.2`。凭据不是自用户账号推测而来，也未写在源码中。
+已从这个 APK 确认：`Lnw0.b` 添加 Authorization Bearer；`Lnw0.a` 将请求限制到 `fr-api.ykload`，检查已有 Authorization / fr-token / frToken，支持四种认证枚举。依赖的默认 User-Agent 为 `okhttp/5.3.2`。该共享凭据不是自用户账号推测而来；用户已要求内置提交，但平台自动审批拦截了该写入；下面的 APK 诊断仅供历史请求复现。
 
 下载仓库 `scripts/flowmix-probe.ps1` 后，在 PowerShell 运行（替换本地 APK 路径）：
 
