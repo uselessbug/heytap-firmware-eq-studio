@@ -4,7 +4,7 @@
 
 未知布局可显式扫描合理参数和可能指针；候选没有名称或写入权限。
 
-本阶段尚未开放桌面固件导出或版本修改。原 CLI 研究工具保持可用，不把历史 32 项测试算作桌面覆盖。在线接口尚无成功的真实数据响应。
+本阶段尚未开放桌面固件导出或版本修改。原 CLI 研究工具保持可用，不把历史 32 项测试算作桌面覆盖。在线 sources / 品牌 / 型号 / Enco X4 测量已成功验证；其他来源仍需按实际响应处理。
 
 ## Windows 程序
 
@@ -13,8 +13,9 @@
 1. 打开官方 116，核对版本 116、产品 06EC10、完整性、四张路径表和每个预设九个状态。
 2. 导入两份 Technics EQ。RAW 应为 127 点，优化版应为 5 个 PEQ。
 3. 修改 PEQ、拖动 RAW 节点，确认撤销重做；保存工程、关闭重开，确认恢复。重新打开原固件会核对 SHA。
-4. 导入原 ReaLab HAR，确认五条 B&K 5128 曲线。实测和估计分开，数字 EQ 在独立页签。
-5. 回传 `SOURCE_SHA.txt`、启动/操作异常信息，以及窗口截图。不要在此阶段刷写耳机。
+4. 点击“连接 Flowmix (APK)”选原 Beta 5-10 APK，选择 ReaLab → OPPO → OPPO Enco X4 后载入在线测量；应看到五条各 127 点。断网后可回退已有缓存，离线文件导入仍可进行。
+5. 导入原 ReaLab HAR，确认五条 B&K 5128 曲线。实测和估计分开，数字 EQ 在独立页签。
+6. 回传 `SOURCE_SHA.txt`、启动/操作异常信息，以及窗口截图。不要在此阶段刷写耳机。
 
 ## Flowmix 567 诊断（无需 Python）
 
@@ -43,4 +44,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\flowmix-probe.ps1 -Apk
 python -m heytap_eq.flowmix --apk "D:\Downloads\Flowmix-Beta-5-10.apk" --output flowmix-cn-auth.json
 ```
 
-当前运行环境用匿名和 APK Bearer 都收到 HTTP 567 HTML。这个结果不能证明令牌无效，也不能证明 567 来自 Flowmix 服务本身；需与本地请求和 App 比较。成功响应回来之前不将 APK 模型当作真实服务端合同。
+当前环境完整复现 Bearer + okhttp/5.3.2 已取得四级 200 JSON；同 UA 匿名为 403。若本地仍为 567，使用上述脚本与同网络 App 对照即可，无需再次取得已经验证过的基础合同。

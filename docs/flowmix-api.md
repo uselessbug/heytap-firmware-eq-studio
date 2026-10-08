@@ -42,9 +42,9 @@ APK 域名管理配置中的测量服务为：
 - 混淆后的 `Lnw0.b` 把完整 Bearer 常量添加到 `Authorization`。
 - `Lnw0.a` 检查 `fr-api.ykload` 域名、已有 `Authorization`、`fr-token` 自定义头和 `frToken` 查询参数；枚举包括 Bearer、自定义头、查询参数、请求体。当前不需要同时叠加所有认证方式。
 - APK 的 OkHttp 默认 UA 字面量为 `okhttp/5.3.2`。没有发现此测量拦截器依赖账号 JWT 或需要自创设备签名的证据。
-- 当前环境匿名和按 APK Bearer 请求均为 HTTP 567 HTML；不能据此区分 Flowmix WAF、出口策略、凭据有效性或服务故障。真实 `/api/sources` 合同仍未得到响应验证。
+- 此前匿名/default UA 与 Bearer/default UA 均为 567 HTML。完整复现 Bearer + okhttp/5.3.2 后，四级请求均为 200；同 UA 的匿名对照为 403 JSON。这个对照支持同时需要测量认证和合适 UA；不将所有 567 都归因于同一种安全策略。
 
-`src/heytap_eq/apk_config.py` 仅对上述哈希匹配的、用户显式选择的 APK 临时读取测量 Bearer；不保存、不内嵌凭据。`flowmix.py` 提供限量诊断，不把未确认模型作为成功响应。Windows 无 Python 诊断见 [本地步骤](local-checks.md) 与 `scripts/flowmix-probe.ps1`。
+`src/heytap_eq/apk_config.py` 仅对上述哈希匹配的、用户显式选择的 APK 临时读取测量 Bearer；不保存、不内嵌凭据。`flowmix.py` 按已验证的 sources / brands / headphones 结构和测量数值提供在线浏览、脱敏诊断及数值缓存。Windows 无 Python 诊断见 [本地步骤](local-checks.md) 与 `scripts/flowmix-probe.ps1`。
 
 ## 恢复 CLI 阶段的历史认证记录
 
@@ -65,3 +65,18 @@ APK 中存在认证配置。尝试使用其中的内置凭据请求服务时，�
 
 用户提供的 ReaLab HAR 可以提取 Enco X4 五条人工耳频响，无需在线服务认证。该数据足够先完成曲线显示、基线选择和目标修正预览。
 
+
+## 已在线验证的合同
+
+2026-10-08，使用已授权的 APK 测量 Bearer + okhttp/5.3.2：
+
+| 请求 | HTTP | 实际 data |
+| --- | --- | --- |
+| sources | 200 | 6 个对象，name / displayName / description |
+| sources/realab/brands | 200 | 106 个品牌字符串 |
+| sources/realab/brands/OPPO/headphones | 200 | 10 个对象，fileName / originalName / lastUpdated / sourceName |
+| 上一路径 / OPPO_Enco_X4 | 200 | 5 个测量条件，每条 127 点 |
+
+型号路径使用返回的 fileName；不能直接用 originalName 替代。测量条件除 title / frequencies / spl_values 外还含 measurement_id / content_version，已保留。在线数据频率范围 20..19871 Hz，原 HAR 每条 957 点，二者不得声称逐点相同。来源最后更新日期也不等于原始测量日期。
+
+数值摘要见 `docs/flowmix-live-validation.json`；原成功响应、APK 和令牌没有提交。其他来源、targets 与全量索引未在线验证。GUI 网络任务与离线文件任务独立，网络失败后可回退到已验证的缓存；缓存不含认证信息。

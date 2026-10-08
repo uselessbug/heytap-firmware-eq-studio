@@ -19,17 +19,18 @@ from heytap_eq.session import Session
 
 
 class Worker(QtCore.QThread):
-    completed = QtCore.Signal(object)
-
-    def __init__(self, fn, parent):
+    def __init__(self, fn, callback, network, parent):
         super().__init__(parent)
         self.fn = fn
+        self.callback = callback
+        self.network = network
+        self.result = None
 
     def run(self):
         try:
-            self.completed.emit((self.fn(), None))
+            self.result = (self.fn(), None)
         except Exception as exc:
-            self.completed.emit((None, exc))
+            self.result = (None, exc)
 
 
 class DragNodes(pg.GraphItem):
@@ -222,35 +223,37 @@ class MainWindow(QtWidgets.QMainWindow):
         if workers:
             self.statusBar().showMessage("正在读取文件，请等待当前任务完成。")
             return
-        worker = Worker(fn, self)
+        worker = Worker(fn, callback, network, self)
         workers.add(worker)
-        result_box = []
         if network:
             for control in self.online_controls:
                 control.setEnabled(False)
         self.statusBar().showMessage("正在读取并验证…")
 
-        def complete(result):
-            value, error = result
-            try:
-                if error:
-                    raise error
-                callback(value)
-            except Exception as exc:
-                self.statusBar().showMessage(f"未加载：{exc}")
-
-        def finished():
-            workers.discard(worker)
-            worker.deleteLater()
-            if network:
-                for control in self.online_controls:
-                    control.setEnabled(True)
-            if result_box:
-                complete(result_box[0])
-
-        worker.completed.connect(lambda result: result_box.append(result))
-        worker.finished.connect(finished)
+        worker.finished.connect(self.worker_finished, QtCore.Qt.ConnectionType.QueuedConnection)
         worker.start()
+
+    @QtCore.Slot()
+    def worker_finished(self):
+        worker = self.sender()
+        # finished can precede native TLS cleanup; join before freeing the wrapper.
+        worker.wait()
+        workers = self.network_workers if worker.network else self.workers
+        workers.discard(worker)
+        if worker.network:
+            for control in self.online_controls:
+                control.setEnabled(True)
+        try:
+            value, error = worker.result
+            if error:
+                raise error
+            worker.callback(value)
+        except Exception as exc:
+            self.statusBar().showMessage(f"未加载：{exc}")
+        finally:
+            worker.fn = None
+            worker.callback = None
+            worker.deleteLater()
 
     def connect_flowmix(self):
         path = self._choose("选择 Flowmix Beta 5-10 APK", "APK (*.apk)")

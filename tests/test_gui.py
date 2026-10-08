@@ -1,12 +1,12 @@
-from PySide6 import QtCore, QtGui, QtTest, QtWidgets
+from PySide6 import QtCore, QtGui, QtTest
 
 from heytap_eq.eq_formats import parse_text
 from heytap_eq.gui import MainWindow
 from heytap_eq.measurements import Measurement
 
 
-def test_edit_undo_project_and_measurement_preview(tmp_path):
-    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+def test_edit_undo_project_and_measurement_preview(tmp_path, qt_app):
+    app = qt_app
     window = MainWindow(recover=False, auto_path=tmp_path/"recovery.json")
     window.show()
     window.set_document(parse_text("GraphicEQ: 20 1; 20000 0"))
@@ -34,8 +34,8 @@ def test_edit_undo_project_and_measurement_preview(tmp_path):
     window.close()
 
 
-def test_raw_mouse_drag_is_one_undo_step(tmp_path):
-    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+def test_raw_mouse_drag_is_one_undo_step(tmp_path, qt_app):
+    app = qt_app
     window = MainWindow(recover=False, auto_path=tmp_path/"drag.json")
     window.show()
     window.set_document(parse_text("GraphicEQ: 20 0; 1000 1; 20000 0"))
@@ -59,8 +59,8 @@ def test_raw_mouse_drag_is_one_undo_step(tmp_path):
     window.close()
 
 
-def test_online_selection_uses_file_id_without_network(tmp_path):
-    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+def test_online_selection_uses_file_id_without_network(tmp_path, qt_app):
+    app = qt_app
     window = MainWindow(recover=False, auto_path=tmp_path/"online.json")
     calls = []
     class Client:
@@ -91,9 +91,9 @@ def test_online_selection_uses_file_id_without_network(tmp_path):
     window.close()
 
 
-def test_pending_network_does_not_block_offline_file_task(tmp_path):
+def test_pending_network_does_not_block_offline_file_task(tmp_path, qt_app):
     import threading
-    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    app = qt_app
     window = MainWindow(recover=False, auto_path=tmp_path/"independent.json")
     release = threading.Event()
     def slow_network():

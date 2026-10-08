@@ -2,7 +2,7 @@
 
 面向 OPPO / HeyTap 耳机固件的本地 EQ 编辑项目，首个研究对象为 Enco X4。
 
-当前有 **PySide6 + pyqtgraph 本地桌面工程** 与原 **Python CLI 研究原型**。桌面提供固件校验/只读查看、通用 Wavelet 与 Flowmix EQ 导入编辑、RAW 拖动、撤销重做、工程自动恢复，以及人工耳测量/估计展示。原 CLI 保留拟合和重新封包能力。
+当前有 **PySide6 + pyqtgraph 本地桌面工程** 与原 **Python CLI 研究原型**。桌面提供固件校验/只读查看、通用 Wavelet 与 Flowmix EQ 导入编辑、RAW 拖动、撤销重做、工程自动恢复，以及人工耳测量/估计展示。Flowmix 在线来源/品牌/型号浏览已按真实响应接入，并提供离线数值缓存。原 CLI 保留拟合和重新封包能力。
 
 桌面采用 **Python + PySide6 + pyqtgraph**，核心独立于 Qt。源码和 Windows 便携 ZIP 由 GitHub Actions 检查/构建；每个产物记录源 SHA，并实际启动冻结 EXE。桌面固件写入和版本修改尚未开放。此前 32 项测试属于源码未恢复的历史结果。
 

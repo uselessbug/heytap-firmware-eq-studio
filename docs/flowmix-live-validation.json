@@ -71,5 +71,11 @@
   },
   "raw_har_points_per_curve": 957,
   "server_behavior_confirmed_only_for_this_read_path": true,
-  "credentials_in_report": false
+  "credentials_in_report": false,
+  "controlled_sources_checks": {
+    "anonymous_default_agent": "HTTP 567 HTML",
+    "apk_bearer_default_agent": "HTTP 567 HTML",
+    "anonymous_okhttp_5_3_2": "HTTP 403 JSON",
+    "apk_bearer_okhttp_5_3_2": "HTTP 200 JSON"
+  }
 }

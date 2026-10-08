@@ -267,3 +267,5 @@ RAR 解压实际名称和哈希已重新核对：113 的整包 SHA256 为 `ee867
 ### 在线接口实现阶段
 
 已验证 sources 实际 data 为对象列表（name/displayName/description），品牌为字符串列表，型号为对象列表（fileName/originalName）；请求 Enco X4 用 OPPO_Enco_X4。测量五条各 127 点，附 measurement_id/content_version，原 HAR 五条各 957 点。新 FlowmixClient 按真实结构解析，凭据只在内存，缓存只存经验证的索引和测量数值。GUI 来源/品牌/型号选择放独立网络线程，离线文件任务可同时运行；新增合成合同、缓存回退、文件 ID 和线程独立性测试，CI 待对应新提交。固件写入与版本仍未开放。
+
+在线阶段源码提交 `b953c7cf8717458b4213c88be56b24ed59fd1093` 的首轮 CI 在新增并行网络/离线测试中暴露 Qt 崩溃；已按日志改为 MainWindow 的显式 queued Slot 接收线程结束，等待原生线程清理后释放 QThread，并将测试 QApplication 生命周期固定到会话。当前等待修复提交的 Actions；不把失败轮当作验证成功。
