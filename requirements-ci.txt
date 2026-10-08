@@ -1,0 +1,21 @@
+# Exact runtime, build and test versions; Python 3.11, Windows/Linux.
+numpy==2.2.6
+scipy==1.15.3
+PySide6==6.8.3
+PySide6_Addons==6.8.3
+PySide6_Essentials==6.8.3
+shiboken6==6.8.3
+pyqtgraph==0.13.7
+setuptools==80.9.0
+wheel==0.45.1
+packaging==25.0
+pytest==8.3.5
+iniconfig==2.1.0
+pluggy==1.6.0
+colorama==0.4.6; sys_platform == 'win32'
+ruff==0.11.13
+pyinstaller==6.13.0
+pyinstaller-hooks-contrib==2025.4
+altgraph==0.17.4
+pefile==2023.2.7; sys_platform == 'win32'
+pywin32-ctypes==0.2.3; sys_platform == 'win32'

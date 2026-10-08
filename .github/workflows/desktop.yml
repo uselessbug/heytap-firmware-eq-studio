@@ -1,0 +1,97 @@
+name: Desktop checks and Windows package
+on:
+  push:
+    branches: [feat/python-desktop-studio]
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+env:
+  PYTHONNOUSERSITE: '1'
+  PYQTGRAPH_QT_LIB: PySide6
+  HEYTAP_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEYTAP_BUILD_SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Linux GUI libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxkbcommon0 fonts-noto-cjk
+      - name: Clean virtual environment
+        shell: bash
+        run: |
+          python -m venv .venv
+          if [ "$RUNNER_OS" = Windows ]; then echo "$PWD/.venv/Scripts" >> "$GITHUB_PATH"; else echo "$PWD/.venv/bin" >> "$GITHUB_PATH"; fi
+      - name: Locked dependencies
+        run: |
+          python -m pip install -r requirements-ci.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+          python -m pip check
+      - name: Static checks and tests
+        run: |
+          python -m ruff check .
+          python -m pytest --junitxml=reports/pytest.xml
+      - name: GUI event loop and screenshot
+        env:
+          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'offscreen' || 'windows' }}
+        run: python -m heytap_eq.app --smoke-test --report reports/source-startup.json
+      - name: Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checks-${{ runner.os }}-${{ env.HEYTAP_BUILD_SHA }}
+          path: reports/
+  windows-package:
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEYTAP_BUILD_SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Clean virtual environment
+        shell: bash
+        run: |
+          python -m venv .venv
+          echo "$PWD/.venv/Scripts" >> "$GITHUB_PATH"
+      - name: Locked dependencies
+        run: |
+          python -m pip install -r requirements-ci.txt
+          python -m pip install --no-deps --no-build-isolation .
+          python -m pip check
+      - name: Freeze
+        run: python -m PyInstaller --noconfirm --clean --onedir --windowed --name HeyTapFirmwareEQStudio --paths src --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 scripts/desktop_entry.py
+      - name: Start actual frozen executable
+        run: python scripts/check_frozen.py
+      - name: Upload startup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-startup-${{ env.HEYTAP_BUILD_SHA }}
+          path: reports/
+      - name: Record source SHA and zip portable package
+        shell: pwsh
+        run: |
+          Set-Content dist/HeyTapFirmwareEQStudio/SOURCE_SHA.txt "$env:HEYTAP_BUILD_SHA"
+          Compress-Archive dist/HeyTapFirmwareEQStudio dist/HeyTapFirmwareEQStudio-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HeyTapFirmwareEQStudio-windows-${{ env.HEYTAP_BUILD_SHA }}
+          path: dist/HeyTapFirmwareEQStudio-windows.zip
