@@ -153,13 +153,15 @@ def load(path: str | Path) -> dict:
     return parse(Path(path).read_bytes())
 
 
-def repack(original: dict, edited: bytes) -> tuple[bytes, list[int]]:
+def repack(original: dict, edited: bytes, cancelled=None) -> tuple[bytes, list[int]]:
     require(len(edited) == len(original["raw"]), "Only equal-length raw images may be repacked")
     packed = []
     changed = []
     filters = [{"id": lzma.FILTER_LZMA1, "dict_size": 0x04000000, "lc": 3, "lp": 0, "pb": 2,
                 "mode": lzma.MODE_NORMAL, "nice_len": 64, "mf": lzma.MF_BT4}]
     for block in original["blocks"]:
+        if cancelled is not None and cancelled.is_set():
+            raise InterruptedError("Repacking cancelled")
         o, size = block["raw_offset"], block["raw_size"]
         raw = edited[o : o + size]
         if raw == block["raw"]:

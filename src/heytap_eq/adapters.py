@@ -28,9 +28,16 @@ class Firmware:
 
 def inspect_firmware(path):
     item = opkg.load(path)
+    bank = verified_bank(item)
+    reason = ("Enco X4：代码指纹与四张指针表通过" if bank else
+              "未知布局或代码指纹；完整性通过，尚未确认参数语义")
+    return Firmware(str(path), item, bank, reason)
+
+
+def verified_bank(item):
+    """Recheck semantics from bytes, including when applying a saved edit plan."""
     raw = item["raw"]
     bank = None
-    reason = "未知布局；完整性通过，结构尚未确认"
     if item["summary"]["product_id"] == "06EC10" and len(raw) in FINGERPRINTS:
         if all(opkg.sha(raw[a:b]) == digest for a, b, digest in FINGERPRINTS[len(raw)]):
             bank = opkg.profiles(raw)
@@ -40,7 +47,4 @@ def inspect_firmware(path):
                     opkg.require(f["type_id"] <= 5 and -60 <= f["gain"] <= 24
                                  and 0 < f["fc"] < 22050 and .01 <= f["q"] <= 100,
                                  "Active filter outside known preview bounds")
-            reason = "Enco X4：代码指纹与四张指针表通过；当前桌面阶段只读"
-        else:
-            reason = "布局长度相似，代码指纹未确认；保持只读"
-    return Firmware(str(path), item, bank, reason)
+    return bank

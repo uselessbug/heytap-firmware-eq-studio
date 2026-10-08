@@ -16,6 +16,8 @@ colorama==0.4.6; sys_platform == 'win32'
 ruff==0.11.13
 pyinstaller==6.13.0
 pyinstaller-hooks-contrib==2025.4
+capstone==5.0.9
+unicorn==2.1.4
 altgraph==0.17.4
 pefile==2023.2.7; sys_platform == 'win32'
 pywin32-ctypes==0.2.3; sys_platform == 'win32'
