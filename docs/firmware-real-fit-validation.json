@@ -1,0 +1,294 @@
+{
+  "source_sha": "8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a",
+  "environment": "Private-input core validation using existing local NumPy/SciPy; GUI and locked-dependency tests run separately in Actions.",
+  "device_validation": false,
+  "results": [
+    {
+      "version": "112",
+      "source_sha256": "ffa7443f9c8a349a952176ad231fff73850d4e6be5a65ec2b97e9bbe13798729",
+      "eq_source_sha256": "ceea352ae0ae14c598734606f41a26156164716665de9f4530e26d81debca927",
+      "raw_points": 127,
+      "peq_filters": 5,
+      "fitting_elapsed_seconds": 32.74218559300016,
+      "changed_records": 36,
+      "all_four_paths_and_nine_states": true,
+      "worst_rms_db": 0.12770779629750445,
+      "worst_max_db": 0.7826991651920845,
+      "accepted_by_default_limits": true,
+      "export_limits": {
+        "max_rms": 0.45,
+        "max_error": 1.5
+      },
+      "reopened_recognized": true,
+      "hp_lp_ap_preserved": true,
+      "input_unchanged": true,
+      "export_report": {
+        "sha256": "4d1e99d26434e51aa64587f9b2cf88d33d1956d7b79fbe8b3e126ed7d80b9802",
+        "source_sha256": "ffa7443f9c8a349a952176ad231fff73850d4e6be5a65ec2b97e9bbe13798729",
+        "presets": [
+          "丹拿高解析"
+        ],
+        "changed_records": 36,
+        "changed_blocks": [
+          29,
+          30
+        ],
+        "metadata_edits": {},
+        "checks": {
+          "pkg_length": true,
+          "pkg_sha256": true,
+          "raw_sha256": true,
+          "compressed_sha256": true,
+          "all_block_crc32": true,
+          "all_lzma_sizes": true
+        },
+        "outside_permitted_raw_ranges_unchanged": true,
+        "on_device_test": false,
+        "error_limits": {
+          "rms_db": 0.45,
+          "max_db": 1.5
+        },
+        "path_summary": {
+          "other_output2": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.06768155772019814,
+                "worst_max_db": 0.22480034911915725,
+                "worst_full_band_rms_db": 0.09897153620849124
+              },
+              "48000": {
+                "worst_rms_db": 0.06534188437921272,
+                "worst_max_db": 0.19071767864777933,
+                "worst_full_band_rms_db": 0.0968412896158431
+              },
+              "96000": {
+                "worst_rms_db": 0.06247820884670908,
+                "worst_max_db": 0.20310235996105863,
+                "worst_full_band_rms_db": 0.09554708335644055
+              }
+            }
+          },
+          "india_output2": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.06768155772019814,
+                "worst_max_db": 0.22480034911915725,
+                "worst_full_band_rms_db": 0.09897153620849124
+              },
+              "48000": {
+                "worst_rms_db": 0.06534188437921272,
+                "worst_max_db": 0.19071767864777933,
+                "worst_full_band_rms_db": 0.0968412896158431
+              },
+              "96000": {
+                "worst_rms_db": 0.06247820884670908,
+                "worst_max_db": 0.20310235996105863,
+                "worst_full_band_rms_db": 0.09554708335644055
+              }
+            }
+          },
+          "other_output1": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.12770779629750445,
+                "worst_max_db": 0.6359986682507293,
+                "worst_full_band_rms_db": 0.12770779629750445
+              },
+              "48000": {
+                "worst_rms_db": 0.11779909921361864,
+                "worst_max_db": 0.6360942955541573,
+                "worst_full_band_rms_db": 0.11779909921361864
+              },
+              "96000": {
+                "worst_rms_db": 0.12496361383696915,
+                "worst_max_db": 0.7826991651920845,
+                "worst_full_band_rms_db": 0.12496361383696915
+              }
+            }
+          },
+          "india_output1": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.12770779629750445,
+                "worst_max_db": 0.6359986682507293,
+                "worst_full_band_rms_db": 0.12770779629750445
+              },
+              "48000": {
+                "worst_rms_db": 0.11779909921361864,
+                "worst_max_db": 0.6360942955541573,
+                "worst_full_band_rms_db": 0.11779909921361864
+              },
+              "96000": {
+                "worst_rms_db": 0.12496361383696915,
+                "worst_max_db": 0.7826991651920845,
+                "worst_full_band_rms_db": 0.12496361383696915
+              }
+            }
+          }
+        },
+        "record_count_independently_verified_after_reopen": 36
+      },
+      "reopened_dense_response_validation": {
+        "points": 8192,
+        "sample_rates_hz": [
+          44100,
+          48000,
+          96000
+        ],
+        "effective_band": "Baseline peak minus 30 dB",
+        "worst_rms_db": 0.12771843747047404,
+        "worst_max_db": 0.8510115667524218,
+        "default_limits_pass": true
+      }
+    },
+    {
+      "version": "116",
+      "source_sha256": "e34a6f0982f45b855b2d7f3372080664dd1c47bbc9918f4dae2b818acd3b4680",
+      "eq_source_sha256": "ceea352ae0ae14c598734606f41a26156164716665de9f4530e26d81debca927",
+      "raw_points": 127,
+      "peq_filters": 5,
+      "fitting_elapsed_seconds": 34.150972119000016,
+      "changed_records": 36,
+      "all_four_paths_and_nine_states": true,
+      "worst_rms_db": 0.12770779629750445,
+      "worst_max_db": 0.7826991651920845,
+      "accepted_by_default_limits": true,
+      "export_limits": {
+        "max_rms": 0.45,
+        "max_error": 1.5
+      },
+      "reopened_recognized": true,
+      "hp_lp_ap_preserved": true,
+      "input_unchanged": true,
+      "export_report": {
+        "sha256": "5c07498de83567d3ad961ff902266c0fd844cf4674d82a4816a84ccf2b8bba1f",
+        "source_sha256": "e34a6f0982f45b855b2d7f3372080664dd1c47bbc9918f4dae2b818acd3b4680",
+        "presets": [
+          "丹拿高解析"
+        ],
+        "changed_records": 36,
+        "changed_blocks": [
+          29
+        ],
+        "metadata_edits": {},
+        "checks": {
+          "pkg_length": true,
+          "pkg_sha256": true,
+          "raw_sha256": true,
+          "compressed_sha256": true,
+          "all_block_crc32": true,
+          "all_lzma_sizes": true
+        },
+        "outside_permitted_raw_ranges_unchanged": true,
+        "on_device_test": false,
+        "error_limits": {
+          "rms_db": 0.45,
+          "max_db": 1.5
+        },
+        "path_summary": {
+          "other_output2": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.06768155772019814,
+                "worst_max_db": 0.22480034911915725,
+                "worst_full_band_rms_db": 0.09897153620849124
+              },
+              "48000": {
+                "worst_rms_db": 0.06534188437921272,
+                "worst_max_db": 0.19071767864777933,
+                "worst_full_band_rms_db": 0.0968412896158431
+              },
+              "96000": {
+                "worst_rms_db": 0.06247820884670908,
+                "worst_max_db": 0.20310235996105863,
+                "worst_full_band_rms_db": 0.09554708335644055
+              }
+            }
+          },
+          "india_output2": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.06768155772019814,
+                "worst_max_db": 0.22480034911915725,
+                "worst_full_band_rms_db": 0.09897153620849124
+              },
+              "48000": {
+                "worst_rms_db": 0.06534188437921272,
+                "worst_max_db": 0.19071767864777933,
+                "worst_full_band_rms_db": 0.0968412896158431
+              },
+              "96000": {
+                "worst_rms_db": 0.06247820884670908,
+                "worst_max_db": 0.20310235996105863,
+                "worst_full_band_rms_db": 0.09554708335644055
+              }
+            }
+          },
+          "other_output1": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.12770779629750445,
+                "worst_max_db": 0.6359986682507293,
+                "worst_full_band_rms_db": 0.12770779629750445
+              },
+              "48000": {
+                "worst_rms_db": 0.11779909921361864,
+                "worst_max_db": 0.6360942955541573,
+                "worst_full_band_rms_db": 0.11779909921361864
+              },
+              "96000": {
+                "worst_rms_db": 0.12496361383696915,
+                "worst_max_db": 0.7826991651920845,
+                "worst_full_band_rms_db": 0.12496361383696915
+              }
+            }
+          },
+          "india_output1": {
+            "states": 9,
+            "sample_rates": {
+              "44100": {
+                "worst_rms_db": 0.12770779629750445,
+                "worst_max_db": 0.6359986682507293,
+                "worst_full_band_rms_db": 0.12770779629750445
+              },
+              "48000": {
+                "worst_rms_db": 0.11779909921361864,
+                "worst_max_db": 0.6360942955541573,
+                "worst_full_band_rms_db": 0.11779909921361864
+              },
+              "96000": {
+                "worst_rms_db": 0.12496361383696915,
+                "worst_max_db": 0.7826991651920845,
+                "worst_full_band_rms_db": 0.12496361383696915
+              }
+            }
+          }
+        },
+        "record_count_independently_verified_after_reopen": 36
+      },
+      "reopened_dense_response_validation": {
+        "points": 8192,
+        "sample_rates_hz": [
+          44100,
+          48000,
+          96000
+        ],
+        "effective_band": "Baseline peak minus 30 dB",
+        "worst_rms_db": 0.12771843747047404,
+        "worst_max_db": 0.8510115667524218,
+        "default_limits_pass": true
+      }
+    }
+  ],
+  "local_numpy_version": "2.3.5",
+  "local_scipy_version": "1.17.0",
+  "date_utc": "2026-10-08",
+  "scope": "Fits imported 127-point RAW plus 5-PEQ correction onto the original Dynaudio baseline, replacing the entire Dynaudio High Resolution preset; digital amplitude model, no device or acoustic validation."
+}

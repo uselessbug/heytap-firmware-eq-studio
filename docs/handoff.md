@@ -4,15 +4,19 @@
 
 ## 桌面固件编辑阶段（2026-10-09，当前）
 
-核心阶段 00030e3e3655fa1c2ec58d8818ed5b639e67a7d9，GUI 阶段 a4ff335ead4ea2486a2f7d5c153e91523559095f；均已保存到现有工作分支，main 未合并。GUI 阶段 Actions https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37814712635 当前等待结果，不能以旧 32 项覆盖本阶段。
+功能提交 `8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a`，位于 `feat/python-desktop-studio`，沿用草稿 PR #1；main 未合并。[Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589) 全部通过：Linux/Windows 各 39 项测试和 Ruff、源码 GUI、Windows 便携构建及实际冻结 EXE 启动。已下载并检查截图、成品 `SOURCE_SHA.txt` 与 EXE 哈希，见 [当前验证](firmware-edit-validation.json)。[Windows 成品](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589/artifacts/11567181875) 无认证配置。
 
-已接入：四路径 × 九状态完整预设拟合；保护对应丹拿原声 HP/LP/AP，最多 18 槽；生成多个预设快照；后台取消与过期结果拒绝；原链/待导出链预览；导出时按 float32 三采样率重算误差，可调 RMS/最大误差门限；输入 SHA 绑定、原输入不覆盖、限定范围修改、重新封包和旁边的报告。元数据编辑覆盖已确认容器字段和各段 BUILD_DATE/REV_INFO；版本同步容器、SW_VER 和 12 字节 Thumb getter。工程 v3 保存计划/元数据并支持撤销重做、原子恢复，兼容 v1/v2。
+已接入：四路径 × 九状态完整预设拟合；保护对应丹拿原声 HP/LP/AP，最多 18 槽；生成多个预设快照；后台取消与过期结果拒绝；原链/待导出链预览；导出时按 float32 三采样率重算误差，可调 RMS/最大误差门限；输入 SHA 绑定、原输入不覆盖、限定范围修改、重新封包和旁边的报告。元数据编辑覆盖已确认容器字段和各段 BUILD_DATE/REV_INFO；版本同步容器、SW_VER 和 12 字节 Thumb getter。工程 v3 保存计划/元数据并支持撤销重做、原子恢复，兼容 v1/v2。使用步骤见 [固件编辑](firmware-editing.md)。
 
-真实 112/116 getter 已重新读取核对。Windows 核心测试已执行 000..999 × 对齐/未对齐共 2,000 次 Cortex-M4 仿真，检查 r0/r1/r4 与周围字节；Linux 初次因两处 lint 失败，已修正。真实 112/116 及用户补充 Optimized 112 的版本修改/封包/重开识别已通过，EQ bank 未改变，见 metadata-real-validation.json。没有实机验证。
+真实原始 112/116 使用 Optimized EQ（127 RAW 点 + 5 PEQ）分别拟合约 33/34 秒，各改 36 条记录，默认门限通过，封包/重开识别与范围外字节保护通过。读取导出文件后在 8,192 个频点、44.1/48/96 kHz 重算：有效频段最差 RMS 0.127718 dB，最大误差 0.851012 dB；数字模型不等于声学实测。真实输入验证使用既有本地 NumPy/SciPy，锁定依赖的合成夹具和 GUI 在 Actions 验证，见 [真实拟合记录](firmware-real-fit-validation.json)。
 
-补充样本 sha d2007e5a2546870b98aa3e9e5588bb4ea22b658e1fbf3126926cc20d027bbd39，与报告一致；18 条 output1 记录改变，output2 未改，EQ 区域外不变，HP/LP/AP 保留。见 modified-sample-validation.json。未上传该固件或完整报告。
+真实 112/116 getter 已重新读取核对，两平台测试均执行 000..999 × 对齐/未对齐共 2,000 次 Cortex-M4 仿真。真实 112/116 及用户补充 Optimized 112 的版本修改/封包/重开识别通过，EQ bank 未改变，见 [元数据记录](metadata-real-validation.json)。
 
-剩余：本阶段 Actions/frozen 交付确认、真实完整预设拟合性能和误差验证、未知机型语义适配、OTA/双单元声学验证。共享令牌按用户安排由其醒来后处理；令牌入库仍被平台审批拦截，未修改 service_profile.py，不继续尝试。
+补充样本 SHA `d2007e5a2546870b98aa3e9e5588bb4ea22b658e1fbf3126926cc20d027bbd39` 与报告一致；18 条 output1 记录改变，output2 未改，EQ 区域外不变，HP/LP/AP 保留。见 [样本记录](modified-sample-validation.json)。未上传该固件或完整输入报告。
+
+已完成六来源（含 Woodenears）动态索引、在线/本地/另一副耳机目标、RAW/PEQ 修正拟合、音频坐标、首次选择置空/已确认型号精确匹配/后续记忆。直接 HTTP 客户端运行和构建不依赖 APK；算法参考 APK 流程并使用受限优化，未声称逐点复刻。
+
+剩余：共享 Bearer 由用户醒来后填入；未知机型参数语义适配；真实耳机 OTA、双单元声学与听感验证。令牌按此前平台拦截不再尝试公开提交，`service_profile.py` 未修改。源码填写位置为 `builtin_authorization()` 最后的 `return None`；成品也可在 EXE 旁放 `_flowmix_profile.json`，格式见 [本地操作](local-checks.md)，令牌文本由对话交付。此前用户授权已更新，不得再次归因于缺少用户授权。
 
 下面为历史阶段记录，其中“GUI 只读、固件导出/版本尚未完成”不代表当前源码。
 

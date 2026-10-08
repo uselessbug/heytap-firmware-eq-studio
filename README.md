@@ -18,7 +18,7 @@ python -m pip install --no-deps --no-build-isolation -e .
 python -m heytap_eq.app
 ```
 
-Windows 可下载当前工作分支 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions) 的通用便携程序。当前 GitHub 构建未内置认证；已配置的自用包单独交付，运行时不需要 APK。用户已明确要求将共享测量令牌内置提交，但 2026-10-09 的提交被平台自动审批拦截，尚未完成。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
+Windows 可下载 [当前便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589/artifacts/11567181875)，解开产物内的 ZIP，运行 EXE 并保留 `_internal`。当前 GitHub 构建未内置认证，共享 Bearer 按用户安排手动填入；可修改 `src/heytap_eq/service_profile.py` 的 `builtin_authorization()` 最后一个 `return None` 后重新构建，也可在 EXE 旁配置 `_flowmix_profile.json`，无需重新打包。运行与构建均不需要 APK。详细配置见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
 
 ## 接手开发
 
@@ -43,7 +43,9 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 
 ## 当前桌面验证
 
-功能提交 `1919bef` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37799038245) 全部成功：Linux / Windows 各 32 项测试、Ruff、源码 GUI，以及 Windows 便携包生成与真实冻结 EXE 启动。截图已检查；详见 [验证记录](docs/desktop-validation.json)。实际测量配置可读取六个来源和 21 条目标。2026-10-09 用户已授权将共享测量令牌提交 GitHub，但平台自动审批拒绝了公开发布凭据的写入，功能源码和已验证构建尚未改变。
+功能提交 `8878dfd` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589) 全部成功：Linux / Windows 各 39 项测试、Ruff、源码 GUI、Windows 便携包及真实冻结 EXE 启动。已检查截图、成品源 SHA 和 EXE 哈希。GUI 的“完整预设拟合 → 版本修改 → 导出 → 重开 → 工程恢复”已通过；getter 000..999 的对齐/未对齐写入独立仿真 2,000 次。详见 [当前验证](docs/firmware-edit-validation.json)，[此前测量阶段记录](docs/desktop-validation.json) 保留其原始范围。实际测量配置已验证六个来源和 21 条目标。
+
+真实原始 112/116 的 Optimized EQ 完整预设替换也已通过：各 36 条记录，默认误差门限内，重新封包与重开识别通过。读取导出文件后在 8,192 点、三采样率复算最差 RMS 0.128 dB、最大误差 0.851 dB（有效频段）；详见 [真实输入拟合记录](docs/firmware-real-fit-validation.json)。
 
 ## 恢复 CLI 的历史验证
 

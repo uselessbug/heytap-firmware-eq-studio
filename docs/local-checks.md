@@ -1,6 +1,13 @@
 # 通用测量与拟合新版（2026-10-09）
 
-已配置的自用便携包解压后运行 EXE，保持 `_internal` 完整；点击“获取在线测量”，不需要 APK、手机或手填认证。当前 GitHub 通用构建未内置认证：用户 2026-10-09 已明确授权提交共享令牌，但平台自动审批拒绝公开发布凭据，提交尚未成功。功能版本仍为 1919bef；没有新构建。
+下载 [当前 Windows 便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589/artifacts/11567181875)，解开产物内的 ZIP，运行 EXE，保持 `_internal` 完整。`SOURCE_SHA.txt` 应为 `8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a`；此版本已通过实际 EXE 启动检查。运行和构建均不需要 APK。
+
+GitHub 通用包尚无认证。Bearer 按用户安排自行填入，下列位置任选其一：
+
+- 源码：`src/heytap_eq/service_profile.py`，`builtin_authorization()` 函数最后的 `return None` 改为 `return "Bearer <共享令牌>"`，保留环境变量和配置文件读取逻辑，再运行 Actions 构建。
+- 已下载成品：EXE 同目录新建 `_flowmix_profile.json`，内容为 `{"schema":"flowmix-http-v1","authorization":"Bearer <共享令牌>"}`。不需要重新构建；程序重开后点“获取在线测量”。
+
+尖括号内容替换为实际令牌，`Bearer ` 与令牌之间只有一个空格。真实令牌文本在对话中交付，不写入本说明。平台此前拦截公开写入凭据，当前由用户手动处理；不再重复尝试同一写入。
 
 1. 首次进入来源/品牌/型号应为空。选择 Woodenears 或任一服务返回来源，搜索型号并载入测量。
 2. 可以从“目标曲线库”读取在线目标，或导入目标 CSV/JSON/HAR；另一副耳机的测量可点“当前实测设为目标”。
@@ -12,7 +19,7 @@
 
 下面保留上一阶段的历史验证和 APK 诊断，仅用于研究复现；新版程序运行与构建均不依赖 APK。
 
-# 当前桌面阶段的本地验证
+# 历史桌面阶段的本地验证（只读时期）
 
 本阶段可用：完整性检查、已知 Enco X4 指纹/指针识别、现有记录只读查看、两类 EQ 导入、PEQ 表格编辑、RAW 纵向拖动、PEQ 频率/增益拖动、撤销重做、绑定固件 SHA 的原子工程保存/自动恢复、CSV/JSON/ReaLab HAR 测量和声学估计。
 

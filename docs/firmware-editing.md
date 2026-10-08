@@ -13,4 +13,6 @@
 
 用户补充的 Optimized 112 样本已独立检查：哈希与报告一致，18 条 output1 记录改变，output2 保持，EQ 区域外不变，HP/LP/AP 保留。它用于回归检查，不代表四路径全部已替换；见 modified-sample-validation.json。
 
-CI 使用合成固件验证完整流程和 getter 000..999 的对齐/未对齐 SRAM 写入；真实 112/116 及修改样本的元数据封包检查见 metadata-real-validation.json。当前 GUI 阶段 Actions 结果待返回。
+功能提交 `8878dfd` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589) 全部通过：Linux/Windows 各 39 项测试、源码启动和实际冻结 EXE 启动。CI 使用合成固件验证完整流程和 getter 000..999 的对齐/未对齐 SRAM 写入；真实 112/116 及修改样本的元数据封包检查见 [记录](metadata-real-validation.json)，成品验证见 [记录](firmware-edit-validation.json)。
+
+真实原始 112/116 与 Optimized EQ 已验证：各替换完整 36 条，拟合约 33/34 秒，默认门限通过；重新打开输出在 8,192 点、三采样率重算，有效频段最差 RMS 0.128 dB、最大误差 0.851 dB。见 [真实拟合记录](firmware-real-fit-validation.json)。这与仅改 output1 的补充样本属于不同覆盖范围。
