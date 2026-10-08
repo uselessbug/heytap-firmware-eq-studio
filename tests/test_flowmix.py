@@ -77,3 +77,17 @@ def test_device_matching_searches_dynamic_sources_without_a_fixed_default(monkey
     result = client.match_device({"brand": ["Brand"], "model": ["Brand Model"]},
                                  [{"name": "old-source"}, {"name": "new-source"}])
     assert result == {"source": "new-source", "brand": "Brand", "headphone": "Brand_Model"}
+
+
+def test_independent_api_profile_loads_beside_frozen_executable(monkeypatch, tmp_path):
+    from heytap_eq import service_profile
+    monkeypatch.delenv("HEYTAP_FLOWMIX_AUTHORIZATION", raising=False)
+    monkeypatch.setattr(service_profile, "__file__", str(tmp_path/"_internal"/"heytap_eq"/"service_profile.py"))
+    monkeypatch.setattr(service_profile.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(service_profile.sys, "executable", str(tmp_path/"Studio.exe"))
+    assert service_profile.builtin_authorization() is None
+    service_profile.prepare_profile(tmp_path, "Bearer synthetic")
+    assert service_profile.builtin_authorization() == "Bearer synthetic"
+    assert not list(tmp_path.glob("*.apk"))
+    with pytest.raises(ValueError):
+        service_profile.prepare_profile(tmp_path, "Bearer synthetic\ninvalid")

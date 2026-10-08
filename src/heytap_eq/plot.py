@@ -55,6 +55,7 @@ QMainWindow, QWidget { background: #171d26; color: #dce4ef; font-size: 12px; }
 QToolBar { background: #202836; border: 0; spacing: 8px; padding: 5px; }
 QToolButton, QPushButton { background: #263243; border: 1px solid #3d4d63;
                           border-radius: 4px; padding: 6px 10px; }
+QPushButton:disabled { color: #718197; background: #1d2633; border-color: #293647; }
 QPushButton:hover, QToolButton:hover { background: #35475e; }
 QPushButton:checked { background: #174b50; border-color: #35c5b7; color: #59e1d3; }
 QComboBox, QSpinBox, QDoubleSpinBox, QLineEdit { background: #202936;
