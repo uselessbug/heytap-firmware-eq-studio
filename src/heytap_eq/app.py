@@ -55,6 +55,9 @@ def main(argv=None):
                     "measurements": len(window.measurements), "targets": len(window.targets),
                     "apk_dependency": False,
                     "service_configured": __import__("heytap_eq.service_profile", fromlist=["builtin_authorization"]).builtin_authorization() is not None,
+                    "firmware_export_available": callable(getattr(window, "export_to_path", None)),
+                    "metadata_editor_available": callable(getattr(window, "set_metadata_edits", None)),
+                    "project_schema": "heytap-project-v3",
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
                 result = 1

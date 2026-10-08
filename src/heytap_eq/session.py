@@ -1,5 +1,6 @@
 """Atomic projects; validate a recovery fully before changing the current session."""
 
+import copy
 import json
 import os
 import tempfile
@@ -7,6 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from heytap_eq.eq_formats import EQDocument
+from heytap_eq.firmware_edit import plan_shape
 from heytap_eq.measurements import Measurement
 
 
@@ -34,41 +36,74 @@ class Session:
         self.measurement_index = -1
         self.target_index = -1
         self.online_selection = {}
+        self.firmware_plans = []
+        self.metadata_edits = {}
         self._undo = []
         self._redo = []
 
     def replace(self, doc):
         data = doc.to_dict()
-        before = self.document.to_dict()
-        if before == data:
+        if self.document.to_dict() == data:
             return
-        self._undo.append(before)
+        self._checkpoint()
+        self.document = EQDocument.from_dict(data)
+
+    def snapshot(self):
+        return {"eq": self.document.to_dict(), "firmware_plans": copy.deepcopy(self.firmware_plans),
+                "metadata_edits": dict(self.metadata_edits)}
+
+    def _checkpoint(self):
+        self._undo.append(self.snapshot())
         self._undo = self._undo[-100:]
         self._redo.clear()
-        self.document = EQDocument.from_dict(data)
+
+    def _apply_snapshot(self, data):
+        self.document = EQDocument.from_dict(data["eq"])
+        self.firmware_plans = copy.deepcopy(data["firmware_plans"])
+        self.metadata_edits = dict(data["metadata_edits"])
+
+    def stage_plan(self, plan):
+        plan_shape(plan)
+        if plan["firmware_sha256"] != self.firmware_sha256:
+            raise ValueError("Firmware plan is bound to another firmware")
+        self._checkpoint()
+        self.firmware_plans = [p for p in self.firmware_plans if p["destination"] != plan["destination"]]
+        self.firmware_plans.append(copy.deepcopy(plan))
+
+    def set_metadata(self, edits):
+        if edits != self.metadata_edits:
+            self._checkpoint()
+            self.metadata_edits = dict(edits)
+
+    def clear_firmware_edits(self):
+        if self.firmware_plans or self.metadata_edits:
+            self._checkpoint()
+            self.firmware_plans, self.metadata_edits = [], {}
 
     def undo(self):
         if self._undo:
-            self._redo.append(self.document.to_dict())
-            self.document = EQDocument.from_dict(self._undo.pop())
+            self._redo.append(self.snapshot())
+            self._apply_snapshot(self._undo.pop())
 
     def redo(self):
         if self._redo:
-            self._undo.append(self.document.to_dict())
-            self.document = EQDocument.from_dict(self._redo.pop())
+            self._undo.append(self.snapshot())
+            self._apply_snapshot(self._redo.pop())
 
     def save(self, path):
-        atomic_json(path, {"schema": "heytap-project-v2", "firmware_sha256": self.firmware_sha256,
+        atomic_json(path, {"schema": "heytap-project-v3", "firmware_sha256": self.firmware_sha256,
                            "firmware_path": self.firmware_path, "eq": self.document.to_dict(),
                            "measurements": [asdict(m.validate()) for m in self.measurements],
                            "targets": [asdict(m.validate()) for m in self.targets],
                            "measurement_index": self.measurement_index,
                            "target_index": self.target_index,
-                           "online_selection": self.online_selection})
+                           "online_selection": self.online_selection,
+                           "firmware_plans": self.firmware_plans,
+                           "metadata_edits": self.metadata_edits})
 
     def restore(self, path, expected_sha=None):
         data = json.loads(Path(path).read_text(encoding="utf-8"))
-        if data["schema"] not in ("heytap-project-v1", "heytap-project-v2"):
+        if data["schema"] not in ("heytap-project-v1", "heytap-project-v2", "heytap-project-v3"):
             raise ValueError("Unsupported project format")
         if expected_sha is not None and data["firmware_sha256"] != expected_sha:
             raise ValueError("Project is bound to a different firmware SHA-256")
@@ -99,11 +134,29 @@ class Session:
         if (not isinstance(selection, dict) or set(selection) - {"source", "brand", "headphone"}
                 or any(v is not None and not isinstance(v, str) for v in selection.values())):
             raise ValueError("Invalid project browser selection")
+        plans = data.get("firmware_plans", [])
+        if not isinstance(plans, list) or len(plans) > 5:
+            raise ValueError("Invalid project firmware plans")
+        destinations = set()
+        for plan in plans:
+            plan_shape(plan)
+            if plan["firmware_sha256"] != digest or plan["destination"] in destinations:
+                raise ValueError("Invalid project firmware binding or duplicate preset")
+            destinations.add(plan["destination"])
+        edits = data.get("metadata_edits", {})
+        if (not isinstance(edits, dict) or len(edits) > 250 or
+                any(not isinstance(k, str) or not isinstance(v, str) or
+                    any(ord(c) < 32 or ord(c) > 126 for c in v) for k, v in edits.items())):
+            raise ValueError("Invalid project metadata edits")
+        if (plans or edits) and digest is None:
+            raise ValueError("Firmware edits must bind to an input SHA-256")
         self.document = doc
         self.firmware_sha256 = digest
         self.firmware_path = firmware_path
         self.measurements, self.targets = curves["measurements"], curves["targets"]
         self.measurement_index, self.target_index = indices.values()
         self.online_selection = selection
+        self.firmware_plans = copy.deepcopy(plans)
+        self.metadata_edits = dict(edits)
         self._undo.clear()
         self._redo.clear()

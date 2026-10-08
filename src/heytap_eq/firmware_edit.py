@@ -237,14 +237,16 @@ def outside_ranges_unchanged(before, after, ranges):
     opkg.require(before[previous:] == after[previous:], "Bytes after edited fields changed")
 
 
-def export_firmware(firmware, plans, edits, output, cancelled=None):
+def export_firmware(firmware, plans, edits, output, cancelled=None, max_rms=.45, max_error=1.5):
     check_cancel(cancelled)
+    opkg.require(math.isfinite(max_rms) and math.isfinite(max_error)
+                 and 0 < max_rms <= max_error, "Invalid export error limits")
     path = Path(output)
     opkg.require(path.resolve() != Path(firmware.path).resolve(), "Choose a new output path")
     opkg.require(not path.exists(), "Output already exists; choose a new path")
     opkg.require(opkg.sha(Path(firmware.path).read_bytes()) == firmware.sha256, "Input file has changed")
     opkg.require(plans or edits, "No firmware changes prepared")
-    raw, ranges, reports = apply_plans(firmware, plans, cancelled)
+    raw, ranges, reports = apply_plans(firmware, plans, cancelled, max_rms, max_error)
     ranges += metadata.apply_raw(firmware.package, raw, edits)
     outside_ranges_unchanged(firmware.package["raw"], raw, ranges)
     opkg.profiles(bytes(raw))
@@ -269,4 +271,5 @@ def export_firmware(firmware, plans, edits, output, cancelled=None):
             "presets": [p["destination"] for p in plans], "changed_records": len(reports),
             "changed_blocks": blocks, "metadata_edits": edits, "checks": verified["summary"]["checks"],
             "outside_permitted_raw_ranges_unchanged": True, "on_device_test": False,
+            "error_limits": {"rms_db": max_rms, "max_db": max_error},
             "records": reports}

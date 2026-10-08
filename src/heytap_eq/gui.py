@@ -1,4 +1,4 @@
-"""Local Qt studio; firmware remains read-only in this milestone."""
+"""Local Qt studio with external EQ and validated firmware edit plans."""
 
 import copy
 import json
@@ -9,20 +9,24 @@ import numpy as np
 import pyqtgraph as pg
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from heytap_eq import metadata
 from heytap_eq.adapters import PRESETS, STATES, inspect_firmware
 from heytap_eq.discovery import discover
 from heytap_eq.dsp import correction, firmware_curve
 from heytap_eq.eq_formats import KINDS, Filter, dump_eq, load_eq
+from heytap_eq.firmware_dsp import response as firmware_response
+from heytap_eq.firmware_edit import export_firmware, make_plan
 from heytap_eq.fitting import FitOptions, fit_response
 from heytap_eq.flowmix import FlowmixClient
 from heytap_eq.measurements import load_measurements
 from heytap_eq.plot import DARK_STYLE, ResponsePlot
 from heytap_eq.preferences import BrowserMemory, device_identity
 from heytap_eq.service_profile import builtin_authorization
-from heytap_eq.session import Session
+from heytap_eq.session import Session, atomic_json
 
 
 class Worker(QtCore.QThread):
+    progress = QtCore.Signal(str)
     def __init__(self, fn, callback, network, parent):
         super().__init__(parent)
         self.fn = fn
@@ -132,6 +136,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self._action(toolbar, "候选结构扫描", self.scan_candidates)
         self.undo_action = self._action(toolbar, "撤销", self.undo, "Ctrl+Z")
         self.redo_action = self._action(toolbar, "重做", self.redo, "Ctrl+Shift+Z")
+        self.addToolBarBreak()
+        firmware_toolbar = self.addToolBar("固件编辑")
+        firmware_toolbar.setMovable(False)
+        self.firmware_actions = [
+            self._action(firmware_toolbar, "拟合到固件预设", self.start_firmware_fit),
+            self._action(firmware_toolbar, "编辑固件信息", self.edit_metadata),
+            self._action(firmware_toolbar, "清空固件修改", self.clear_firmware_edits),
+            self._action(firmware_toolbar, "导出固件", self.start_firmware_export),
+        ]
+        self._action(firmware_toolbar, "取消任务", self.cancel_fit)
         body = QtWidgets.QWidget()
         self.setCentralWidget(body)
         layout = QtWidgets.QVBoxLayout(body)
@@ -153,6 +167,9 @@ class MainWindow(QtWidgets.QMainWindow):
             selectors.addWidget(combo)
             combo.currentIndexChanged.connect(self.refresh)
         layout.addLayout(selectors)
+        self.firmware_edits_label = QtWidgets.QLabel("尚未准备固件修改")
+        self.firmware_edits_label.setWordWrap(True)
+        layout.addWidget(self.firmware_edits_label)
         online = QtWidgets.QHBoxLayout()
         connect = QtWidgets.QPushButton("获取在线测量")
         connect.clicked.connect(self.connect_flowmix)
@@ -251,7 +268,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tabs.addTab(acoustic, "人工耳实测与估计")
         self.metadata_text = QtWidgets.QPlainTextEdit()
         self.metadata_text.setReadOnly(True)
-        self.tabs.addTab(self.metadata_text, "固件元数据 · 只读")
+        self.tabs.addTab(self.metadata_text, "固件信息与修改计划")
         side = QtWidgets.QWidget()
         self.side = side
         side_layout = QtWidgets.QVBoxLayout(side)
@@ -285,7 +302,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.peq_nodes.moved.connect(self.edit_peq)
         self._peq_map = []
         self.reset_plots()
-        self.statusBar().showMessage("通用频响与 EQ 编辑 · 固件写入待接入")
+        self.statusBar().showMessage("导入 EQ 或频响后，可拟合到已确认的固件预设并导出新文件。")
 
     def _plot(self, label):
         return ResponsePlot(label)
@@ -310,12 +327,15 @@ class MainWindow(QtWidgets.QMainWindow):
         method = QtWidgets.QFileDialog.getSaveFileName if save else QtWidgets.QFileDialog.getOpenFileName
         return method(self, title, "", pattern)[0]
 
-    def _task(self, fn, callback, network=False):
+    def _task(self, fn, callback, network=False, with_progress=False):
         workers = self.network_workers if network else self.workers
         if workers:
             self.statusBar().showMessage("正在读取文件，请等待当前任务完成。")
             return
         worker = Worker(fn, callback, network, self)
+        if with_progress:
+            worker.fn = lambda: fn(worker.progress.emit)
+        worker.progress.connect(self.statusBar().showMessage)
         workers.add(worker)
         if network:
             for control in self.online_controls:
@@ -507,7 +527,164 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def cancel_fit(self):
         self.fit_cancel.set()
-        self.statusBar().showMessage("正在取消拟合…")
+        self.statusBar().showMessage("正在取消当前拟合或封包任务…")
+
+    def start_firmware_fit(self):
+        if not self.firmware or not self.firmware.profiles or self.workers:
+            return
+        if not self.session.document.raw and not self.session.document.filters:
+            self.statusBar().showMessage("先导入、编辑或生成修正 EQ。")
+            return
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("拟合到固件完整预设")
+        form = QtWidgets.QFormLayout(dialog)
+        destination = QtWidgets.QComboBox()
+        destination.addItems(list(PRESETS))
+        current = self.preset_combo.currentText()
+        destination.setCurrentText(current if current in PRESETS and current != "丹拿原声" else "丹拿高解析")
+        preamp = QtWidgets.QDoubleSpinBox()
+        preamp.setRange(-24, 0)
+        preamp.setSuffix(" dB")
+        form.addRow("替换预设", destination)
+        form.addRow("整体衰减", preamp)
+        note = QtWidgets.QLabel("以各路径、状态对应的丹拿原声为基线，加上当前修正 EQ。\n"
+                               "处理四条路径和全部九个内部状态，保留基线 HP/LP/AP。\n"
+                               "完成后加入修改计划；可以继续为其他预设准备不同 EQ。")
+        note.setWordWrap(True)
+        form.addRow(note)
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok |
+                                             QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            self.fit_firmware_preset(destination.currentText(), preamp.value())
+
+    def fit_firmware_preset(self, destination, preamp=0):
+        if not self.firmware or not self.firmware.profiles or self.workers:
+            return
+        firmware, doc = self.firmware, copy.deepcopy(self.session.document)
+        generation = self.edit_generation
+        self.fit_cancel = threading.Event()
+        cancelled = self.fit_cancel
+        def received(plan):
+            if generation != self.edit_generation:
+                self.statusBar().showMessage("拟合期间输入已变化，结果未加入当前固件计划。")
+                return
+            self.session.stage_plan(plan)
+            self._changed()
+            maximum = max(m["max_db"] for r in plan["records"] for m in r["record"]["metrics"].values())
+            self.statusBar().showMessage(f"{destination} 已加入计划：36 条记录，最大误差 {maximum:.3f} dB。")
+        self._task(lambda progress: make_plan(firmware, doc, destination, preamp, cancelled, progress),
+                   received, with_progress=True)
+
+    def edit_metadata(self):
+        if not self.firmware or not self.firmware.profiles:
+            return
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("编辑固件信息")
+        dialog.resize(850, 650)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        body = QtWidgets.QWidget()
+        form = QtWidgets.QFormLayout(body)
+        inputs = {}
+        known = metadata.fields(self.firmware.package)
+        for field in known:
+            value = self.session.metadata_edits.get(field["id"], field["value"])
+            entry = QtWidgets.QLineEdit(value)
+            entry.setReadOnly(not field.get("editable", True))
+            if field.get("editable", True):
+                inputs[field["id"]] = entry
+            label = field["label"]
+            if field["kind"] in ("text", "fixed_text"):
+                label += f"（最多 {field['width']} 字节）"
+            form.addRow(label, entry)
+        scroll.setWidget(body)
+        layout.addWidget(scroll)
+        note = QtWidgets.QLabel("文本按原字段容量保存；校验值和长度由封包自动计算。软件版本会同步 SW_VER 和运行时 getter。")
+        note.setWordWrap(True)
+        layout.addWidget(note)
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok |
+                                             QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        edits = {f["id"]: inputs[f["id"]].text() for f in known if f["id"] in inputs
+                 and inputs[f["id"]].text() != f["value"]}
+        try:
+            self.set_metadata_edits(edits)
+        except (ValueError, UnicodeError) as exc:
+            self.statusBar().showMessage(f"固件信息未应用：{exc}")
+
+    def set_metadata_edits(self, edits):
+        if not self.firmware or not self.firmware.profiles:
+            raise ValueError("请先打开已确认的固件。")
+        metadata.apply_raw(self.firmware.package, bytearray(self.firmware.package["raw"]), edits)
+        self.session.set_metadata(edits)
+        self._changed()
+
+    def clear_firmware_edits(self):
+        self.session.clear_firmware_edits()
+        self._changed()
+
+    def start_firmware_export(self):
+        if not self.firmware or self.workers:
+            return
+        if not self.session.firmware_plans and not self.session.metadata_edits:
+            self.statusBar().showMessage("先拟合到固件预设，或编辑固件信息。")
+            return
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("导出固件")
+        form = QtWidgets.QFormLayout(dialog)
+        values = [v for p in self.session.firmware_plans for r in p["records"]
+                  for v in r["record"]["metrics"].values()]
+        summary = "仅修改固件信息" if not values else (
+            f"已准备 {len(self.session.firmware_plans)} 个预设；三采样率最差 RMS "
+            f"{max(v['rms_db'] for v in values):.3f} / 最大 {max(v['max_db'] for v in values):.3f} dB")
+        note = QtWidgets.QLabel(summary+"。导出时按实际写入参数重新计算误差。")
+        note.setWordWrap(True)
+        form.addRow(note)
+        rms, peak = QtWidgets.QDoubleSpinBox(), QtWidgets.QDoubleSpinBox()
+        for spin, limit, value in ((rms, 20, .45), (peak, 60, 1.5)):
+            spin.setRange(.01, limit)
+            spin.setDecimals(2)
+            spin.setValue(value)
+            spin.setSuffix(" dB")
+            spin.setEnabled(bool(values))
+        form.addRow("允许 RMS 误差", rms)
+        form.addRow("允许最大误差", peak)
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok |
+                                             QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        form.addRow(buttons)
+        if dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
+            return
+        original = Path(self.firmware.path)
+        output = QtWidgets.QFileDialog.getSaveFileName(self, "导出修改后的固件",
+                  str(original.with_name(original.stem+"-edited.bin")), "固件 (*.bin);;所有文件 (*)")[0]
+        if output:
+            self.export_to_path(output, rms.value(), peak.value())
+
+    def export_to_path(self, output, max_rms=.45, max_error=1.5):
+        if not self.firmware or self.workers:
+            return
+        firmware = self.firmware
+        plans, edits = copy.deepcopy(self.session.firmware_plans), dict(self.session.metadata_edits)
+        self.fit_cancel = threading.Event()
+        cancelled = self.fit_cancel
+        def received(report):
+            self.last_export_report = report
+            try:
+                atomic_json(str(output)+".report.json", report)
+                self.statusBar().showMessage(f"已导出 {Path(output).name}，并保存逐路径验证报告。")
+            except OSError as exc:
+                self.statusBar().showMessage(f"固件已导出，报告保存失败：{exc}")
+        self._task(lambda: export_firmware(firmware, plans, edits, output, cancelled, max_rms, max_error), received)
 
     def start_fit(self):
         a, b = self.measurement_combo.currentIndex(), self.target_combo.currentIndex()
@@ -735,6 +912,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if not hasattr(self, "nodes"):
             return
         doc = self.session.document
+        writable = bool(self.firmware and self.firmware.profiles)
+        for action in self.firmware_actions:
+            action.setEnabled(writable)
+        queued = ", ".join(p["destination"]+" ← "+p["eq"]["name"] for p in self.session.firmware_plans)
+        self.firmware_edits_label.setText("待导出预设："+(queued or "无")+
+                                         f" · 元数据修改 {len(self.session.metadata_edits)} 项")
+        if self.firmware:
+            self.metadata_text.setPlainText(json.dumps({"original": self.firmware.package["summary"],
+                "pending_presets": [{"destination": p["destination"], "eq": p["eq"]["name"],
+                                     "records": len(p["records"])} for p in self.session.firmware_plans],
+                "pending_metadata": self.session.metadata_edits}, ensure_ascii=False, indent=2))
         frequency = np.geomspace(20, 20000, 800)
         fs = int(self.rate_combo.currentText())
         self.digital_plot.clear_curves()
@@ -755,6 +943,12 @@ class MainWindow(QtWidgets.QMainWindow):
             record = bank["profiles"][table["profile_indices"][index]]
             self.digital_plot.plot(np.log10(frequency), firmware_curve(record, frequency, fs),
                                    pen="#67afd1", name="固件滤波链 · 不含整体增益")
+            plan = next((p for p in self.session.firmware_plans if p["destination"] == name), None)
+            if plan:
+                planned = next(c["record"] for c in plan["records"] if c["table"] == table["name"]
+                               and c["state"] == self.state_combo.currentIndex())
+                self.digital_plot.plot(np.log10(frequency), firmware_response(planned["filters"], frequency, fs),
+                                       pen=pg.mkPen("#32cbb9", width=2), name="待导出固件滤波链")
         for name, button in self.preset_buttons.items():
             button.setChecked(name == self.preset_combo.currentText())
             button.setEnabled(self.firmware is not None and self.firmware.profiles is not None)

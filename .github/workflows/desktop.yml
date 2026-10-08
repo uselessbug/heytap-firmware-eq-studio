@@ -45,6 +45,7 @@ jobs:
           python -m pip install --no-deps --no-build-isolation -e .
           python -m pip check
       - name: Static checks and tests
+        shell: bash
         env:
           QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'offscreen' || 'windows' }}
         run: |

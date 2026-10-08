@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6 import QtCore, QtGui, QtTest
 
 from heytap_eq.eq_formats import parse_text
@@ -153,4 +155,40 @@ def test_target_fit_and_project_curve_recovery(tmp_path, qt_app):
     assert restored.measurements == [original] and restored.targets == [target]
     assert restored.target_combo.currentIndex() == 0
     assert restored.digital_plot.getViewBox().viewRange()[1] == [-24., 24.]
+    restored.close()
+
+
+def test_gui_firmware_fit_metadata_export_and_recovery(monkeypatch, tmp_path, qt_app):
+    from heytap_eq.adapters import inspect_firmware
+    from tests.firmware_fixture import synthetic_firmware
+    firmware = synthetic_firmware(monkeypatch, tmp_path)
+    window = MainWindow(recover=False, auto_path=tmp_path/"firmware-project.json")
+    monkeypatch.setattr(window, "connect_flowmix", lambda: None)
+    window.set_firmware(firmware)
+    window.set_document(parse_text("[PEQ]\nPEQ1: 1200 -2 1 PEAK"))
+    window.fit_firmware_preset("丹拿高解析")
+    for _ in range(400):
+        qt_app.processEvents()
+        if window.session.firmware_plans and not window.workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert len(window.session.firmware_plans) == 1
+    window.preset_combo.setCurrentText("丹拿高解析")
+    assert len(window.digital_plot.listDataItems()) == 3
+    window.set_metadata_edits({"version_digits": "119"})
+    output = tmp_path/"gui-edited.bin"
+    window.export_to_path(output)
+    for _ in range(400):
+        qt_app.processEvents()
+        if hasattr(window, "last_export_report") and not window.workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert window.last_export_report["changed_records"] == 36
+    assert inspect_firmware(output).package["summary"]["version_digits"] == "119"
+    assert Path(str(output)+".report.json").exists()
+    window.close()
+    restored = MainWindow(recover=True, auto_path=tmp_path/"firmware-project.json")
+    assert len(restored.session.firmware_plans) == 1
+    assert restored.session.metadata_edits == {"version_digits": "119"}
+    restored.undo()
     restored.close()

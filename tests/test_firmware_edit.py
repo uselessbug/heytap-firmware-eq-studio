@@ -5,10 +5,11 @@ import threading
 import numpy as np
 import pytest
 
-from heytap_eq import metadata, opkg
+from heytap_eq import metadata
 from heytap_eq.adapters import inspect_firmware
 from heytap_eq.eq_formats import EQDocument, Filter
 from heytap_eq.firmware_edit import apply_plans, export_firmware, fit_record, make_plan
+from heytap_eq.session import Session
 from tests.firmware_fixture import synthetic_firmware
 
 
@@ -97,16 +98,40 @@ def test_metadata_and_version_synchronization(monkeypatch, tmp_path):
     assert not (tmp_path/"bad.bin").exists()
 
 
+def test_firmware_project_recovery_undo_and_invalid_restore(monkeypatch, tmp_path):
+    firmware = synthetic_firmware(monkeypatch, tmp_path)
+    plan = make_plan(firmware, EQDocument(filters=[Filter(1, 1000., 2., 1.)]), "清亮高音")
+    session = Session()
+    session.firmware_sha256, session.firmware_path = firmware.sha256, firmware.path
+    session.stage_plan(plan)
+    session.set_metadata({"version_digits": "119"})
+    session.undo()
+    assert not session.metadata_edits and len(session.firmware_plans) == 1
+    session.redo()
+    path = tmp_path/"project.json"
+    session.save(path)
+    recovered = Session()
+    recovered.restore(path, firmware.sha256)
+    assert recovered.firmware_plans == [plan] and recovered.metadata_edits == {"version_digits": "119"}
+    before = recovered.snapshot()
+    bad = json.loads(path.read_text())
+    bad["firmware_plans"][0]["firmware_sha256"] = "0"*64
+    path.write_text(json.dumps(bad))
+    with pytest.raises(ValueError):
+        recovered.restore(path, firmware.sha256)
+    assert recovered.snapshot() == before
+
+
 def test_thumb_getter_all_versions_and_alignment():
     from capstone import CS_ARCH_ARM, CS_MODE_MCLASS, CS_MODE_THUMB, Cs
     from unicorn import UC_ARCH_ARM, UC_MODE_MCLASS, UC_MODE_THUMB, Uc
     from unicorn.arm_const import (
-        UC_CPU_ARM_CORTEX_M4,
         UC_ARM_REG_LR,
         UC_ARM_REG_R0,
         UC_ARM_REG_R1,
         UC_ARM_REG_R4,
         UC_ARM_REG_SP,
+        UC_CPU_ARM_CORTEX_M4,
     )
     u = Uc(UC_ARCH_ARM, UC_MODE_THUMB | UC_MODE_MCLASS)
     u.ctl_set_cpu_model(UC_CPU_ARM_CORTEX_M4)
