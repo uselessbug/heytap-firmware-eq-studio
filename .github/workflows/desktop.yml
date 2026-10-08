@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          if [ "$RUNNER_OS" = Windows ]; then echo "$PWD/.venv/Scripts" >> "$GITHUB_PATH"; else echo "$PWD/.venv/bin" >> "$GITHUB_PATH"; fi
+          if [ "$RUNNER_OS" = Windows ]; then cygpath -w "$PWD/.venv/Scripts" >> "$GITHUB_PATH"; else echo "$PWD/.venv/bin" >> "$GITHUB_PATH"; fi
       - name: Locked dependencies
         run: |
           python -m pip install -r requirements-ci.txt
@@ -84,7 +84,7 @@ jobs:
         shell: bash
         run: |
           python -m venv .venv
-          echo "$PWD/.venv/Scripts" >> "$GITHUB_PATH"
+          cygpath -w "$PWD/.venv/Scripts" >> "$GITHUB_PATH"
       - name: Locked dependencies
         run: |
           python -m pip install -r requirements-ci.txt

@@ -2,11 +2,11 @@
 
 面向 OPPO / HeyTap 耳机固件的本地 EQ 编辑项目，首个研究对象为 Enco X4。
 
-当前有 **PySide6 + pyqtgraph 本地桌面工程** 与原 **Python CLI 研究原型**。桌面支持固件校验/只读查看、Wavelet / Flowmix EQ 编辑、RAW / PEQ 拖动、撤销重做、包含测量和目标的工程恢复，以及通用频响拟合。
+当前有 **PySide6 + pyqtgraph 本地桌面工程** 与原 **Python CLI 研究原型**。桌面支持固件校验、Wavelet / Flowmix EQ 编辑、RAW / PEQ 拖动、通用频响拟合，以及已确认 Enco X4 的完整预设替换、元数据/版本修改和重新封包。工程 v3 保存测量、目标、固件拟合计划和元数据修改，支持撤销重做与自动恢复。
 
 测量来源动态读取（当前六个，含 Woodenears），可以选在线目标、本地目标或另一副耳机的测量，生成 RAW / PEQ 修正。首次使用选择为空，之后记住上次和各固件的选择；已确认机型可精确匹配测量。独立 HTTP 客户端在运行和构建时均不依赖 APK。深色大图使用稳定的音频坐标，实测 / 目标 / 估计可独立显示。原 CLI 保留固件拟合和重新封包能力。
 
-桌面采用 **Python + PySide6 + pyqtgraph**，核心独立于 Qt。源码和 Windows 便携 ZIP 由 GitHub Actions 检查/构建；每个产物记录源 SHA，并实际启动冻结 EXE。桌面固件写入和版本修改尚未开放。此前丢失源码阶段的测试报告未作为当前实现的验证。
+桌面采用 **Python + PySide6 + pyqtgraph**，核心独立于 Qt。源码和 Windows 便携 ZIP 由 GitHub Actions 检查/构建；每个产物记录源 SHA，并实际启动冻结 EXE。桌面固件导出和版本同步已接入，操作见 [固件编辑](docs/firmware-editing.md)。此前丢失源码阶段的测试报告未作为当前实现的验证。
 
 ## 桌面启动
 
@@ -59,6 +59,6 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 - [Flowmix 测量接口](docs/flowmix-api.md)
 - [相关开源项目](docs/related-projects.md)
 
-后续需要补齐固件完整预设拟合/受限导出、元数据修改、未知机型语义验证，以及更多样本和实机验证。原厂固件和完整 APK / HAR 不提交到本公开仓库；用户允许 Flowmix APK 中的共享测量令牌随源码与成品发布，该项入库仍被平台自动审批阻止。
+后续需要更多机型的参数语义适配与实机 OTA/声学验证。当前固件编辑通过完整代码指纹和四表识别，不以整包哈希作为唯一条件，因此支持已修改 EQ/版本的已确认布局。原厂固件和完整 APK / HAR 不提交到本公开仓库；用户允许 Flowmix APK 中的共享测量令牌随源码与成品发布，该项入库仍被平台自动审批阻止。
 
 

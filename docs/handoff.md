@@ -2,7 +2,21 @@
 
 更新时间：2026-10-09（Asia/Shanghai）。此文档可直接交给后续对话继续开发。
 
-## 当前授权、进度与平台拦截（2026-10-09）
+## 桌面固件编辑阶段（2026-10-09，当前）
+
+核心阶段 00030e3e3655fa1c2ec58d8818ed5b639e67a7d9，GUI 阶段 a4ff335ead4ea2486a2f7d5c153e91523559095f；均已保存到现有工作分支，main 未合并。GUI 阶段 Actions https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37814712635 当前等待结果，不能以旧 32 项覆盖本阶段。
+
+已接入：四路径 × 九状态完整预设拟合；保护对应丹拿原声 HP/LP/AP，最多 18 槽；生成多个预设快照；后台取消与过期结果拒绝；原链/待导出链预览；导出时按 float32 三采样率重算误差，可调 RMS/最大误差门限；输入 SHA 绑定、原输入不覆盖、限定范围修改、重新封包和旁边的报告。元数据编辑覆盖已确认容器字段和各段 BUILD_DATE/REV_INFO；版本同步容器、SW_VER 和 12 字节 Thumb getter。工程 v3 保存计划/元数据并支持撤销重做、原子恢复，兼容 v1/v2。
+
+真实 112/116 getter 已重新读取核对。Windows 核心测试已执行 000..999 × 对齐/未对齐共 2,000 次 Cortex-M4 仿真，检查 r0/r1/r4 与周围字节；Linux 初次因两处 lint 失败，已修正。真实 112/116 及用户补充 Optimized 112 的版本修改/封包/重开识别已通过，EQ bank 未改变，见 metadata-real-validation.json。没有实机验证。
+
+补充样本 sha d2007e5a2546870b98aa3e9e5588bb4ea22b658e1fbf3126926cc20d027bbd39，与报告一致；18 条 output1 记录改变，output2 未改，EQ 区域外不变，HP/LP/AP 保留。见 modified-sample-validation.json。未上传该固件或完整报告。
+
+剩余：本阶段 Actions/frozen 交付确认、真实完整预设拟合性能和误差验证、未知机型语义适配、OTA/双单元声学验证。共享令牌按用户安排由其醒来后处理；令牌入库仍被平台审批拦截，未修改 service_profile.py，不继续尝试。
+
+下面为历史阶段记录，其中“GUI 只读、固件导出/版本尚未完成”不代表当前源码。
+
+## 当前授权、进度与平台拦截（2026-10-09，上一阶段）
 
 用户明确要求将 Flowmix APK 中的共享测量令牌 commit 到 GitHub，并允许随 Actions 成品发布，无需用户配置 Secret。已准备在 service_profile.py 添加默认常量，但 GitHub create_tree 被平台自动审批拒绝：认为该操作会将访问凭据明文发布到公开仓库及成品，即使已有用户明确授权仍禁止。没有创建提交、没有移动分支；本地功能改动已撤回。不得绕过该拦截。
 

@@ -180,9 +180,10 @@ def test_gui_firmware_fit_metadata_export_and_recovery(monkeypatch, tmp_path, qt
     window.export_to_path(output)
     for _ in range(400):
         qt_app.processEvents()
-        if hasattr(window, "last_export_report") and not window.workers:
+        if not window.workers:
             break
         QtTest.QTest.qWait(10)
+    assert hasattr(window, "last_export_report"), window.statusBar().currentMessage()
     assert window.last_export_report["changed_records"] == 36
     assert inspect_firmware(output).package["summary"]["version_digits"] == "119"
     assert Path(str(output)+".report.json").exists()
