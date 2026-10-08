@@ -1,8 +1,8 @@
 {
   "date": "2026-10-08",
-  "source_commit": "546ea97fa20255a0f368a6e2b593b076df002809",
-  "workflow_run_id": 37785516338,
-  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37785516338",
+  "source_commit": "1919befde94c56d3e01bf0563ff4f146a92439ad",
+  "workflow_run_id": 37799038245,
+  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37799038245",
   "github_actions": "success",
   "static_checks": {
     "Linux": "passed",
@@ -10,12 +10,12 @@
   },
   "pytest": {
     "Linux": {
-      "passed": 25,
-      "seconds": 1.64
+      "passed": 32,
+      "seconds": 3.51
     },
     "Windows": {
-      "passed": 25,
-      "seconds": 4.57
+      "passed": 32,
+      "seconds": 24.42
     }
   },
   "source_gui_startup": {
@@ -27,26 +27,58 @@
     "frozen": true,
     "qt": "6.8.3",
     "qt_binding": "PySide6",
-    "sha": "546ea97fa20255a0f368a6e2b593b076df002809",
+    "sha": "1919befde94c56d3e01bf0563ff4f146a92439ad",
     "window_visible": true,
     "screenshot": "frozen-startup.png",
     "raw_points": 5,
     "peq_filters": 1,
     "measurements": 1,
-    "executable_sha256": "f7d439e2ea2567deec8a3cf85582d7bca7ae796301f72b5b1212bc940e1b05ba"
+    "targets": 1,
+    "apk_dependency": false,
+    "service_configured": false,
+    "executable_sha256": "35a146d62b7f95ddfa6047b8231884f5ef1c53208de2ef08cd34cf0e4a2678e2"
   },
   "windows_package": {
-    "artifact_id": 11553334600,
-    "size_bytes": 103978146,
-    "type": "portable zip",
-    "source_sha_file": "SOURCE_SHA.txt"
+    "artifact_id": 11559593903,
+    "size_bytes": 104005224,
+    "type": "generic portable zip",
+    "source_sha_file": "SOURCE_SHA.txt",
+    "contains_authorization": false
   },
-  "visual_qa": "Frozen Windows screenshot inspected; CJK text, table and synthetic preview rendered. User machine operation pending.",
+  "visual_qa": "Final frozen Windows screenshot inspected: readable audio axes, independent original/target/estimated controls, dark workspace, search placeholders and collapsible parameter panel.",
   "firmware_write_enabled_in_gui": false,
   "version_patch_revalidated": false,
   "flowmix_successful_response_verified": true,
   "device_test": false,
   "historical_32_tests_not_used": true,
   "flowmix_verified_scope": "sources, realab brands, OPPO headphones and Enco X4 five 127-point measurements",
-  "network_cache_and_offline_task_independence_verified": true
+  "network_cache_and_offline_task_independence_verified": true,
+  "live_sources_verified": [
+    "realab",
+    "huihifi",
+    "woodenears",
+    "hangoutaudio5128",
+    "hangoutaudio711",
+    "hobbytalk"
+  ],
+  "live_targets_index_count": 21,
+  "project_measurements_and_targets_restore_verified": true,
+  "generic_raw_and_peq_fitting_verified": true,
+  "flowmix_apk_algorithm_exact_equivalence": false,
+  "private_delivery": {
+    "source_commit": "1919befde94c56d3e01bf0563ff4f146a92439ad",
+    "private_package_sha256": "2dc48925d3a6de7178c6b75736910c8d87744d31017adb7086f2061bf3e10b50",
+    "size_bytes": 104298578,
+    "executable_sha256": "35a146d62b7f95ddfa6047b8231884f5ef1c53208de2ef08cd34cf0e4a2678e2",
+    "executable_matches_ci": true,
+    "http_configuration_present": true,
+    "apk_dependency": false,
+    "package_uploaded_to_github": false,
+    "live_sources": 6,
+    "live_targets": 21,
+    "windows_frozen_ci_startup": "passed_without_private_configuration",
+    "profile_loader_windows_unit_test": "passed_with_synthetic_configuration",
+    "user_machine_operation": "pending"
+  },
+  "approval_rejection_handled": "Secret-bearing GitHub workflow artifact rejected; workflow reverted. Configuration supplied only in separately delivered self-use package."
 }

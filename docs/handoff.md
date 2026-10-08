@@ -2,11 +2,21 @@
 
 更新时间：2026-10-08（Asia/Shanghai）。此文档可直接交给后续对话继续开发。
 
-## 2026-10-08 通用测量阶段（进行中）
+## 最新通用测量交付（2026-10-08）
 
-已抽样验证六个在线测量来源（包含 Woodenears）及 21 条目标索引。新增独立测量拟合核心、目标接口、通用选择记忆、工程 v2 的测量/目标恢复，以及独立 HTTP 请求配置。已按用户纠正移除自动下载/读取 APK 步骤，运行和构建均不依赖 APK。来源动态读取，首次使用不默认 OPPO。GUI 已接入：目标库、耳机实测设为目标、RAW/PEQ 拟合与取消、测量工程恢复、逐固件精确匹配和稳定音频坐标/深色大图。Actions 验证仍待完成；详见 measurement-fitting.md 和 flowmix-source-validation.json。
+功能提交 `1919befde94c56d3e01bf0563ff4f146a92439ad`。Actions https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37799038245 全部成功：Linux / Windows 各 32 项测试、Ruff、源码 GUI、Windows 便携包生成及实际冻结 EXE 启动。已查看最终 Windows 截图。
 
-## 当前桌面交付状态（2026-10-08）
+- 六个测量源（含 Woodenears）均抽样验证品牌/型号/测量 200；来源列表来自服务端，不是应用白名单。目标索引 21 条，已读取 JM-1 实际响应。见 flowmix-source-validation.json。
+- 独立 HTTP 客户端直接请求逆向确认的接口。运行和构建均不读取/下载 APK。自用配置实际验证能读取 6 来源与 21 目标。
+- 新 GUI 提供在线目标库、本地目标、另一副耳机实测设为目标；无需固件即可根据原始/目标生成 RAW 或 PEQ 修正。PEQ 参考 APK 的剩余误差逐步拟合流程，再用 SciPy 受限优化；没有宣称 APK 逐点复刻。可调整频段、强度、增益上限、滤波器数、电平对齐并取消；指标为平滑/限幅后期望修正的实际重算误差。见 measurement-fitting.md。
+- 首次使用留空；之后记住来源/品牌/型号和各固件选择。已确认机型可按服务端来源顺序尝试唯一精确型号匹配；未知固件没有猜测身份。工程 v2 保存原始/目标测量及选中条件，兼容 v1，异常恢复原子回滚。
+- 深色大图、稳定 20 Hz..20 kHz 对数音频坐标、数字 EQ ±12/24/48 dB、相对 1 kHz 与绝对 SPL、曲线显隐/悬停读数、视图复位和参数面板收起。
+- GitHub 通用 ZIP 不含认证；已配置自用 ZIP 已交付，文件名 HeyTapFirmwareEQStudio-self-use-1919bef-windows.zip。自用 EXE SHA 与 CI 逐字节一致，SOURCE_SHA 为上述功能提交；没有重新编译、没有 APK/原厂固件/HAR。实际本机操作仍待用户检查。
+- 自动审批拒绝将认证随产物上传 GitHub，理由是此前用户禁止上传访问令牌。相关工作流已撤回，采用单独交付自用包。不要向 GitHub 上传配置文件或自用 ZIP。详见 desktop-validation.json 中公开/自用验证范围。
+
+**下一阶段仍未完成：GUI 的固件完整预设拟合、保护对应基线 HP/LP/AP 的写入和重新封包、版本 getter/元数据修改及实机验证。当前生成的是外部 EQ 修正，不是已写入固件。** 已保存核心、GUI 与最新验证。下面保留此前阶段与恢复记录。
+
+## 上一阶段桌面交付状态（2026-10-08）
 
 最新功能提交：`546ea97fa20255a0f368a6e2b593b076df002809`。所有源码均通过连接器保存在 `feat/python-desktop-studio`，沿用草稿 PR #1；main 未合并。
 
