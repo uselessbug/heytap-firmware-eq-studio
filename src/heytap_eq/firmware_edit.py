@@ -52,7 +52,7 @@ def metrics(original, filters, doc):
     return result
 
 
-def validate_record(record):
+def validate_record(record, cache=None):
     filters = record["filters"]
     opkg.require(isinstance(filters, list) and len(filters) <= opkg.PROFILE_CAPACITY,
                  "Profile exceeds 18 filter slots")
@@ -63,14 +63,19 @@ def validate_record(record):
         opkg.require(all(math.isfinite(f[k]) for k in ("gain", "fc", "q"))
                      and -60 <= f["gain"] <= 24 and 0 < f["fc"] <= 21000
                      and .01 <= f["q"] <= 100, "Invalid firmware filter parameters")
+    key = tuple((f["type_id"], f["gain"], f["fc"], f["q"]) for f in filters)
+    if cache is not None and key in cache:
+        return
     for rate in SAMPLE_RATES:
         for row in coefficients(filters, rate):
             opkg.require(np.max(np.abs(np.roots(row[3:]))) < 1, "Unstable firmware filter")
             opkg.require(np.max(np.abs(row)) < 15.9, "Firmware coefficient exceeds hardware bounds")
+    if cache is not None:
+        cache.add(key)
 
 
-def pack_record(record):
-    validate_record(record)
+def pack_record(record, cache=None):
+    validate_record(record, cache)
     filters = record["filters"]
     return (struct.pack("<ffI", record["gain0"], record["gain1"], len(filters))
             + b"".join(struct.pack("<Ifff", f["type_id"], f["gain"], f["fc"], f["q"])
@@ -142,10 +147,11 @@ def plan_shape(plan):
     opkg.require(math.isfinite(plan["preamp_db"]) and -24 <= plan["preamp_db"] <= 0,
                  "Preamp must be -24..0 dB")
     doc = EQDocument.from_dict(plan["eq"])
+    cache = set()
     for change in plan["records"]:
         opkg.require(isinstance(change, dict) and type(change.get("state")) is int
                      and 0 <= change["state"] < 9, "Invalid planned internal state")
-        validate_record(change["record"])
+        validate_record(change["record"], cache)
     return doc
 
 
@@ -186,6 +192,7 @@ def apply_plans(firmware, plans, cancelled=None, max_rms=.45, max_error=1.5):
     opkg.require(bank is not None, "Firmware code and table semantics are not verified")
     edited, ranges, reports = bytearray(item["raw"]), [], []
     selected = set()
+    coefficient_cache, metric_cache = set(), {}
     tables = {t["name"]: t["profile_indices"] for t in bank["tables"]}
     for plan in plans:
         check_cancel(cancelled)
@@ -209,18 +216,21 @@ def apply_plans(firmware, plans, cancelled=None, max_rms=.45, max_error=1.5):
             # Validate the float32 values actually written, not editable report metrics.
             record = copy.deepcopy(change["record"])
             record["filters"] = quantize(record["filters"])
-            validate_record(record)
+            validate_record(record, coefficient_cache)
             for gain in ("gain0", "gain1"):
                 opkg.require(abs(record[gain]-float(np.float32(source[gain]+plan["preamp_db"]))) < 1e-6,
                              "Overall gain differs from baseline plus preamp")
             protected = [f for f in active(source) if f["type_id"] in (3, 4, 5)]
             opkg.require([f for f in record["filters"] if f["type_id"] in (3, 4, 5)] == protected,
                          "Baseline HP/LP/AP parameters changed")
-            actual_metrics = metrics(active(source), record["filters"], doc)
+            metric_key = json.dumps([active(source), record["filters"], plan["eq"]], sort_keys=True)
+            if metric_key not in metric_cache:
+                metric_cache[metric_key] = metrics(active(source), record["filters"], doc)
+            actual_metrics = metric_cache[metric_key]
             opkg.require(all(m["rms_db"] <= max_rms and m["max_db"] <= max_error
                              for m in actual_metrics.values()),
                          f"Fit exceeds RMS {max_rms} / max {max_error} dB at {name}, state {state}: {actual_metrics}")
-            edited[offset:offset+300] = pack_record(record)
+            edited[offset:offset+300] = pack_record(record, coefficient_cache)
             selected.add(offset)
             ranges.append((offset, offset+300))
             reports.append({"preset": plan["destination"], "path": name, "state": state,

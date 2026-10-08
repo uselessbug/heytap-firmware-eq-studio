@@ -145,7 +145,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._action(firmware_toolbar, "清空固件修改", self.clear_firmware_edits),
             self._action(firmware_toolbar, "导出固件", self.start_firmware_export),
         ]
-        self._action(firmware_toolbar, "取消任务", self.cancel_fit)
+        self._action(firmware_toolbar, "取消拟合/封包", self.cancel_fit)
         body = QtWidgets.QWidget()
         self.setCentralWidget(body)
         layout = QtWidgets.QVBoxLayout(body)
@@ -361,7 +361,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 raise error
             worker.callback(value)
         except Exception as exc:
-            self.statusBar().showMessage(f"未加载：{exc}")
+            self.statusBar().showMessage(f"操作未完成：{exc}")
+            self.statusBar().setToolTip(str(exc))
         finally:
             worker.fn = None
             worker.callback = None

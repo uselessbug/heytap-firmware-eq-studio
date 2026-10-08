@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtTest
@@ -107,7 +108,6 @@ def test_online_selection_uses_file_id_without_network(tmp_path, qt_app):
 
 
 def test_pending_network_does_not_block_offline_file_task(tmp_path, qt_app):
-    import threading
     app = qt_app
     window = MainWindow(recover=False, auto_path=tmp_path/"independent.json")
     release = threading.Event()
@@ -171,7 +171,7 @@ def test_gui_firmware_fit_metadata_export_and_recovery(monkeypatch, tmp_path, qt
         qt_app.processEvents()
         if window.session.firmware_plans and not window.workers:
             break
-        QtTest.QTest.qWait(10)
+        threading.Event().wait(.01)
     assert len(window.session.firmware_plans) == 1
     window.preset_combo.setCurrentText("丹拿高解析")
     assert len(window.digital_plot.listDataItems()) == 3
@@ -182,7 +182,7 @@ def test_gui_firmware_fit_metadata_export_and_recovery(monkeypatch, tmp_path, qt
         qt_app.processEvents()
         if not window.workers:
             break
-        QtTest.QTest.qWait(10)
+        threading.Event().wait(.01)
     assert hasattr(window, "last_export_report"), window.statusBar().currentMessage()
     assert window.last_export_report["changed_records"] == 36
     assert inspect_firmware(output).package["summary"]["version_digits"] == "119"
