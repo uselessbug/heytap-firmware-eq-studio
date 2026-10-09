@@ -18,7 +18,7 @@ python -m pip install --no-deps --no-build-isolation -e .
 python -m heytap_eq.app
 ```
 
-Windows 可下载 [当前便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589/artifacts/11567181875)，解开产物内的 ZIP，运行 EXE 并保留 `_internal`。当前 GitHub 构建未内置认证，共享 Bearer 按用户安排手动填入；可修改 `src/heytap_eq/service_profile.py` 的 `builtin_authorization()` 最后一个 `return None` 后重新构建，也可在 EXE 旁配置 `_flowmix_profile.json`，无需重新打包。运行与构建均不需要 APK。详细配置见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
+Windows 可下载 [当前便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639/artifacts/11591473190)，解开产物内的 ZIP，运行 EXE 并保留 `_internal`。用户已在 `b23c92f` 内置共享认证，新成品直接点“获取在线测量”，无需 APK 或 Action Secret；配置文件/环境变量仍可覆写默认值。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
 
 ## 接手开发
 
@@ -43,7 +43,9 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 
 ## 当前桌面验证
 
-功能提交 `8878dfd` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589) 全部成功：Linux / Windows 各 39 项测试、Ruff、源码 GUI、Windows 便携包及真实冻结 EXE 启动。已检查截图、成品源 SHA 和 EXE 哈希。GUI 的“完整预设拟合 → 版本修改 → 导出 → 重开 → 工程恢复”已通过；getter 000..999 的对齐/未对齐写入独立仿真 2,000 次。详见 [当前验证](docs/firmware-edit-validation.json)，[此前测量阶段记录](docs/desktop-validation.json) 保留其原始范围。实际测量配置已验证六个来源和 21 条目标。
+当前提交 `035a021` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639) 全部成功：Linux / Windows 各 39 项测试、Ruff、源码 GUI、Windows 便携包及真实冻结 EXE 启动。用户内置认证已保留；成品启动报告 `service_configured: true`，与源码一致。配置文件和环境变量覆盖及回退验证通过；Workflow 未修改。见 [认证与成品验证](docs/authentication-ci-validation.json)。
+
+GUI 的“完整预设拟合 → 版本修改 → 导出 → 重开 → 工程恢复”已通过；getter 000..999 的对齐/未对齐写入独立仿真 2,000 次。主功能和真实输入验证的原始来源提交为 `8878dfd`，见 [记录](docs/firmware-edit-validation.json)；[此前测量阶段记录](docs/desktop-validation.json) 保留其原始范围。实际测量配置已验证六个来源和 21 条目标。
 
 真实原始 112/116 的 Optimized EQ 完整预设替换也已通过：各 36 条记录，默认误差门限内，重新封包与重开识别通过。读取导出文件后在 8,192 点、三采样率复算最差 RMS 0.128 dB、最大误差 0.851 dB（有效频段）；详见 [真实输入拟合记录](docs/firmware-real-fit-validation.json)。
 
@@ -61,6 +63,6 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 - [Flowmix 测量接口](docs/flowmix-api.md)
 - [相关开源项目](docs/related-projects.md)
 
-后续需要更多机型的参数语义适配与实机 OTA/声学验证。当前固件编辑通过完整代码指纹和四表识别，不以整包哈希作为唯一条件，因此支持已修改 EQ/版本的已确认布局。原厂固件和完整 APK / HAR 不提交到本公开仓库；用户允许 Flowmix APK 中的共享测量令牌随源码与成品发布，该项入库仍被平台自动审批阻止。
+后续需要更多机型的参数语义适配与实机 OTA/声学验证。当前固件编辑通过完整代码指纹和四表识别，不以整包哈希作为唯一条件，因此支持已修改 EQ/版本的已确认布局。原厂固件和完整 APK / HAR 不提交到本公开仓库；用户已自行提交 Flowmix 共享测量认证，后续修复保留该默认值。
 
 

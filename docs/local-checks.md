@@ -1,13 +1,11 @@
 # 通用测量与拟合新版（2026-10-09）
 
-下载 [当前 Windows 便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589/artifacts/11567181875)，解开产物内的 ZIP，运行 EXE，保持 `_internal` 完整。`SOURCE_SHA.txt` 应为 `8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a`；此版本已通过实际 EXE 启动检查。运行和构建均不需要 APK。
+下载 [当前 Windows 便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639/artifacts/11591473190)，解开产物内的 ZIP，运行 EXE，保持 `_internal` 完整。`SOURCE_SHA.txt` 应为 `035a0219d2ce7d3998b171370faf573711e16dac`；此版本已通过实际 EXE 启动检查，认证已内置（`service_configured: true`），见 [验证](authentication-ci-validation.json)。运行和构建均不需要 APK。
 
-GitHub 通用包尚无认证。Bearer 按用户安排自行填入，下列位置任选其一：
+用户已在 `b23c92f` 内置共享认证。新构建不需要 APK、手机、Action Secret 或手填配置，直接点“获取在线测量”。
 
-- 源码：`src/heytap_eq/service_profile.py`，`builtin_authorization()` 函数最后的 `return None` 改为 `return "Bearer <共享令牌>"`，保留环境变量和配置文件读取逻辑，再运行 Actions 构建。
-- 已下载成品：EXE 同目录新建 `_flowmix_profile.json`，内容为 `{"schema":"flowmix-http-v1","authorization":"Bearer <共享令牌>"}`。不需要重新构建；程序重开后点“获取在线测量”。
+如需覆写默认认证，设置环境变量 `HEYTAP_FLOWMIX_AUTHORIZATION`，或在 EXE 同目录新建 `_flowmix_profile.json`，内容为 `{"schema":"flowmix-http-v1","authorization":"Bearer <共享令牌>"}`。尖括号替换为实际令牌，`Bearer ` 与令牌之间只有一个空格；环境变量优先于配置文件，配置文件优先于源码默认值。无需重新构建即可使用配置文件覆写。
 
-尖括号内容替换为实际令牌，`Bearer ` 与令牌之间只有一个空格。真实令牌文本在对话中交付，不写入本说明。平台此前拦截公开写入凭据，当前由用户手动处理；不再重复尝试同一写入。
 
 1. 首次进入来源/品牌/型号应为空。选择 Woodenears 或任一服务返回来源，搜索型号并载入测量。
 2. 可以从“目标曲线库”读取在线目标，或导入目标 CSV/JSON/HAR；另一副耳机的测量可点“当前实测设为目标”。

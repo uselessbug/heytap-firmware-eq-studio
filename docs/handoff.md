@@ -4,7 +4,7 @@
 
 ## 桌面固件编辑阶段（2026-10-09，当前）
 
-功能提交 `8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a`，位于 `feat/python-desktop-studio`，沿用草稿 PR #1；main 未合并。[Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589) 全部通过：Linux/Windows 各 39 项测试和 Ruff、源码 GUI、Windows 便携构建及实际冻结 EXE 启动。已下载并检查截图、成品 `SOURCE_SHA.txt` 与 EXE 哈希，见 [当前验证](firmware-edit-validation.json)。[Windows 成品](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589/artifacts/11567181875) 无认证配置。
+当前源码提交 `035a0219d2ce7d3998b171370faf573711e16dac`，位于 `feat/python-desktop-studio`，沿用草稿 PR #1；main 未合并。[Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639) 全部通过：Linux/Windows 各 39 项测试和 Ruff、源码 GUI、Windows 便携构建及实际冻结 EXE 启动。用户添加的共享认证已保留，下载并核对的冻结报告 `service_configured: true`，见 [认证验证](authentication-ci-validation.json)。[Windows 成品](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639/artifacts/11591473190) 直接获取在线测量，无需 APK 或额外配置。主功能与真实输入验证的原始来源提交为 `8878dfd`，见 [固件编辑验证](firmware-edit-validation.json)。
 
 已接入：四路径 × 九状态完整预设拟合；保护对应丹拿原声 HP/LP/AP，最多 18 槽；生成多个预设快照；后台取消与过期结果拒绝；原链/待导出链预览；导出时按 float32 三采样率重算误差，可调 RMS/最大误差门限；输入 SHA 绑定、原输入不覆盖、限定范围修改、重新封包和旁边的报告。元数据编辑覆盖已确认容器字段和各段 BUILD_DATE/REV_INFO；版本同步容器、SW_VER 和 12 字节 Thumb getter。工程 v3 保存计划/元数据并支持撤销重做、原子恢复，兼容 v1/v2。使用步骤见 [固件编辑](firmware-editing.md)。
 
@@ -16,7 +16,9 @@
 
 已完成六来源（含 Woodenears）动态索引、在线/本地/另一副耳机目标、RAW/PEQ 修正拟合、音频坐标、首次选择置空/已确认型号精确匹配/后续记忆。直接 HTTP 客户端运行和构建不依赖 APK；算法参考 APK 流程并使用受限优化，未声称逐点复刻。
 
-剩余：共享 Bearer 由用户醒来后填入；未知机型参数语义适配；真实耳机 OTA、双单元声学与听感验证。令牌按此前平台拦截不再尝试公开提交，`service_profile.py` 未修改。源码填写位置为 `builtin_authorization()` 最后的 `return None`；成品也可在 EXE 旁放 `_flowmix_profile.json`，格式见 [本地操作](local-checks.md)，令牌文本由对话交付。此前用户授权已更新，不得再次归因于缺少用户授权。
+共享认证已由用户在 `b23c92fa7aee09316d3293fad4a4cb77d87cca4f` 提交。该轮 CI 两平台均因测试将默认返回值写死为 None 而失败（其余 38 项通过）。修复提交 `035a0219d2ce7d3998b171370faf573711e16dac` 仅修改 `tests/test_flowmix.py` 和 `scripts/check_frozen.py`：接受有效的内置默认认证，验证配置文件/环境变量覆盖及删除配置后的回退，冻结启动比较源码与成品的认证配置状态。Workflow 与用户填写的 Bearer 均未修改。后续无需再次要求用户填写，也不要撤回其改动。
+
+剩余：未知机型参数语义适配；真实耳机 OTA、双单元声学与听感验证。
 
 下面为历史阶段记录，其中“GUI 只读、固件导出/版本尚未完成”不代表当前源码。
 
