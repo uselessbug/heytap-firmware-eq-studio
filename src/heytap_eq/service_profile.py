@@ -28,7 +28,7 @@ def builtin_authorization(local_dir=None):
         if path.exists():
             data = json.loads(path.read_text(encoding="utf-8"))
             return validate_authorization(data.get("authorization"))
-    return None
+    return "Bearer YKload233-FR4Flowmix777-API-AkkoYK."
 
 
 def prepare_profile(directory, authorization=None):
