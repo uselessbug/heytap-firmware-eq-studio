@@ -85,9 +85,17 @@ def test_independent_api_profile_loads_beside_frozen_executable(monkeypatch, tmp
     monkeypatch.setattr(service_profile, "__file__", str(tmp_path/"_internal"/"heytap_eq"/"service_profile.py"))
     monkeypatch.setattr(service_profile.sys, "frozen", True, raising=False)
     monkeypatch.setattr(service_profile.sys, "executable", str(tmp_path/"Studio.exe"))
-    assert service_profile.builtin_authorization() is None
+    fallback = service_profile.builtin_authorization()
+    if fallback is not None:
+        service_profile.validate_authorization(fallback)
     service_profile.prepare_profile(tmp_path, "Bearer synthetic")
     assert service_profile.builtin_authorization() == "Bearer synthetic"
+    monkeypatch.setenv("HEYTAP_FLOWMIX_AUTHORIZATION", "Bearer synthetic environment")
+    assert service_profile.builtin_authorization() == "Bearer synthetic environment"
+    monkeypatch.delenv("HEYTAP_FLOWMIX_AUTHORIZATION")
+    assert service_profile.builtin_authorization() == "Bearer synthetic"
+    (tmp_path/service_profile.PROFILE_NAME).unlink()
+    assert service_profile.builtin_authorization() == fallback
     assert not list(tmp_path.glob("*.apk"))
     with pytest.raises(ValueError):
         service_profile.prepare_profile(tmp_path, "Bearer synthetic\ninvalid")

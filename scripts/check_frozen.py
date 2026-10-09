@@ -6,6 +6,8 @@ import os
 import subprocess
 from pathlib import Path
 
+from heytap_eq.service_profile import builtin_authorization
+
 exe = Path("dist/HeyTapFirmwareEQStudio/HeyTapFirmwareEQStudio.exe").resolve()
 report = Path("reports/frozen-startup.json").resolve()
 report.parent.mkdir(exist_ok=True)
@@ -16,5 +18,7 @@ assert data["status"] == "passed" and data["frozen"] and data["window_visible"]
 assert data["sha"] == os.environ["HEYTAP_BUILD_SHA"]
 assert data["firmware_export_available"] and data["metadata_editor_available"]
 assert data["project_schema"] == "heytap-project-v3"
+assert not data["apk_dependency"]
+assert data["service_configured"] == (builtin_authorization() is not None)
 data["executable_sha256"] = hashlib.sha256(exe.read_bytes()).hexdigest()
 report.write_text(json.dumps(data, indent=2))
