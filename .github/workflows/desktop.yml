@@ -14,7 +14,9 @@ concurrency:
   cancel-in-progress: true
 env:
   PYTHONNOUSERSITE: '1'
-  PYQTGRAPH_QT_LIB: PySide6
+  QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu
+  QTWEBENGINE_DISABLE_SANDBOX: '1'
+  QT_QUICK_BACKEND: software
   HEYTAP_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 jobs:
   check:
@@ -31,6 +33,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build local graph assets
+        working-directory: frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          npm test
+      - name: Browser interaction checks
+        if: runner.os == 'Linux'
+        working-directory: frontend
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:browser
       - name: Linux GUI libraries
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxkbcommon0 fonts-noto-cjk
@@ -80,6 +97,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build local graph assets
+        working-directory: frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
       - name: Clean virtual environment
         shell: bash
         run: |
@@ -91,7 +116,7 @@ jobs:
           python -m pip install --no-deps --no-build-isolation .
           python -m pip check
       - name: Freeze
-        run: python -m PyInstaller --noconfirm --clean --onedir --windowed --name HeyTapFirmwareEQStudio --paths src --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 scripts/desktop_entry.py
+        run: python -m PyInstaller --noconfirm --clean --onedir --windowed --name HeyTapFirmwareEQStudio --paths src --collect-data heytap_eq --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 scripts/desktop_entry.py
       - name: Start actual frozen executable
         run: python scripts/check_frozen.py
       - name: Upload startup evidence

@@ -3,23 +3,24 @@
 import copy
 import json
 import threading
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
-import pyqtgraph as pg
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from heytap_eq import metadata
 from heytap_eq.adapters import PRESETS, STATES, inspect_firmware
 from heytap_eq.discovery import discover
 from heytap_eq.dsp import correction, firmware_curve
-from heytap_eq.eq_formats import KINDS, Filter, dump_eq, load_eq
+from heytap_eq.eq_formats import Filter, dump_eq, load_eq
 from heytap_eq.firmware_dsp import response as firmware_response
 from heytap_eq.firmware_edit import export_firmware, make_plan
 from heytap_eq.fitting import FitOptions, fit_response
 from heytap_eq.flowmix import FlowmixClient
 from heytap_eq.measurements import load_measurements
-from heytap_eq.plot import DARK_STYLE, ResponsePlot
+from heytap_eq.plot import DARK_STYLE
+from heytap_eq.web_plot import ResponsePlot
 from heytap_eq.preferences import BrowserMemory, device_identity
 from heytap_eq.service_profile import builtin_authorization
 from heytap_eq.session import Session, atomic_json
@@ -41,49 +42,6 @@ class Worker(QtCore.QThread):
             self.result = (None, exc)
 
 
-class DragNodes(pg.GraphItem):
-    moved = QtCore.Signal(object)
-
-    def __init__(self, peq=False):
-        super().__init__()
-        self.positions = np.empty((0, 2))
-        self.drag_index = None
-        self.peq = peq
-
-    def set_points(self, points):
-        self.positions = np.array(points, dtype=float).reshape(-1, 2)
-        self.refresh()
-
-    def refresh(self):
-        self.setData(pos=self.positions, data=np.arange(len(self.positions)),
-                     symbol="d" if self.peq else "o", size=9 if self.peq else 7,
-                     pxMode=True, brush="#85c997" if self.peq else "#d8a650", pen=None)
-
-    def mouseDragEvent(self, event):
-        if event.button() != QtCore.Qt.MouseButton.LeftButton:
-            event.ignore()
-            return
-        if event.isStart():
-            points = self.scatter.pointsAt(event.buttonDownPos())
-            if not points:
-                event.ignore()
-                return
-            self.drag_index = int(points[0].data())
-        if self.drag_index is None:
-            event.ignore()
-            return
-        index = self.drag_index
-        if self.peq:
-            self.positions[index, 0] = np.clip(event.pos().x(), np.log10(20), np.log10(20000))
-        self.positions[index, 1] = np.clip(event.pos().y(), -60, 60)
-        self.refresh()
-        event.accept()
-        if event.isFinish():
-            change = (index, 10**float(self.positions[index, 0]), float(self.positions[index, 1])) if self.peq else (index, float(self.positions[index, 1]))
-            self.moved.emit(change)
-            self.drag_index = None
-
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, recover=True, auto_path=None):
         super().__init__()
@@ -98,6 +56,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fit_cancel = threading.Event()
         self.edit_generation = 0
         self.fit_report = None
+        self._preview_document = None
+        self.preview_timer = QtCore.QTimer(self)
+        self.preview_timer.setSingleShot(True)
+        self.preview_timer.setInterval(25)
+        self.preview_timer.timeout.connect(self.refresh)
         self.workers = set()
         self.network_workers = set()
         self.flowmix_client = None
@@ -161,12 +124,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rate_combo = QtWidgets.QComboBox()
         self.rate_combo.addItems(["44100", "48000", "96000"])
         self.rate_combo.setCurrentText("48000")
-        for label, combo in (("路径", self.path_combo), ("预设", self.preset_combo),
-                             ("状态", self.state_combo), ("采样率 Hz", self.rate_combo)):
-            selectors.addWidget(QtWidgets.QLabel(label))
-            selectors.addWidget(combo)
-            combo.currentIndexChanged.connect(self.refresh)
+        selectors.addWidget(QtWidgets.QLabel("当前预设"))
+        selectors.addWidget(self.preset_combo)
+        self.preset_combo.currentIndexChanged.connect(self.refresh)
+        advanced = QtWidgets.QPushButton("高级预览")
+        advanced.setCheckable(True)
+        selectors.addWidget(advanced)
+        selectors.addStretch()
         layout.addLayout(selectors)
+        self.advanced_controls = QtWidgets.QWidget()
+        advanced_layout = QtWidgets.QHBoxLayout(self.advanced_controls)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+        for label, combo in (("输出路径", self.path_combo), ("内部状态", self.state_combo),
+                             ("预览采样率 Hz", self.rate_combo)):
+            advanced_layout.addWidget(QtWidgets.QLabel(label))
+            advanced_layout.addWidget(combo)
+            combo.currentIndexChanged.connect(self.refresh)
+        advanced_layout.addWidget(QtWidgets.QLabel("这些选项只控制数字链预览；写入处理整个预设。"))
+        self.advanced_controls.setVisible(False)
+        advanced.toggled.connect(self.advanced_controls.setVisible)
+        layout.addWidget(self.advanced_controls)
         self.firmware_edits_label = QtWidgets.QLabel("尚未准备固件修改")
         self.firmware_edits_label.setWordWrap(True)
         layout.addWidget(self.firmware_edits_label)
@@ -224,7 +201,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tabs = QtWidgets.QTabWidget()
         split.addWidget(self.tabs)
         self.digital_plot = self._plot("数字滤波增益 dB")
-        self.tabs.addTab(self.digital_plot, "数字 EQ")
+        self.tabs.addTab(self.digital_plot, "数字 EQ／固件链")
         acoustic = QtWidgets.QWidget()
         acoustic_layout = QtWidgets.QVBoxLayout(acoustic)
         self.measurement_combo = QtWidgets.QComboBox()
@@ -265,7 +242,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.quality_label = QtWidgets.QLabel("选择原始与目标频响，生成 RAW 或 PEQ 修正。估计 = 原始实测 + 当前修正。")
         self.quality_label.setWordWrap(True)
         acoustic_layout.addWidget(self.quality_label)
-        self.tabs.addTab(acoustic, "人工耳实测与估计")
+        self.tabs.addTab(acoustic, "频响与调音")
+        self.tabs.setCurrentIndex(1)
         self.metadata_text = QtWidgets.QPlainTextEdit()
         self.metadata_text.setReadOnly(True)
         self.tabs.addTab(self.metadata_text, "固件信息与修改计划")
@@ -286,7 +264,7 @@ class MainWindow(QtWidgets.QMainWindow):
             button.clicked.connect(fn)
             buttons.addWidget(button)
         side_layout.addLayout(buttons)
-        side_layout.addWidget(QtWidgets.QLabel("类型："+", ".join(KINDS)+"\n黄色圆点：RAW 增益；绿色菱形：PEQ 频率/增益。\nQ 在表格编辑；一次拖动可一次撤销。"))
+        side_layout.addWidget(QtWidgets.QLabel("双击图形添加 PEQ；拖动圆点调频率与增益。\n在点上滚轮调 Q；右键打开完整参数。\n黄色小点编辑 RAW；一次拖动可一次撤销。"))
         self.firmware_table = QtWidgets.QTableWidget(0, 4)
         self.firmware_table.setHorizontalHeaderLabels(["固件类型", "增益 dB", "频率 Hz", "Q"])
         self.firmware_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
@@ -296,10 +274,10 @@ class MainWindow(QtWidgets.QMainWindow):
         side_layout.addWidget(self.gains_label)
         split.addWidget(side)
         split.setSizes([1050, 330])
-        self.nodes = DragNodes()
-        self.nodes.moved.connect(self.edit_raw)
-        self.peq_nodes = DragNodes(peq=True)
-        self.peq_nodes.moved.connect(self.edit_peq)
+        self.digital_plot.editRequested.connect(self.editor_event)
+        self.acoustic_plot.editRequested.connect(self.editor_event)
+        for plot in (self.digital_plot, self.acoustic_plot):
+            plot.error.connect(lambda message: self.statusBar().showMessage(message))
         self._peq_map = []
         self.reset_plots()
         self.statusBar().showMessage("导入 EQ 或频响后，可拟合到已确认的固件预设并导出新文件。")
@@ -791,6 +769,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._task(lambda: load_eq(path), self.set_document)
 
     def set_document(self, doc):
+        self._preview_document = None
         self.session.replace(doc)
         self._changed()
 
@@ -812,6 +791,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.workers:
             return
         self.session = Session()
+        self._preview_document = None
         self.firmware = None
         self.device = None
         self.restore_curves()
@@ -848,10 +828,59 @@ class MainWindow(QtWidgets.QMainWindow):
             except (ValueError, OSError) as exc:
                 self.statusBar().showMessage(f"导出失败：{exc}")
 
+    def editor_event(self, event):
+        """Preview a gesture without checkpoints; commit only its final event."""
+        try:
+            op = event["op"]
+            if op == "begin":
+                self._preview_document = copy.deepcopy(self.session.document)
+                self.edit_generation += 1
+                self.fit_report = None
+                return
+            doc = copy.deepcopy(self.session.document)
+            if op == "add":
+                new_id = max((f.id for f in doc.filters), default=0)+1
+                doc.filters.append(Filter(new_id, float(event["frequency"]),
+                                          float(event["gain"]), .7))
+            elif op in ("filter", "raw", "delete"):
+                index = event["index"]
+                if type(index) is not int or index < 0:
+                    raise ValueError("Invalid editor index")
+                if op == "filter":
+                    data = event["filter"]
+                    original = doc.filters[index]
+                    doc.filters[index] = Filter(original.id, float(data["frequency"]),
+                        float(data["gain"]), float(data["q"]), data["kind"], data["enabled"])
+                elif op == "raw":
+                    doc.raw[index][1] = float(event["gain"])
+                else:
+                    del doc.filters[index]
+            else:
+                raise ValueError("Unknown editor operation")
+            doc.validate()
+            phase = event.get("phase", "end")
+            if phase not in ("change", "end"):
+                raise ValueError("Invalid edit phase")
+            if phase == "change":
+                self._preview_document = doc
+                if not self.preview_timer.isActive():
+                    self.preview_timer.start()
+            else:
+                self.preview_timer.stop()
+                self.set_document(doc)
+        except (ValueError, IndexError, KeyError, TypeError, OverflowError) as exc:
+            self._preview_document = None
+            self.preview_timer.stop()
+            self.refresh()
+            self.statusBar().showMessage(f"图形参数未应用：{exc}")
+
     def add_filter(self):
         doc = copy.deepcopy(self.session.document)
         new_id = max((f.id for f in doc.filters), default=0)+1
-        doc.filters.append(Filter(new_id, 1000, 0, .7))
+        frequency = 1000.
+        while any(abs(f.frequency-frequency) < 1 for f in doc.filters) and frequency < 16000:
+            frequency *= 1.25
+        doc.filters.append(Filter(new_id, frequency, 0, .7))
         self.set_document(doc)
 
     def remove_filter(self):
@@ -889,17 +918,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.set_document(doc)
 
     def undo(self):
+        self._preview_document = None
         self.session.undo()
         self._changed()
 
     def redo(self):
+        self._preview_document = None
         self.session.redo()
         self._changed()
 
     def _changed(self):
         self.edit_generation += 1
         self.fit_report = None
-        self.quality_label.setText("估计 = 原始实测 + 当前修正；拟合指标在重新生成后更新。")
+        self.quality_label.setText("估计 = 所选实测 + 当前修正；尚未包含导入固件相对测量固件的差异。")
         self.session.measurements, self.session.targets = self.measurements, self.targets
         self.session.measurement_index = self.measurement_combo.currentIndex()
         self.session.target_index = self.target_combo.currentIndex()
@@ -910,9 +941,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusBar().showMessage(f"自动保存失败：{exc}")
 
     def refresh(self, *_):
-        if not hasattr(self, "nodes"):
+        if not hasattr(self, "gains_label"):
             return
-        doc = self.session.document
+        doc = self._preview_document or self.session.document
         writable = bool(self.firmware and self.firmware.profiles)
         for action in self.firmware_actions:
             action.setEnabled(writable)
@@ -924,17 +955,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 "pending_presets": [{"destination": p["destination"], "eq": p["eq"]["name"],
                                      "records": len(p["records"])} for p in self.session.firmware_plans],
                 "pending_metadata": self.session.metadata_edits}, ensure_ascii=False, indent=2))
-        frequency = np.geomspace(20, 20000, 800)
+        frequency = np.geomspace(20, 20000, 4096)
         fs = int(self.rate_combo.currentText())
         self.digital_plot.clear_curves()
+        raw_doc = copy.deepcopy(doc)
+        raw_doc.filters = []
+        raw_values = correction(raw_doc, frequency, fs)
         self.digital_plot.zero_line()
-        self.digital_plot.plot(np.log10(frequency), correction(doc, frequency, fs),
-                               pen=pg.mkPen("#d8a650", width=2), name="当前修正 RAW + PEQ")
-        self.nodes.set_points([[np.log10(f), g] for f, g in doc.raw])
-        self.digital_plot.addItem(self.nodes)
+        if doc.raw or doc.filters:
+            self.digital_plot.plot(frequency, correction(doc, frequency, fs),
+                                   color="#efb55a", name="当前修正 RAW + PEQ")
         self._peq_map = [i for i, f in enumerate(doc.filters) if f.enabled]
-        self.peq_nodes.set_points([[np.log10(doc.filters[i].frequency), doc.filters[i].gain] for i in self._peq_map])
-        self.digital_plot.addItem(self.peq_nodes)
         record = None
         if self.firmware and self.firmware.profiles and self.path_combo.currentIndex() >= 0:
             bank = self.firmware.profiles
@@ -942,14 +973,14 @@ class MainWindow(QtWidgets.QMainWindow):
             name = self.preset_combo.currentText()
             index = 45 if name == "特殊记录 45" else PRESETS[name]+self.state_combo.currentIndex()
             record = bank["profiles"][table["profile_indices"][index]]
-            self.digital_plot.plot(np.log10(frequency), firmware_curve(record, frequency, fs),
-                                   pen="#67afd1", name="固件滤波链 · 不含整体增益")
+            self.digital_plot.plot(frequency, firmware_curve(record, frequency, fs),
+                                   color="#67afd1", name="固件滤波链 · 不含整体增益")
             plan = next((p for p in self.session.firmware_plans if p["destination"] == name), None)
             if plan:
                 planned = next(c["record"] for c in plan["records"] if c["table"] == table["name"]
                                and c["state"] == self.state_combo.currentIndex())
-                self.digital_plot.plot(np.log10(frequency), firmware_response(planned["filters"], frequency, fs),
-                                       pen=pg.mkPen("#32cbb9", width=2), name="待导出固件滤波链")
+                self.digital_plot.plot(frequency, firmware_response(planned["filters"], frequency, fs),
+                                       color="#32cbb9", name="待导出固件滤波链")
         for name, button in self.preset_buttons.items():
             button.setChecked(name == self.preset_combo.currentText())
             button.setEnabled(self.firmware is not None and self.firmware.profiles is not None)
@@ -981,6 +1012,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.undo_action.setEnabled(bool(self.session._undo))
         self.redo_action.setEnabled(bool(self.session._redo))
         self.acoustic_plot.clear_curves()
+        acoustic_base = np.zeros_like(frequency)
         relative = self.relative_check.isChecked()
         if relative:
             self.acoustic_plot.zero_line()
@@ -993,15 +1025,27 @@ class MainWindow(QtWidgets.QMainWindow):
             m = self.measurements[self.measurement_combo.currentIndex()]
             x = np.asarray(m.frequencies)
             values = displayed(m)
+            acoustic_base = np.interp(np.log(frequency), np.log(x), values)
             if self.curve_checks["original"].isChecked():
-                self.acoustic_plot.plot(np.log10(x), values, pen=pg.mkPen("#759ecb", width=2), name="原始实测")
+                self.acoustic_plot.plot(x, values, color="#759ecb", name="原始实测")
             if self.curve_checks["estimated"].isChecked():
-                self.acoustic_plot.plot(np.log10(x), values+correction(doc, x, fs),
-                                        pen=pg.mkPen("#32cbb9", width=2), name="修改后估计")
+                self.acoustic_plot.plot(frequency, np.interp(np.log(frequency), np.log(x), values)+correction(doc, frequency, fs),
+                                        color="#32cbb9", name="实测＋当前修正估计")
         if self.targets and self.target_combo.currentIndex() >= 0 and self.curve_checks["target"].isChecked():
             target = self.targets[self.target_combo.currentIndex()]
-            self.acoustic_plot.plot(np.log10(target.frequencies), displayed(target),
-                pen=pg.mkPen("#e3ad55", width=2, style=QtCore.Qt.PenStyle.DashLine), name="目标频响")
+            self.acoustic_plot.plot(target.frequencies, displayed(target),
+                color="#e3ad55", dashed=True, name="目标频响")
+
+        filters = [asdict(f) for f in doc.filters]
+        self.digital_plot.set_editor(label="修正 EQ 与所选固件链", filters=filters, raw=doc.raw,
+            nodeBase=np.column_stack((frequency, raw_values)).tolist(), rawBase=[],
+            addBase=np.column_stack((frequency, correction(doc, frequency, fs))).tolist(),
+            empty="双击添加 PEQ，或导入 EQ。打开固件后可在这里检查两路数字滤波链。")
+        self.acoustic_plot.set_editor(label="频响与调音", filters=filters, raw=doc.raw,
+            nodeBase=np.column_stack((frequency, acoustic_base+raw_values)).tolist(),
+            rawBase=np.column_stack((frequency, acoustic_base)).tolist(),
+            addBase=np.column_stack((frequency, acoustic_base+correction(doc, frequency, fs))).tolist(),
+            empty="选择或导入原始测量，再调曲线。也可以直接双击添加 PEQ。")
 
     def closeEvent(self, event):
         if self.workers or self.network_workers:

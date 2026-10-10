@@ -14,11 +14,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.smoke_test and args.report is None:
         parser.error("--smoke-test requires --report")
-    os.environ["PYQTGRAPH_QT_LIB"] = "PySide6"
     from PySide6 import QtCore, QtWidgets
 
     from heytap_eq.gui import MainWindow
+    from heytap_eq.web_plot import initialize_web_engine
 
+    initialize_web_engine()
     app = QtWidgets.QApplication([sys.argv[0]])
     app.setApplicationName("HeyTap Firmware EQ Studio")
     app.setOrganizationName("HeyTapEQStudio")
@@ -38,12 +39,30 @@ def main(argv=None):
         window.set_targets([Measurement("Synthetic target", [20, 1000, 20000], [83, 90, 78]).validate()])
         window.tabs.setCurrentIndex(1)
 
+        attempts = 0
+
         def probe():
+            nonlocal result
+            nonlocal attempts
+            attempts += 1
+            if not window.digital_plot.is_ready or not window.acoustic_plot.is_ready:
+                if attempts < 200:
+                    QtCore.QTimer.singleShot(100, probe)
+                    return
+                result = 1
+                args.report.parent.mkdir(parents=True, exist_ok=True)
+                args.report.write_text(json.dumps({"status": "failed", "error": "Web editor did not initialize"}))
+                app.quit()
+                return
+            window.acoustic_plot.inspect(finish_probe)
+
+        def finish_probe(web):
             nonlocal result
             try:
                 args.report.parent.mkdir(parents=True, exist_ok=True)
                 image = args.report.with_suffix(".png")
                 assert window.isVisible() and window.width() >= 600
+                assert web and web["ready"] and web["svgPaths"] >= 3, web
                 assert window.grab().save(str(image))
                 assert not any(k.startswith(("PyQt5", "PyQt6", "PySide2")) for k in sys.modules)
                 args.report.write_text(json.dumps({
@@ -58,6 +77,7 @@ def main(argv=None):
                     "firmware_export_available": callable(getattr(window, "export_to_path", None)),
                     "metadata_editor_available": callable(getattr(window, "set_metadata_edits", None)),
                     "project_schema": "heytap-project-v3",
+                    "plot_engine": "DSSSP 0.8.0", "web_editor": web,
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
                 result = 1
@@ -65,7 +85,7 @@ def main(argv=None):
             finally:
                 app.quit()
 
-        QtCore.QTimer.singleShot(500, probe)
+        QtCore.QTimer.singleShot(1000, probe)
     app.exec()
     return result
 

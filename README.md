@@ -2,11 +2,11 @@
 
 面向 OPPO / HeyTap 耳机固件的本地 EQ 编辑项目，首个研究对象为 Enco X4。
 
-当前有 **PySide6 + pyqtgraph 本地桌面工程** 与原 **Python CLI 研究原型**。桌面支持固件校验、Wavelet / Flowmix EQ 编辑、RAW / PEQ 拖动、通用频响拟合，以及已确认 Enco X4 的完整预设替换、元数据/版本修改和重新封包。工程 v3 保存测量、目标、固件拟合计划和元数据修改，支持撤销重做与自动恢复。
+当前有 **Python / PySide6 本地桌面工程** 与原 **Python CLI 研究原型**。DSSSP 图形编辑区支持双击添加 PEQ、实时拖点、滚轮调 Q、参数浮窗和鼠标位置缩放，操作见 [图形编辑](docs/dsssp-editor.md)。桌面支持固件校验、Wavelet / Flowmix EQ 编辑、RAW / PEQ 拖动、通用频响拟合，以及已确认 Enco X4 的完整预设替换、元数据/版本修改和重新封包。工程 v3 保存测量、目标、固件拟合计划和元数据修改，支持撤销重做与自动恢复。
 
 测量来源动态读取（当前六个，含 Woodenears），可以选在线目标、本地目标或另一副耳机的测量，生成 RAW / PEQ 修正。首次使用选择为空，之后记住上次和各固件的选择；已确认机型可精确匹配测量。独立 HTTP 客户端在运行和构建时均不依赖 APK。深色大图使用稳定的音频坐标，实测 / 目标 / 估计可独立显示。原 CLI 保留固件拟合和重新封包能力。
 
-桌面采用 **Python + PySide6 + pyqtgraph**，核心独立于 Qt。源码和 Windows 便携 ZIP 由 GitHub Actions 检查/构建；每个产物记录源 SHA，并实际启动冻结 EXE。桌面固件导出和版本同步已接入，操作见 [固件编辑](docs/firmware-editing.md)。此前丢失源码阶段的测试报告未作为当前实现的验证。
+桌面采用 **Python + PySide6 + 内嵌 DSSSP / React 编辑器**，核心独立于 Qt；网页资源随程序打包，使用者不需要 Node 或运行浏览器服务器。源码和 Windows 便携 ZIP 由 GitHub Actions 检查/构建；每个产物记录源 SHA，并实际启动冻结 EXE。桌面固件导出和版本同步已接入，操作见 [固件编辑](docs/firmware-editing.md)。此前丢失源码阶段的测试报告未作为当前实现的验证。
 
 ## 桌面启动
 

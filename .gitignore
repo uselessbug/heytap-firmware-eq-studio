@@ -15,3 +15,5 @@ inputs/
 *.rar
 *.heytap.json
 _flowmix_profile.json
+frontend/node_modules/
+src/heytap_eq/web/

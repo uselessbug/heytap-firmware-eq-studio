@@ -1,7 +1,7 @@
 import threading
 from pathlib import Path
 
-from PySide6 import QtCore, QtGui, QtTest
+from PySide6 import QtTest
 
 from heytap_eq.eq_formats import parse_text
 from heytap_eq.gui import MainWindow
@@ -37,28 +37,61 @@ def test_edit_undo_project_and_measurement_preview(tmp_path, qt_app):
     window.close()
 
 
-def test_raw_mouse_drag_is_one_undo_step(tmp_path, qt_app):
-    app = qt_app
+def test_web_gesture_previews_live_and_is_one_undo_step(tmp_path, qt_app):
     window = MainWindow(recover=False, auto_path=tmp_path/"drag.json")
     window.show()
     window.set_document(parse_text("GraphicEQ: 20 0; 1000 1; 20000 0"))
-    app.processEvents()
-    point = window.nodes.scatter.points()[1]
-    start = window.digital_plot.mapFromScene(window.nodes.scatter.mapToScene(point.pos()))
-    target = start+QtCore.QPoint(0, 35)
-    viewport = window.digital_plot.viewport()
-    QtTest.QTest.mousePress(viewport, QtCore.Qt.MouseButton.LeftButton, pos=start)
-    move = QtGui.QMouseEvent(QtCore.QEvent.Type.MouseMove, QtCore.QPointF(target),
-                            QtCore.QPointF(viewport.mapToGlobal(target)),
-                            QtCore.Qt.MouseButton.NoButton, QtCore.Qt.MouseButton.LeftButton,
-                            QtCore.Qt.KeyboardModifier.NoModifier)
-    QtCore.QCoreApplication.sendEvent(viewport, move)
-    QtTest.QTest.mouseRelease(viewport, QtCore.Qt.MouseButton.LeftButton, pos=target)
-    app.processEvents()
-    assert window.session.document.raw[1][1] != 1
+    window.editor_event({"op": "begin"})
+    window.editor_event({"op": "raw", "phase": "change", "index": 1, "gain": 4})
+    QtTest.QTest.qWait(35)
+    assert window.session.document.raw[1][1] == 1
+    assert window._preview_document.raw[1][1] == 4
+    assert len(window.session._undo) == 1
+    window.editor_event({"op": "raw", "phase": "end", "index": 1, "gain": 4})
+    assert window.session.document.raw[1][1] == 4
     assert len(window.session._undo) == 2
     window.undo()
     assert window.session.document.raw[1][1] == 1
+    window.editor_event({"op": "add", "frequency": 2300, "gain": -3})
+    assert window.session.document.filters[0].frequency == 2300
+    count = len(window.session._undo)
+    window.editor_event({"op": "filter", "phase": "end", "index": 0,
+        "filter": {"frequency": 2500, "gain": 0, "q": 1.3, "kind": "HS", "enabled": True}})
+    assert window.session.document.filters[0].q == 1.3
+    assert window.session.document.filters[0].gain == 0
+    assert len(window.session._undo) == count+1
+    window.undo()
+    assert window.session.document.filters[0].kind == "PEAK"
+    window.close()
+
+
+def test_actual_web_channel_renders_and_delivers_edit(tmp_path, qt_app):
+    window = MainWindow(recover=False, auto_path=tmp_path/"web.json")
+    window.show()
+    for _ in range(200):
+        qt_app.processEvents()
+        if window.digital_plot.is_ready and window.acoustic_plot.is_ready:
+            break
+        QtTest.QTest.qWait(50)
+    assert window.digital_plot.is_ready and window.acoustic_plot.is_ready
+    window.digital_plot.page().runJavaScript(
+        'window.studioEdit({op:"add",frequency:1250,gain:2})')
+    for _ in range(100):
+        qt_app.processEvents()
+        if window.session.document.filters:
+            break
+        QtTest.QTest.qWait(25)
+    QtTest.QTest.qWait(100)
+    received = []
+    window.digital_plot.inspect(received.append)
+    for _ in range(100):
+        qt_app.processEvents()
+        if received and received[0]["svgPaths"]:
+            break
+        QtTest.QTest.qWait(25)
+    assert received and received[0]["svgPaths"] > 0
+    assert window.session.document.filters[0].frequency == 1250
+    assert not window.advanced_controls.isVisible()
     window.close()
 
 
@@ -154,7 +187,7 @@ def test_target_fit_and_project_curve_recovery(tmp_path, qt_app):
     restored = MainWindow(recover=True, auto_path=path)
     assert restored.measurements == [original] and restored.targets == [target]
     assert restored.target_combo.currentIndex() == 0
-    assert restored.digital_plot.getViewBox().viewRange()[1] == [-24., 24.]
+    assert [restored.digital_plot.low, restored.digital_plot.high] == [-24., 24.]
     restored.close()
 
 
