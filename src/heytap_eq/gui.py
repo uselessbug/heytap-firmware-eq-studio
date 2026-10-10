@@ -11,12 +11,24 @@ from PySide6 import QtCore, QtGui, QtWidgets
 
 from heytap_eq import metadata
 from heytap_eq.adapters import inspect_firmware
-from heytap_eq.clipboard import MIME, PRESET_SCHEMA, copy_plan, decode_text, preset_payload, tuning_payload
+from heytap_eq.clipboard import (
+    MIME,
+    PRESET_SCHEMA,
+    copy_plan,
+    decode_text,
+    preset_payload,
+    tuning_payload,
+)
 from heytap_eq.configuration import config, configurations, record_at, regions, tables_for
 from heytap_eq.discovery import discover
 from heytap_eq.dsp import correction, firmware_curve
 from heytap_eq.eq_formats import Filter, dump_eq, load_eq
-from heytap_eq.estimation import builtin_reference, estimate_difference, measurement_key, reference_snapshot
+from heytap_eq.estimation import (
+    builtin_reference,
+    estimate_difference,
+    measurement_key,
+    reference_snapshot,
+)
 from heytap_eq.firmware_dsp import response as firmware_response
 from heytap_eq.firmware_edit import export_firmware, make_plan
 from heytap_eq.fitting import FitOptions, fit_response
