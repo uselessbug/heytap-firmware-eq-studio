@@ -130,7 +130,10 @@ function Editor() {
     <div className="graph-shell">
       {ticks.map(f => <span className="x-tick" key={f} style={{ left: 54 + xAt(f, size.width, view) }}>{formatHz(f)}</span>)}
       {yTicks.map(v => <span className="y-tick" key={v} style={{ top: 6 + yAt(v, size.height, view) }}>{v}</span>)}
-      <div className="plot" ref={plotRef} onDoubleClick={addPoint}
+      {data.splOffset !== null && data.splOffset !== undefined && yTicks.map(v => <span className="spl-tick" key={v}
+        style={{ top: 6 + yAt(v, size.height, view) }}>{(v + data.splOffset).toFixed(0)}</span>)}
+      {data.splOffset !== null && data.splOffset !== undefined && <span className="spl-label">SPL dB</span>}
+      <div className="plot" ref={plotRef} style={{ right: data.splOffset !== null && data.splOffset !== undefined ? 54 : 12 }} onDoubleClick={addPoint}
         onContextMenu={e => {
           e.preventDefault()
           const node = e.target.closest('[data-filter]')
@@ -157,6 +160,12 @@ function Editor() {
             {curves.map((c, i) => <clipPath id={`curve-clip-${i}`} key={c.name}><rect x={c.left} width={Math.max(0, c.right - c.left)} height={size.height} /></clipPath>)}
           </defs>
           <g clipPath="url(#plot-clip)">
+            {(data.bands || []).map((band, i) => {
+              const left = clamp(xAt(band.low, size.width, view), 0, size.width)
+              const right = clamp(xAt(band.high, size.width, view), 0, size.width)
+              return <g key={`band-${i}`} pointerEvents="none"><rect x={left} width={Math.max(0, right-left)} height={size.height} fill="#b29ad4" opacity="0.09" />
+                <text x={left+5} y={16} fill="#c0a9df" fontSize={11}>{band.label}</text></g>
+            })}
             {curves.map((c, i) => <g key={c.name} clipPath={`url(#curve-clip-${i})`}><FrequencyResponseCurve color={c.color} lineWidth={2} dotted={c.dashed}
               magnitudes={c.magnitudes} /></g>)}
             {data.raw.map((point, index) => <g key={`raw-${index}`} data-node="raw">
@@ -174,6 +183,9 @@ function Editor() {
                 onDrag={active => { activeRef.current = active; if (active) send({ op: 'begin' }) }}
                 onChange={e => changeFilter(f, index, e)} />
             </g>)}
+            {pointer && <g pointerEvents="none" opacity="0.5"><line x1={xAt(pointer.frequency, size.width, view)} x2={xAt(pointer.frequency, size.width, view)}
+              y1={0} y2={size.height} stroke="#a8b9cf" strokeDasharray="3 4" />
+              <line x1={0} x2={size.width} y1={yAt(pointer.gain, size.height, view)} y2={yAt(pointer.gain, size.height, view)} stroke="#a8b9cf" strokeDasharray="3 4" /></g>}
           </g>
         </FrequencyResponseGraph>
         {!data.curves.length && <div className="empty">{data.empty}</div>}

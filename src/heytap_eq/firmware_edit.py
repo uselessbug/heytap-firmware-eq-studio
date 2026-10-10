@@ -13,11 +13,12 @@ from scipy.optimize import least_squares
 
 from heytap_eq import metadata, opkg
 from heytap_eq.adapters import PRESETS, verified_bank
+from heytap_eq.configuration import config, record_at
 from heytap_eq.dsp import FIRMWARE_KIND, SAMPLE_RATES, correction
 from heytap_eq.eq_formats import EQDocument
 from heytap_eq.firmware_dsp import coefficients, response
 
-SCHEMA = "heytap-firmware-plan-v1"
+SCHEMA = "heytap-firmware-plan-v2"
 FREQUENCY = np.geomspace(20, 20000, 1024)
 
 
@@ -138,9 +139,13 @@ def fit_record(source, doc, cancelled=None, max_nfev=300):
 
 
 def plan_shape(plan):
-    opkg.require(isinstance(plan, dict) and plan.get("schema") == SCHEMA, "Unsupported firmware plan")
-    opkg.require(plan.get("destination") in PRESETS and isinstance(plan.get("records"), list)
-                 and len(plan["records"]) == 36, "Plan needs four paths and all nine states")
+    opkg.require(isinstance(plan, dict) and plan.get("schema") in (SCHEMA, "heytap-firmware-plan-v1"),
+                 "Unsupported firmware plan")
+    opkg.require(isinstance(plan.get("destination"), str) and isinstance(plan.get("records"), list)
+                 and 0 < len(plan["records"]) <= 4096, "Invalid plan coverage")
+    if plan["schema"] == "heytap-firmware-plan-v1":
+        opkg.require(plan["destination"] in PRESETS and len(plan["records"]) == 36, "Invalid legacy plan")
+    opkg.require(plan.get("operation", "fit") in ("fit", "copy"), "Unknown plan operation")
     opkg.require(isinstance(plan.get("firmware_sha256"), str)
                  and bool(re.fullmatch(r"[0-9a-f]{64}", plan["firmware_sha256"])),
                  "Invalid plan firmware SHA-256")
@@ -150,26 +155,30 @@ def plan_shape(plan):
     cache = set()
     for change in plan["records"]:
         opkg.require(isinstance(change, dict) and type(change.get("state")) is int
-                     and 0 <= change["state"] < 9, "Invalid planned internal state")
+                     and 0 <= change["state"] < 1024, "Invalid planned internal state")
         validate_record(change["record"], cache)
     return doc
 
 
 def make_plan(firmware, doc, destination, preamp_db=0., cancelled=None, progress=None,
-              max_nfev=300):
+              max_nfev=300, baseline=None):
     doc = EQDocument.from_dict(doc.to_dict())
-    bank = verified_bank(firmware.package)
+    bank = verified_bank(firmware.package, firmware.mapping)
     opkg.require(bank is not None, "Firmware code and table semantics are not verified")
-    opkg.require(destination in PRESETS, "Unknown destination preset")
+    destination_config = config(bank, destination)
+    baseline = baseline or (destination if destination_config.get("special") else "丹拿原声")
+    baseline_config = config(bank, baseline)
+    opkg.require(len(baseline_config["indices"]) == len(destination_config["indices"]),
+                 "Baseline and destination have different state coverage")
     opkg.require(math.isfinite(preamp_db) and -24 <= preamp_db <= 0, "Preamp must be -24..0 dB")
     cache, changes = {}, []
     for table in bank["tables"]:
-        for state in range(9):
+        for state in range(len(destination_config["indices"])):
             check_cancel(cancelled)
             if progress:
-                progress(f"拟合 {destination} · {table['name']} · {state+1}/9")
-            source = bank["profiles"][table["profile_indices"][state]]
-            target = bank["profiles"][table["profile_indices"][PRESETS[destination]+state]]
+                progress(f"拟合 {destination_config['title']} · {table['name']} · {state+1}/{len(destination_config['indices'])}")
+            source = record_at(bank, table["name"], baseline, state)
+            target = record_at(bank, table["name"], destination, state)
             key = json.dumps(active(source), sort_keys=True)
             if key not in cache:
                 cache[key] = fit_record(source, doc, cancelled, max_nfev)
@@ -182,13 +191,13 @@ def make_plan(firmware, doc, destination, preamp_db=0., cancelled=None, progress
                             "before_sha256": target["record_sha256"],
                             "baseline_sha256": source["record_sha256"], "record": record})
     return {"schema": SCHEMA, "firmware_sha256": firmware.sha256,
-            "raw_sha256": opkg.sha(firmware.package["raw"]), "baseline": "丹拿原声",
+            "raw_sha256": opkg.sha(firmware.package["raw"]), "baseline": baseline, "operation": "fit",
             "destination": destination, "preamp_db": preamp_db, "eq": doc.to_dict(), "records": changes}
 
 
 def apply_plans(firmware, plans, cancelled=None, max_rms=.45, max_error=1.5):
     item = firmware.package
-    bank = verified_bank(item)
+    bank = verified_bank(item, firmware.mapping)
     opkg.require(bank is not None, "Firmware code and table semantics are not verified")
     edited, ranges, reports = bytearray(item["raw"]), [], []
     selected = set()
@@ -197,6 +206,9 @@ def apply_plans(firmware, plans, cancelled=None, max_rms=.45, max_error=1.5):
     for plan in plans:
         check_cancel(cancelled)
         doc = plan_shape(plan)
+        target_config = config(bank, plan["destination"])
+        expected = {(t["name"], state) for t in bank["tables"] for state in range(len(target_config["indices"]))}
+        opkg.require(len(plan["records"]) == len(expected), "Plan does not cover the complete configuration")
         opkg.require(plan["firmware_sha256"] == firmware.sha256
                      and plan["raw_sha256"] == opkg.sha(item["raw"]), "Plan belongs to another firmware")
         seen = set()
@@ -205,9 +217,9 @@ def apply_plans(firmware, plans, cancelled=None, max_rms=.45, max_error=1.5):
             name, state = change["table"], change["state"]
             opkg.require(name in tables and (name, state) not in seen, "Invalid or duplicate path/state")
             seen.add((name, state))
-            ids = tables[name]
-            source = bank["profiles"][ids[state]]
-            target = bank["profiles"][ids[PRESETS[plan["destination"]]+state]]
+            opkg.require((name, state) in expected, "State is outside configuration")
+            source = record_at(bank, name, plan.get("baseline", "丹拿原声"), state)
+            target = record_at(bank, name, plan["destination"], state)
             offset = target["raw_offset"]
             opkg.require(change["raw_offset"] == offset and offset not in selected,
                          "Invalid or overlapping target records")
@@ -217,15 +229,20 @@ def apply_plans(firmware, plans, cancelled=None, max_rms=.45, max_error=1.5):
             record = copy.deepcopy(change["record"])
             record["filters"] = quantize(record["filters"])
             validate_record(record, coefficient_cache)
+            copying = plan.get("operation") == "copy"
+            reference = change.get("reference") if copying else source
+            if copying:
+                validate_record(reference, coefficient_cache)
             for gain in ("gain0", "gain1"):
-                opkg.require(abs(record[gain]-float(np.float32(source[gain]+plan["preamp_db"]))) < 1e-6,
+                opkg.require(abs(record[gain]-float(np.float32(reference[gain]+plan["preamp_db"]))) < 1e-6,
                              "Overall gain differs from baseline plus preamp")
-            protected = [f for f in active(source) if f["type_id"] in (3, 4, 5)]
+            baseline_filters = reference["filters"] if copying else active(source)
+            protected = [f for f in baseline_filters if f["type_id"] in (3, 4, 5)]
             opkg.require([f for f in record["filters"] if f["type_id"] in (3, 4, 5)] == protected,
                          "Baseline HP/LP/AP parameters changed")
-            metric_key = json.dumps([active(source), record["filters"], plan["eq"]], sort_keys=True)
+            metric_key = json.dumps([baseline_filters, record["filters"], plan["eq"]], sort_keys=True)
             if metric_key not in metric_cache:
-                metric_cache[metric_key] = metrics(active(source), record["filters"], doc)
+                metric_cache[metric_key] = metrics(baseline_filters, record["filters"], doc)
             actual_metrics = metric_cache[metric_key]
             opkg.require(all(m["rms_db"] <= max_rms and m["max_db"] <= max_error
                              for m in actual_metrics.values()),
@@ -259,7 +276,7 @@ def export_firmware(firmware, plans, edits, output, cancelled=None, max_rms=.45,
     raw, ranges, reports = apply_plans(firmware, plans, cancelled, max_rms, max_error)
     ranges += metadata.apply_raw(firmware.package, raw, edits)
     outside_ranges_unchanged(firmware.package["raw"], raw, ranges)
-    opkg.profiles(bytes(raw))
+    opkg.profiles(bytes(raw), firmware.mapping["layout"] if firmware.mapping else None)
     packed, blocks = opkg.repack(firmware.package, bytes(raw), cancelled)
     packed = metadata.apply_header(firmware.package, packed, edits)
     verified = opkg.parse(packed)

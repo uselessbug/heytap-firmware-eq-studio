@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from heytap_eq import opkg
+from heytap_eq.configuration import attach_configuration
 
 PRESETS = {"丹拿原声": 0, "清亮高音": 9, "纯享人声": 18, "澎湃低音": 27, "丹拿高解析": 36}
 STATES = ("1", "2", "3 / 4", "5", "6", "7", "9", "8", "14")
@@ -20,27 +21,32 @@ class Firmware:
     package: dict
     profiles: dict | None
     recognition: str
+    mapping: dict | None = None
 
     @property
     def sha256(self):
         return self.package["summary"]["file_sha256"]
 
 
-def inspect_firmware(path):
+def inspect_firmware(path, mapping=None):
     item = opkg.load(path)
-    bank = verified_bank(item)
+    bank = verified_bank(item, mapping)
     reason = ("Enco X4：代码指纹与四张指针表通过" if bank else
               "未知布局或代码指纹；完整性通过，尚未确认参数语义")
-    return Firmware(str(path), item, bank, reason)
+    if mapping:
+        reason = "已载入自定义配置映射 · 指针和参数检查通过"
+    return Firmware(str(path), item, bank, reason, mapping)
 
 
-def verified_bank(item):
+def verified_bank(item, mapping=None):
     """Recheck semantics from bytes, including when applying a saved edit plan."""
     raw = item["raw"]
     bank = None
+    if mapping:
+        bank = attach_configuration(opkg.profiles(raw, mapping["layout"]), mapping["configuration"])
     if item["summary"]["product_id"] == "06EC10" and len(raw) in FINGERPRINTS:
         if all(opkg.sha(raw[a:b]) == digest for a, b, digest in FINGERPRINTS[len(raw)]):
-            bank = opkg.profiles(raw)
+            bank = bank or attach_configuration(opkg.profiles(raw))
             for record in bank["profiles"]:
                 opkg.require(all(-60 <= record[k] <= 1 for k in ("gain0", "gain1")), "Overall gain out of known bounds")
                 for f in record["slots"][:record["count"]]:

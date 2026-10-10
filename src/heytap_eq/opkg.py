@@ -189,12 +189,17 @@ def repack(original: dict, edited: bytes, cancelled=None) -> tuple[bytes, list[i
     return result, changed
 
 
-def profiles(raw: bytes) -> dict:
-    require(len(raw) in LAYOUTS, "No verified EQ layout for this raw image length")
-    layout = LAYOUTS[len(raw)]
+def profiles(raw: bytes, layout=None) -> dict:
+    require(layout is not None or len(raw) in LAYOUTS, "No verified EQ layout for this raw image length")
+    layout = layout or LAYOUTS[len(raw)]
     bank = layout["bank"]
+    profile_count = layout.get("profile_count", PROFILE_COUNT)
+    table_entries = layout.get("table_entries", 46)
+    flash_base = layout.get("flash_base", FLASH_BASE)
+    require(0 < profile_count <= 4096 and 0 < table_entries <= 1024, "Invalid layout dimensions")
+    require(0 <= bank <= len(raw)-profile_count*PROFILE_SIZE, "EQ bank is outside image")
     configs = []
-    for i in range(PROFILE_COUNT):
+    for i in range(profile_count):
         o = bank + i * PROFILE_SIZE
         gain0, gain1, count = struct.unpack_from("<ffI", raw, o)
         require(0 <= count <= PROFILE_CAPACITY, f"Bad IIR count in profile {i}")
@@ -204,26 +209,28 @@ def profiles(raw: bytes) -> dict:
             typ, gain, fc, q = struct.unpack_from("<Ifff", raw, o + 12 + k * 16)
             require(all(math.isfinite(v) for v in [gain, fc, q]), f"Non-finite parameter in profile {i}")
             entries.append({"slot": k, "active": k < count, "type_id": typ, "gain": gain, "fc": fc, "q": q})
-        configs.append({"profile_index": i, "raw_offset": o, "flash_address": FLASH_BASE + o,
+        configs.append({"profile_index": i, "raw_offset": o, "flash_address": flash_base + o,
                         "gain0": gain0, "gain1": gain1, "count": count, "slots": entries,
                         "record_sha256": sha(raw[o : o + PROFILE_SIZE]), "memberships": []})
     tables = []
-    for name, table in zip(TABLE_NAMES, layout["tables"]):
+    names = layout.get("table_names", TABLE_NAMES)
+    require(len(names) == len(layout["tables"]), "Table names and addresses differ")
+    for name, table in zip(names, layout["tables"]):
         indices = []
-        for k in range(46):
+        for k in range(table_entries):
             ptr = u32(raw, table + 4 * k)
-            delta = ptr - FLASH_BASE - bank
-            require(0 <= delta < PROFILE_COUNT * PROFILE_SIZE and delta % PROFILE_SIZE == 0,
+            delta = ptr - flash_base - bank
+            require(0 <= delta < profile_count * PROFILE_SIZE and delta % PROFILE_SIZE == 0,
                     f"Unexpected EQ pointer at {table + 4*k:#x}")
             idx = delta // PROFILE_SIZE
             indices.append(idx)
             configs[idx]["memberships"].append({"table": name, "table_index": k})
-        require(u32(raw, table + 46 * 4) == 0, "Missing EQ pointer table terminator")
+        require(u32(raw, table + table_entries * 4) == 0, "Missing EQ pointer table terminator")
         tables.append({"name": name, "raw_offset": table, "profile_indices": indices})
-    require(sorted(i for t in tables for i in t["profile_indices"]) == list(range(PROFILE_COUNT)),
+    require(sorted(i for t in tables for i in t["profile_indices"]) == list(range(profile_count)),
             "EQ tables do not reference every profile exactly once")
-    return {"bank_offset": bank, "bank_end_exclusive": bank + PROFILE_COUNT * PROFILE_SIZE,
-            "record_size": PROFILE_SIZE, "capacity": PROFILE_CAPACITY, "profile_count": PROFILE_COUNT,
+    return {"bank_offset": bank, "bank_end_exclusive": bank + profile_count * PROFILE_SIZE,
+            "record_size": PROFILE_SIZE, "capacity": PROFILE_CAPACITY, "profile_count": profile_count,
             "interpretation": "Gain/fc/Q and type_id are decoded by the firmware coefficient generator. "
                               "See eq_tool.py and mapping.json for verified filter types and preset names. "
                               "output1/output2 denote pointer-selector output arguments, not left/right ears.",

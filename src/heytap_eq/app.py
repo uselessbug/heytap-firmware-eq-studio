@@ -37,7 +37,7 @@ def main(argv=None):
         window.set_measurements([Measurement("Synthetic test fixture", [20, 1000, 20000], [80, 90, 80]).validate()])
 
         window.set_targets([Measurement("Synthetic target", [20, 1000, 20000], [83, 90, 78]).validate()])
-        window.tabs.setCurrentIndex(1)
+        window.tabs.setCurrentIndex(0)
 
         attempts = 0
 
@@ -77,7 +77,8 @@ def main(argv=None):
                     "service_configured": __import__("heytap_eq.service_profile", fromlist=["builtin_authorization"]).builtin_authorization() is not None,
                     "firmware_export_available": callable(getattr(window, "export_to_path", None)),
                     "metadata_editor_available": callable(getattr(window, "set_metadata_edits", None)),
-                    "project_schema": "heytap-project-v3",
+                    "project_schema": "heytap-project-v4",
+                    "single_plot": window.digital_plot is window.acoustic_plot,
                     "plot_engine": "DSSSP 0.8.0", "web_editor": web,
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
@@ -87,6 +88,8 @@ def main(argv=None):
                 app.quit()
 
         QtCore.QTimer.singleShot(1000, probe)
+    else:
+        QtCore.QTimer.singleShot(0, window.connect_flowmix)
     app.exec()
     return result
 

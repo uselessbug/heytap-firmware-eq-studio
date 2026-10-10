@@ -10,10 +10,13 @@ import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from heytap_eq import metadata
-from heytap_eq.adapters import PRESETS, STATES, inspect_firmware
+from heytap_eq.adapters import inspect_firmware
+from heytap_eq.clipboard import MIME, PRESET_SCHEMA, copy_plan, decode_text, preset_payload, tuning_payload
+from heytap_eq.configuration import config, configurations, record_at, regions, tables_for
 from heytap_eq.discovery import discover
 from heytap_eq.dsp import correction, firmware_curve
 from heytap_eq.eq_formats import Filter, dump_eq, load_eq
+from heytap_eq.estimation import builtin_reference, estimate_difference, measurement_key, reference_snapshot
 from heytap_eq.firmware_dsp import response as firmware_response
 from heytap_eq.firmware_edit import export_firmware, make_plan
 from heytap_eq.fitting import FitOptions, fit_response
@@ -56,6 +59,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fit_cancel = threading.Event()
         self.edit_generation = 0
         self.fit_report = None
+        self._restoring = False
+        self._online_request = 0
         self._preview_document = None
         self.preview_timer = QtCore.QTimer(self)
         self.preview_timer.setSingleShot(True)
@@ -77,6 +82,7 @@ class MainWindow(QtWidgets.QMainWindow):
             except (ValueError, OSError, KeyError, TypeError) as exc:
                 self.statusBar().showMessage(f"恢复文件未加载：{exc}")
         self.restore_curves()
+        self.restore_context_controls()
         self.refresh()
 
     def _action(self, toolbar, label, fn, shortcut=None):
@@ -89,226 +95,426 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _setup(self):
         self.setStyleSheet(DARK_STYLE)
-        toolbar = self.addToolBar("文件与编辑")
+        toolbar = self.addToolBar("工程与调音")
         toolbar.setMovable(False)
-        files = self.menuBar().addMenu("文件")
+        files = self.menuBar().addMenu("工程")
         for label, fn in (("新建工程", self.new_project), ("打开工程", self.open_project),
-                          ("导入测量文件", self.import_measurements), ("导出 EQ", self.export_eq),
-                          ("导入目标文件", self.import_target)):
-            self._action(files, label, fn)
+                          ("保存工程", self.save_project), ("导出 EQ 文本", self.export_eq)):
+            self._action(files, label, fn, "Ctrl+S" if label == "保存工程" else None)
         self._action(toolbar, "打开固件", self.open_firmware)
         self._action(toolbar, "导入 EQ", self.import_eq)
-        self._action(toolbar, "保存工程", self.save_project, "Ctrl+S")
         self.undo_action = self._action(toolbar, "撤销", self.undo, "Ctrl+Z")
         self.redo_action = self._action(toolbar, "重做", self.redo, "Ctrl+Shift+Z")
         toolbar.addSeparator()
-        firmware_menu = self.menuBar().addMenu("固件")
+        copy_button = QtWidgets.QToolButton()
+        copy_button.setText("复制调音")
+        copy_button.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        copy_button.clicked.connect(self.copy_tuning)
+        copy_menu = QtWidgets.QMenu(copy_button)
+        self._action(copy_menu, "复制完整固件预设", self.copy_preset)
+        copy_button.setMenu(copy_menu)
+        toolbar.addWidget(copy_button)
+        self._action(toolbar, "粘贴调音", self.paste_tuning, "Ctrl+Shift+V")
+        copy_shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Shift+C"), self)
+        copy_shortcut.activated.connect(self.copy_tuning)
+        firmware_menu = self.menuBar().addMenu("固件详情")
         self.firmware_actions = [
             self._action(toolbar, "拟合到固件预设", self.start_firmware_fit),
             self._action(toolbar, "导出固件", self.start_firmware_export),
             self._action(firmware_menu, "编辑固件信息", self.edit_metadata),
             self._action(firmware_menu, "清空固件修改", self.clear_firmware_edits),
         ]
+        self._action(firmware_menu, "载入配置映射", self.import_mapping)
         self._action(firmware_menu, "候选结构扫描", self.scan_candidates)
-        self._action(firmware_menu, "取消拟合/封包", self.cancel_fit)
         body = QtWidgets.QWidget()
         self.setCentralWidget(body)
         layout = QtWidgets.QVBoxLayout(body)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.setSpacing(4)
-        self.firmware_label = QtWidgets.QLabel("未打开固件")
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(5)
+        self.firmware_label = QtWidgets.QLabel("未打开固件 · 可直接编辑 EQ")
         self.firmware_label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.firmware_label)
-        self.path_combo = QtWidgets.QComboBox()
-        self.preset_combo = QtWidgets.QComboBox()
-        self.preset_combo.addItems([*PRESETS, "特殊记录 45"])
+        self.firmware_edits_label = QtWidgets.QLabel()
+        self.firmware_edits_label.setWordWrap(True)
+        layout.addWidget(self.firmware_edits_label)
+        preset_row = QtWidgets.QHBoxLayout()
+        preset_row.addWidget(QtWidgets.QLabel("调音基底"))
+        self.preset_buttons = {}
+        self.preset_button_layout = QtWidgets.QHBoxLayout()
+        preset_row.addLayout(self.preset_button_layout)
+        preset_row.addStretch()
+        self.preset_combo = QtWidgets.QComboBox(self)
+        self.preset_combo.hide()
+        self.preset_combo.currentIndexChanged.connect(self.context_changed)
+        advanced = QtWidgets.QPushButton("计算详情")
+        advanced.setCheckable(True)
+        preset_row.addWidget(advanced)
+        side_toggle = QtWidgets.QPushButton("参数表")
+        side_toggle.setCheckable(True)
+        preset_row.addWidget(side_toggle)
+        layout.addLayout(preset_row)
+        self.advanced_controls = QtWidgets.QWidget()
+        details = QtWidgets.QGridLayout(self.advanced_controls)
+        details.setContentsMargins(0, 0, 0, 0)
+        self.region_combo = QtWidgets.QComboBox()
         self.state_combo = QtWidgets.QComboBox()
-        self.state_combo.addItems(["内部状态 "+s for s in STATES])
         self.rate_combo = QtWidgets.QComboBox()
         self.rate_combo.addItems(["44100", "48000", "96000"])
         self.rate_combo.setCurrentText("48000")
-        advanced = QtWidgets.QPushButton("高级预览")
-        advanced.setCheckable(True)
-        self.advanced_controls = QtWidgets.QWidget()
-        advanced_layout = QtWidgets.QHBoxLayout(self.advanced_controls)
-        advanced_layout.setContentsMargins(0, 0, 0, 0)
-        for label, combo in (("预设", self.preset_combo), ("输出路径", self.path_combo), ("内部状态", self.state_combo),
-                             ("预览采样率 Hz", self.rate_combo)):
-            advanced_layout.addWidget(QtWidgets.QLabel(label))
-            advanced_layout.addWidget(combo)
-            combo.currentIndexChanged.connect(self.refresh)
-        advanced_layout.addWidget(QtWidgets.QLabel("这些选项只控制数字链预览；写入处理整个预设。"))
-        self.advanced_controls.setVisible(False)
+        self.crossover_spin = QtWidgets.QDoubleSpinBox()
+        self.crossover_spin.setRange(1000, 20000)
+        self.crossover_spin.setValue(15000)
+        self.crossover_spin.setSuffix(" Hz")
+        self.gain_mode_combo = QtWidgets.QComboBox()
+        self.reference_state_combo = QtWidgets.QComboBox()
+        for title, key in (("仅滤波器差分", "none"), ("假定整体增益按 gain0", "gain0"),
+                           ("假定整体增益按 gain1", "gain1")):
+            self.gain_mode_combo.addItem(title, key)
+        for col, title, widget in ((0, "区域", self.region_combo), (2, "内部状态", self.state_combo),
+                                    (4, "计算采样率", self.rate_combo), (0, "双单元模型交接频率", self.crossover_spin),
+                                    (2, "增益模型", self.gain_mode_combo)):
+            row = 1 if widget in (self.crossover_spin, self.gain_mode_combo) else 0
+            details.addWidget(QtWidgets.QLabel(title), row, col)
+            details.addWidget(widget, row, col+1)
+        for widget in (self.region_combo, self.state_combo, self.rate_combo, self.gain_mode_combo):
+            widget.currentIndexChanged.connect(self.context_changed)
+        self.crossover_spin.valueChanged.connect(self.context_changed)
+        details.addWidget(QtWidgets.QLabel("测量参考状态"), 1, 4)
+        details.addWidget(self.reference_state_combo, 1, 5)
+        self.reference_state_combo.currentIndexChanged.connect(self.context_changed)
+        self.advanced_controls.hide()
         advanced.toggled.connect(self.advanced_controls.setVisible)
         layout.addWidget(self.advanced_controls)
-        self.firmware_edits_label = QtWidgets.QLabel("尚未准备固件修改")
-        self.firmware_edits_label.setWordWrap(True)
-        layout.addWidget(self.firmware_edits_label)
-        self.online_panel = QtWidgets.QWidget()
-        online = QtWidgets.QHBoxLayout(self.online_panel)
-        online.setContentsMargins(0, 0, 0, 0)
-        connect = QtWidgets.QPushButton("获取在线测量")
-        connect.clicked.connect(self.connect_flowmix)
-        self.source_combo = QtWidgets.QComboBox()
-        self.brand_combo = QtWidgets.QComboBox()
-        self.headphone_combo = QtWidgets.QComboBox()
-        load_online = QtWidgets.QPushButton("载入在线测量")
-        load_online.clicked.connect(self.load_online_measurements)
-        self.source_combo.activated.connect(self.source_chosen)
-        self.brand_combo.activated.connect(self.brand_chosen)
-        self.headphone_combo.activated.connect(self.remember_browser)
-        self.online_controls = [connect, self.source_combo, self.brand_combo,
-                                self.headphone_combo, load_online]
-        for widget in self.online_controls:
-            online.addWidget(widget)
-        for combo, placeholder in ((self.source_combo, "选择数据源"),
-                                   (self.brand_combo, "搜索品牌"),
-                                   (self.headphone_combo, "搜索型号")):
-            combo.setPlaceholderText(placeholder)
+        selections = QtWidgets.QHBoxLayout()
+        original_card = QtWidgets.QGroupBox("原始频响")
+        original = QtWidgets.QGridLayout(original_card)
+        original.setContentsMargins(8, 6, 8, 6)
+        self.measurement_combo = QtWidgets.QComboBox()
+        self.measurement_combo.setMinimumWidth(140)
+        self.measurement_combo.currentIndexChanged.connect(self.curve_selection_changed)
+        original.addWidget(self.measurement_combo, 0, 0, 1, 3)
+        import_measurement = QtWidgets.QPushButton("导入文件")
+        import_measurement.clicked.connect(self.import_measurements)
+        original.addWidget(import_measurement, 0, 3)
+        self.source_combo, self.brand_combo, self.headphone_combo = [QtWidgets.QComboBox() for _ in range(3)]
+        for col, combo, placeholder in ((0, self.source_combo, "数据源"), (1, self.brand_combo, "搜索品牌"),
+                                        (2, self.headphone_combo, "搜索型号")):
             combo.setEditable(True)
-            combo.lineEdit().setPlaceholderText(placeholder)
             combo.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
+            combo.lineEdit().setPlaceholderText(placeholder)
             combo.completer().setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
             combo.completer().setCompletionMode(QtWidgets.QCompleter.CompletionMode.PopupCompletion)
-        self.online_panel.setVisible(False)
-        layout.addWidget(self.online_panel)
-        presets = QtWidgets.QHBoxLayout()
-        self.preset_buttons = {}
-        for name in PRESETS:
-            button = QtWidgets.QPushButton(name)
-            button.setCheckable(True)
-            button.clicked.connect(lambda checked=False, n=name: self.preset_combo.setCurrentText(n))
-            self.preset_buttons[name] = button
-            presets.addWidget(button)
-        presets.addStretch()
-        presets.addWidget(advanced)
-        self.eq_range_combo = QtWidgets.QComboBox()
-        self.eq_range_combo.addItems(["±12 dB", "±24 dB", "±48 dB"])
-        self.eq_range_combo.setCurrentIndex(1)
-        self.eq_range_combo.currentIndexChanged.connect(self.reset_plots)
-        presets.addWidget(QtWidgets.QLabel("EQ 范围"))
-        presets.addWidget(self.eq_range_combo)
-        side_toggle = QtWidgets.QPushButton("参数面板")
-        side_toggle.setCheckable(True)
-        side_toggle.setChecked(False)
-        side_toggle.toggled.connect(lambda visible: self.side.setVisible(visible))
-        presets.addWidget(side_toggle)
-        layout.addLayout(presets)
+            combo.setMinimumWidth(95)
+            original.addWidget(combo, 1, col)
+        refresh_online = QtWidgets.QPushButton("刷新")
+        refresh_online.clicked.connect(self.connect_flowmix)
+        original.addWidget(refresh_online, 1, 3)
+        self.source_combo.activated.connect(self.source_chosen)
+        self.brand_combo.activated.connect(self.brand_chosen)
+        self.headphone_combo.activated.connect(self.load_online_measurements)
+        self.online_controls = [self.source_combo, self.brand_combo, self.headphone_combo, refresh_online]
+        selections.addWidget(original_card, 1)
+        target_card = QtWidgets.QGroupBox("目标频响")
+        target = QtWidgets.QGridLayout(target_card)
+        target.setContentsMargins(8, 6, 8, 6)
+        self.target_combo = QtWidgets.QComboBox()
+        self.target_combo.setMinimumWidth(140)
+        self.target_combo.currentIndexChanged.connect(self.curve_selection_changed)
+        target.addWidget(self.target_combo, 0, 0, 1, 2)
+        import_target = QtWidgets.QPushButton("导入文件")
+        import_target.clicked.connect(self.import_target)
+        target.addWidget(import_target, 0, 2)
+        self.library_combo = QtWidgets.QComboBox()
+        self.library_combo.setEditable(True)
+        self.library_combo.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
+        self.library_combo.lineEdit().setPlaceholderText("搜索目标曲线库")
+        self.library_combo.completer().setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
+        self.library_combo.activated.connect(self.target_library_chosen)
+        target.addWidget(self.library_combo, 1, 0)
+        use_measurement = QtWidgets.QPushButton("使用原始曲线")
+        use_measurement.clicked.connect(self.measurement_as_target)
+        target.addWidget(use_measurement, 1, 1)
+        fit_target = QtWidgets.QPushButton("生成修正 EQ")
+        fit_target.clicked.connect(self.start_fit)
+        target.addWidget(fit_target, 1, 2)
+        selections.addWidget(target_card, 1)
+        layout.addLayout(selections)
+        reference_row = QtWidgets.QHBoxLayout()
+        reference_row.addWidget(QtWidgets.QLabel("测量参考"))
+        self.reference_label = QtWidgets.QLabel("未绑定参考固件")
+        reference_row.addWidget(self.reference_label)
+        reference_button = QtWidgets.QPushButton("选择参考固件")
+        reference_button.clicked.connect(self.import_reference)
+        reference_row.addWidget(reference_button)
+        self.reference_preset_combo = QtWidgets.QComboBox()
+        self.reference_preset_combo.currentIndexChanged.connect(self.context_changed)
+        reference_row.addWidget(self.reference_preset_combo)
+        self.reference_assumed = QtWidgets.QCheckBox("参考关系为假定")
+        self.reference_assumed.setChecked(True)
+        self.reference_assumed.toggled.connect(self.context_changed)
+        reference_row.addWidget(self.reference_assumed)
+        reference_row.addStretch()
+        layout.addLayout(reference_row)
+        visibility = QtWidgets.QHBoxLayout()
+        digital_visibility = QtWidgets.QHBoxLayout()
+        self.curve_checks = {}
+        for key, title, checked in (("original", "原始实测", True), ("current", "当前固件估计", True),
+                                     ("estimated", "编辑后估计", True), ("target", "目标频响", True),
+                                     ("correction", "修正 EQ", False), ("dac1", "DAC1（输出1）", False),
+                                     ("dac2", "DAC2（输出2）", False), ("planned", "待导出估计", True)):
+            check = QtWidgets.QCheckBox(title)
+            check.setChecked(checked)
+            check.toggled.connect(self.visibility_changed)
+            self.curve_checks[key] = check
+            (digital_visibility if key in ('correction', 'dac1', 'dac2') else visibility).addWidget(check)
+        visibility.addStretch()
+        self.relative_check = QtWidgets.QCheckBox("相对声压")
+        self.dac_mode_combo = QtWidgets.QComboBox()
+        self.dac_mode_combo.addItem("DAC 滤波链", "chain")
+        self.dac_mode_combo.addItem("DAC 相对参考差分", "difference")
+        self.dac_mode_combo.currentIndexChanged.connect(self.visibility_changed)
+        digital_visibility.addWidget(self.dac_mode_combo)
+        digital_visibility.addStretch()
+        self.relative_check.setChecked(True)
+        self.relative_check.toggled.connect(self.visibility_changed)
+        visibility.addWidget(self.relative_check)
+        layout.addLayout(visibility)
+        layout.addLayout(digital_visibility)
         split = QtWidgets.QSplitter()
         layout.addWidget(split, 1)
         self.tabs = QtWidgets.QTabWidget()
         split.addWidget(self.tabs)
-        self.digital_plot = self._plot("数字滤波增益 dB")
-        self.tabs.addTab(self.digital_plot, "数字 EQ／固件链")
-        acoustic = QtWidgets.QWidget()
-        acoustic_layout = QtWidgets.QVBoxLayout(acoustic)
-        acoustic_layout.setContentsMargins(0, 4, 0, 0)
-        acoustic_layout.setSpacing(4)
-        self.measurement_combo = QtWidgets.QComboBox()
-        self.measurement_combo.currentIndexChanged.connect(self.curve_selection_changed)
-        acoustic_controls = QtWidgets.QGridLayout()
-        acoustic_controls.addWidget(QtWidgets.QLabel("原始频响"), 0, 0)
-        acoustic_controls.addWidget(self.measurement_combo, 0, 1, 1, 2)
-        self.target_combo = QtWidgets.QComboBox()
-        self.target_combo.setPlaceholderText("选择目标频响")
-        self.target_combo.currentIndexChanged.connect(self.curve_selection_changed)
-        acoustic_controls.addWidget(QtWidgets.QLabel("目标频响"), 0, 3)
-        acoustic_controls.addWidget(self.target_combo, 0, 4, 1, 2)
-        for column, title, fn in ((0, "目标曲线库", self.browse_targets),
-                                  (1, "导入目标", self.import_target),
-                                  (2, "当前实测设为目标", self.measurement_as_target),
-                                  (3, "生成修正 EQ", self.start_fit),
-                                  (4, "取消拟合", self.cancel_fit)):
-            button = QtWidgets.QPushButton(title)
-            button.clicked.connect(fn)
-            acoustic_controls.addWidget(button, 1, column)
-        self.relative_check = QtWidgets.QCheckBox("1 kHz 对齐显示")
-        self.relative_check.setChecked(True)
-        self.relative_check.toggled.connect(self.reset_plots)
-        acoustic_controls.addWidget(self.relative_check, 1, 5)
-        acoustic_layout.addLayout(acoustic_controls)
-        visibility = QtWidgets.QHBoxLayout()
-        self.curve_checks = {}
-        for key, title in (("original", "原始实测"), ("estimated", "修改后估计"), ("target", "目标频响")):
-            check = QtWidgets.QCheckBox(title)
-            check.setChecked(True)
-            check.toggled.connect(self.refresh)
-            self.curve_checks[key] = check
-            visibility.addWidget(check)
-        visibility.addStretch()
-        self.online_toggle = QtWidgets.QPushButton("在线测量…")
-        self.online_toggle.setCheckable(True)
-        self.online_toggle.toggled.connect(self.online_panel.setVisible)
-        visibility.addWidget(self.online_toggle)
-        acoustic_layout.addLayout(visibility)
-        self.acoustic_plot = self._plot("人工耳 SPL dB")
-        acoustic_layout.addWidget(self.acoustic_plot)
-        self.quality_label = QtWidgets.QLabel("选择原始与目标频响，生成 RAW 或 PEQ 修正。估计 = 原始实测 + 当前修正。")
-        self.quality_label.setWordWrap(True)
-        acoustic_layout.addWidget(self.quality_label)
-        self.tabs.addTab(acoustic, "频响与调音")
-        self.tabs.setCurrentIndex(1)
+        self.main_plot = self._plot("dB · 相对频响／EQ 增益")
+        # Compatibility aliases refer to the same view, never two independent graphs.
+        self.digital_plot = self.acoustic_plot = self.main_plot
+        self.tabs.addTab(self.main_plot, "调音")
         self.metadata_text = QtWidgets.QPlainTextEdit()
         self.metadata_text.setReadOnly(True)
         self.tabs.addTab(self.metadata_text, "固件信息与修改计划")
-        side = QtWidgets.QWidget()
-        self.side = side
-        side_layout = QtWidgets.QVBoxLayout(side)
+        self.side = QtWidgets.QWidget()
+        side = QtWidgets.QVBoxLayout(self.side)
         self.eq_label = QtWidgets.QLabel()
-        side_layout.addWidget(self.eq_label)
+        side.addWidget(self.eq_label)
         self.filters_table = QtWidgets.QTableWidget(0, 6)
         self.filters_table.setHorizontalHeaderLabels(["启用", "ID", "类型", "频率 Hz", "增益 dB", "Q"])
         self.filters_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.filters_table.itemChanged.connect(self.edit_filter)
-        self.filters_table.setMinimumHeight(170)
-        side_layout.addWidget(self.filters_table)
-        buttons = QtWidgets.QHBoxLayout()
-        for title, fn in (("增加 PEQ", self.add_filter), ("删除 PEQ", self.remove_filter)):
-            button = QtWidgets.QPushButton(title)
-            button.clicked.connect(fn)
-            buttons.addWidget(button)
-        side_layout.addLayout(buttons)
-        side_layout.addWidget(QtWidgets.QLabel("双击图形添加 PEQ；拖动圆点调频率与增益。\n在点上滚轮调 Q；右键打开完整参数。\n黄色小点编辑 RAW；一次拖动可一次撤销。"))
-        self.firmware_table = QtWidgets.QTableWidget(0, 4)
-        self.firmware_table.setHorizontalHeaderLabels(["固件类型", "增益 dB", "频率 Hz", "Q"])
-        self.firmware_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        side.addWidget(self.filters_table, 1)
+        self.firmware_table = QtWidgets.QTableWidget(0, 5)
+        self.firmware_table.setHorizontalHeaderLabels(["输出", "固件类型", "增益 dB", "频率 Hz", "Q"])
         self.firmware_table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        side_layout.addWidget(self.firmware_table)
+        side.addWidget(self.firmware_table, 1)
         self.gains_label = QtWidgets.QLabel()
-        side_layout.addWidget(self.gains_label)
-        split.addWidget(side)
-        side.setVisible(False)
-        self.firmware_table.setVisible(False)
-        self.gains_label.setVisible(False)
-        advanced.toggled.connect(self.firmware_table.setVisible)
-        advanced.toggled.connect(self.gains_label.setVisible)
+        side.addWidget(self.gains_label)
+        split.addWidget(self.side)
+        self.side.hide()
+        side_toggle.toggled.connect(self.side.setVisible)
         split.setSizes([1050, 330])
-        self.digital_plot.editRequested.connect(self.editor_event)
-        self.acoustic_plot.editRequested.connect(self.editor_event)
-        for plot in (self.digital_plot, self.acoustic_plot):
-            plot.error.connect(lambda message: self.statusBar().showMessage(message))
+        footer = QtWidgets.QHBoxLayout()
+        self.quality_label = QtWidgets.QLabel()
+        self.quality_label.setWordWrap(True)
+        footer.addWidget(self.quality_label, 1)
+        cancel = QtWidgets.QPushButton("取消计算")
+        cancel.clicked.connect(self.cancel_fit)
+        footer.addWidget(cancel)
+        layout.addLayout(footer)
+        self.main_plot.editRequested.connect(self.editor_event)
+        self.main_plot.error.connect(lambda message: self.statusBar().showMessage(message))
         self._peq_map = []
         self.reset_plots()
-        self.statusBar().showMessage("导入 EQ 或频响后，可拟合到已确认的固件预设并导出新文件。")
+        self.statusBar().showMessage("选择原始与目标频响，编辑修正，再拟合到目标固件预设。")
 
     def _plot(self, label):
         return ResponsePlot(label)
 
-    def reset_plots(self, *_):
-        if not hasattr(self, "acoustic_plot"):
-            return
-        span = (12, 24, 48)[self.eq_range_combo.currentIndex()]
-        self.digital_plot.reset_range(-span, span, span/4)
-        if self.relative_check.isChecked():
-            self.acoustic_plot.reset_range(-24, 24, 6)
-            self.acoustic_plot.setLabel("left", "相对声压 (dB · 1 kHz = 0)")
+    def current_key(self):
+        return self.preset_combo.currentData()
+
+    def configure_firmware(self):
+        bank = self.firmware.profiles if self.firmware else None
+        while self.preset_button_layout.count():
+            item = self.preset_button_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self.preset_buttons = {}
+        self.preset_combo.blockSignals(True)
+        self.preset_combo.clear()
+        self.region_combo.blockSignals(True)
+        self.region_combo.clear()
+        self.state_combo.blockSignals(True)
+        self.state_combo.clear()
+        if bank:
+            for preset in configurations(bank):
+                self.preset_combo.addItem(preset['title'], preset['key'])
+                button = QtWidgets.QPushButton(preset['title'])
+                button.setCheckable(True)
+                button.clicked.connect(lambda checked=False, key=preset['key']:
+                    self.preset_combo.setCurrentIndex(self.preset_combo.findData(key)))
+                self.preset_buttons[preset['key']] = button
+                self.preset_button_layout.addWidget(button)
+            self.region_combo.addItems(regions(bank))
+            self.state_combo.addItems(['内部状态 '+str(s) for s in bank['configuration']['states']])
+        for combo in (self.preset_combo, self.region_combo, self.state_combo):
+            combo.blockSignals(False)
+        self.restore_context_controls()
+
+    def restore_context_controls(self):
+        self._restoring = True
+        context = self.session.context
+        index = self.preset_combo.findData(context.get('preset'))
+        self.preset_combo.setCurrentIndex(index if index >= 0 else (0 if self.preset_combo.count() else -1))
+        self.region_combo.setCurrentText(context.get('region', 'other'))
+        self.state_combo.setCurrentIndex(min(int(context.get('state', 0)), max(0, self.state_combo.count()-1)))
+        self.rate_combo.setCurrentText(str(context.get('rate', 48000)))
+        self.crossover_spin.setValue(float(context.get('crossover', 15000)))
+        self.gain_mode_combo.setCurrentIndex(max(0, self.gain_mode_combo.findData(context.get('gain_mode', 'none'))))
+        self.reference_assumed.setChecked(context.get('reference_assumed', True))
+        reference = context.get('reference')
+        self.reference_preset_combo.clear()
+        self.reference_state_combo.clear()
+        if reference:
+            self.reference_label.setText(reference.get('title', '自定义参考'))
+            for preset in reference.get('presets', []):
+                self.reference_preset_combo.addItem(preset['title'], preset['key'])
+            self.reference_preset_combo.setCurrentIndex(max(0, self.reference_preset_combo.findData(
+                context.get('reference_preset', '丹拿原声'))))
+            ordinary = next((p for p in reference['presets'] if not p.get('special')), None)
+            self.reference_state_combo.addItems([str(s) for s in ordinary.get('states', [])] if ordinary else ['特殊状态'])
+            self.reference_state_combo.setCurrentIndex(min(int(context.get('reference_state', 0)),
+                                                          max(0, self.reference_state_combo.count()-1)))
         else:
-            values = [v for m in self.measurements+self.targets for v in m.spl_values]
-            low = np.floor(min(values)/5)*5 if values else 60
-            high = max(low+50, np.ceil(max(values)/5)*5) if values else 110
-            self.acoustic_plot.reset_range(low, high, 5)
-            self.acoustic_plot.setLabel("left", "声压 SPL (dB)")
+            self.reference_label.setText('未绑定参考固件')
+        for key, check in self.curve_checks.items():
+            check.setChecked(self.session.view_options.get(key, check.isChecked()))
+        self.relative_check.setChecked(self.session.view_options.get('relative', True))
+        self.dac_mode_combo.setCurrentIndex(max(0, self.dac_mode_combo.findData(self.session.view_options.get('dac_mode', 'chain'))))
+        self._restoring = False
+
+    def context_changed(self, *_):
+        if self._restoring or not hasattr(self, 'main_plot'):
+            return
+        special = bool(self.firmware and self.firmware.profiles and self.current_key()
+                       and config(self.firmware.profiles, self.current_key()).get('special'))
+        changes = {'preset': self.current_key(), 'region': self.region_combo.currentText() or 'other',
+            'state': 0 if special else max(0, self.state_combo.currentIndex()), 'rate': int(self.rate_combo.currentText()),
+            'reference_preset': self.reference_preset_combo.currentData(),
+            'reference_assumed': self.reference_assumed.isChecked(), 'crossover': self.crossover_spin.value(),
+            'gain_mode': self.gain_mode_combo.currentData(), 'reference_state': max(0, self.reference_state_combo.currentIndex())}
+        index = self.measurement_combo.currentIndex()
+        if 0 <= index < len(self.measurements) and self.session.context.get('reference'):
+            bindings = copy.deepcopy(self.session.context.get('reference_bindings', {}))
+            bindings[measurement_key(self.measurements[index])] = {
+                **{k: self.session.context[k] for k in ('reference',) if k in self.session.context},
+                **{k: changes[k] for k in ('reference_preset', 'reference_state', 'reference_assumed')}}
+            changes['reference_bindings'] = bindings
+        self.session.set_context(changes)
+        self._changed()
+
+    def visibility_changed(self, *_):
+        if self._restoring or not hasattr(self, 'main_plot'):
+            return
+        self.session.view_options = {key: c.isChecked() for key, c in self.curve_checks.items()}
+        self.session.view_options['relative'] = self.relative_check.isChecked()
+        self.session.view_options['dac_mode'] = self.dac_mode_combo.currentData()
         self.refresh()
+        try:
+            self.session.save(self.auto_path)
+        except OSError as exc:
+            self.statusBar().showMessage(f'显示设置未保存：{exc}')
+
+    def reset_plots(self, *_):
+        if not hasattr(self, 'main_plot'):
+            return
+        self.main_plot.reset_range(-24, 24, 5)
+        self.refresh()
+
+    def copy_tuning(self):
+        payload = tuning_payload(self.session)
+        self._set_clipboard(payload)
+        self.statusBar().showMessage('已复制完整调音，包含 RAW／PEQ 与测量、目标、参考关联。')
+
+    def _set_clipboard(self, payload):
+        text = json.dumps(payload, ensure_ascii=False, allow_nan=False)
+        data = QtCore.QMimeData()
+        data.setData(MIME, text.encode('utf-8'))
+        data.setText(text)
+        QtWidgets.QApplication.clipboard().setMimeData(data)
+
+    def copy_preset(self):
+        if not self.firmware or not self.firmware.profiles or not self.current_key():
+            self.statusBar().showMessage('先打开固件并选择要复制的配置。')
+            return
+        payload = preset_payload(self.firmware, self.current_key(), self.session.firmware_plans)
+        self._set_clipboard(payload)
+        self.statusBar().showMessage(f"已复制 {payload['title']} 的完整配置：{len(payload['records'])} 条记录。")
+
+    def paste_tuning(self):
+        try:
+            mime = QtWidgets.QApplication.clipboard().mimeData()
+            text = bytes(mime.data(MIME)).decode('utf-8') if mime.hasFormat(MIME) else mime.text()
+            payload = decode_text(text)
+            if payload['schema'] == PRESET_SCHEMA:
+                if not self.firmware or not self.firmware.profiles:
+                    raise ValueError('打开目标固件后才能粘贴完整预设；通用 EQ 文本可直接粘贴。')
+                presets = [p for p in configurations(self.firmware.profiles)
+                           if bool(p.get('special')) == bool(payload.get('special'))]
+                labels = [p['title'] for p in presets]
+                initial = next((i for i,p in enumerate(presets) if p['key'] == self.current_key()), 0)
+                label, ok = QtWidgets.QInputDialog.getItem(self, '粘贴完整预设', '写入目标配置', labels, initial, False)
+                if not ok:
+                    return
+                destination = presets[labels.index(label)]['key']
+                self.session.stage_plan(copy_plan(self.firmware, payload, destination))
+                self.preset_combo.blockSignals(True)
+                self.preset_combo.setCurrentIndex(self.preset_combo.findData(destination))
+                self.preset_combo.blockSignals(False)
+            else:
+                self.session.paste_tuning(payload['state'])
+                self.restore_curves()
+                self.restore_context_controls()
+            self._preview_document = None
+            self._changed()
+            self.statusBar().showMessage('已粘贴；本次操作可一步撤销。')
+        except (ValueError, KeyError, TypeError, UnicodeError) as exc:
+            self.statusBar().showMessage(f'粘贴未完成：{exc}')
+
+    def import_mapping(self):
+        if not self.firmware:
+            self.statusBar().showMessage('先打开固件，再载入它的配置映射。')
+            return
+        path = self._choose('载入配置映射', '配置映射 (*.json)')
+        if path:
+            firmware_path = self.firmware.path
+            self._task(lambda: inspect_firmware(firmware_path, json.loads(Path(path).read_text(encoding='utf-8'))),
+                       self.set_firmware)
+
+    def import_reference(self):
+        path = self._choose('选择测量所对应的参考固件')
+        if path:
+            def received(firmware):
+                if not firmware.profiles:
+                    raise ValueError('参考固件尚未识别 EQ 映射')
+                changes = {'reference': reference_snapshot(firmware), 'reference_assumed': True,
+                           'reference_preset': configurations(firmware.profiles)[0]['key'], 'reference_state': 0}
+                index = self.measurement_combo.currentIndex()
+                if 0 <= index < len(self.measurements):
+                    bindings = copy.deepcopy(self.session.context.get('reference_bindings', {}))
+                    bindings[measurement_key(self.measurements[index])] = copy.deepcopy(changes)
+                    changes['reference_bindings'] = bindings
+                self.session.set_context(changes, '绑定参考固件')
+                self.restore_context_controls()
+                self._changed()
+            self._task(lambda: inspect_firmware(path), received)
+
+    def difference(self, frequency, plans=(), current_key=None):
+        context = self.session.context
+        if not (self.firmware and self.firmware.profiles and context.get('reference') and self.current_key()):
+            return None
+        return estimate_difference(self.firmware, context['reference'], current_key or self.current_key(),
+            self.reference_preset_combo.currentData(), frequency, self.region_combo.currentText(),
+            0 if config(self.firmware.profiles, current_key or self.current_key()).get('special') else max(0, self.state_combo.currentIndex()),
+            int(self.rate_combo.currentText()), self.crossover_spin.value(), self.gain_mode_combo.currentData(), plans,
+            max(0, self.reference_state_combo.currentIndex()))
 
     def _choose(self, title, pattern="所有文件 (*)", save=False):
         method = QtWidgets.QFileDialog.getSaveFileName if save else QtWidgets.QFileDialog.getOpenFileName
@@ -359,6 +565,7 @@ class MainWindow(QtWidgets.QMainWindow):
         def connected(auth):
             self.flowmix_client = FlowmixClient(auth, self.auto_path.parent/"flowmix-cache")
             self._task(self.flowmix_client.sources, self.set_online_sources, network=True)
+            self._task(self.flowmix_client.targets, self.set_target_library, network=True)
         def prepare():
             auth = builtin_authorization(self.auto_path.parent)
             if not auth:
@@ -384,7 +591,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.memory.remember(selection, self.device["key"] if self.device else None)
         except OSError as exc:
             self.statusBar().showMessage(f"选择未保存：{exc}")
-        self._changed()
+        try:
+            self.session.save(self.auto_path)
+        except OSError as exc:
+            self.statusBar().showMessage(f"工程未保存：{exc}")
 
     def source_chosen(self, *_):
         self.brand_combo.clear()
@@ -427,7 +637,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.flowmix_client and source:
             self.brand_combo.clear()
             self.headphone_combo.clear()
-            self._task(lambda: self.flowmix_client.brands(source), self.set_online_brands, network=True)
+            def received(entries):
+                if self.source_combo.currentData() == source:
+                    self.set_online_brands(entries)
+            self._task(lambda: self.flowmix_client.brands(source), received, network=True)
 
     def set_online_brands(self, entries):
         self.fill_online(self.brand_combo, entries, self.desired_selection.get("brand"))
@@ -438,42 +651,46 @@ class MainWindow(QtWidgets.QMainWindow):
         source, brand = self.source_combo.currentData(), self.brand_combo.currentData()
         if self.flowmix_client and source and brand:
             self.headphone_combo.clear()
-            self._task(lambda: self.flowmix_client.headphones(source, brand), self.set_online_headphones, network=True)
+            def received(entries):
+                if (self.source_combo.currentData(), self.brand_combo.currentData()) == (source, brand):
+                    self.set_online_headphones(entries)
+            self._task(lambda: self.flowmix_client.headphones(source, brand), received, network=True)
 
     def set_online_headphones(self, entries):
         self.fill_online(self.headphone_combo, entries, self.desired_selection.get("headphone"))
         if self.headphone_combo.currentData():
             self.remember_browser()
+            self.load_online_measurements()
         origin = "离线缓存" if self.flowmix_client.from_cache else "在线"
-        self.statusBar().showMessage(f"{origin}型号索引已载入；选择型号后载入测量。")
+        self.statusBar().showMessage(f"{origin}型号索引已载入；选择型号后自动载入测量。")
 
-    def load_online_measurements(self):
+    def load_online_measurements(self, *_):
         source, brand = self.source_combo.currentData(), self.brand_combo.currentData()
         name = self.headphone_combo.currentData()
         if self.flowmix_client and source and brand and name:
             self.remember_browser()
             def received(curves):
+                if (source, brand, name) != (self.source_combo.currentData(), self.brand_combo.currentData(),
+                                             self.headphone_combo.currentData()):
+                    return
                 self.set_measurements(curves)
-                self.tabs.setCurrentIndex(1)
+                self.tabs.setCurrentIndex(0)
                 origin = "离线缓存" if self.flowmix_client.from_cache else "在线"
                 self.statusBar().showMessage(f"已载入{origin}测量 {len(curves)} 条。")
             self._task(lambda: self.flowmix_client.measurements(source, brand, name), received, network=True)
         else:
             self.statusBar().showMessage("请先选择来源、品牌与型号。")
 
-    def browse_targets(self):
-        if not self.flowmix_client:
-            self.statusBar().showMessage("先点击获取在线测量以连接数据服务。")
-            return
-        def choose(entries):
-            if not entries:
-                return
-            display, ok = QtWidgets.QInputDialog.getItem(self, "在线目标曲线", "选择目标",
-                                                        [e["display"] for e in entries], 0, False)
-            if ok:
-                identifier = next(e["name"] for e in entries if e["display"] == display)
-                self._task(lambda: self.flowmix_client.target(identifier), self.set_targets, network=True)
-        self._task(self.flowmix_client.targets, choose, network=True)
+    def set_target_library(self, entries):
+        self.fill_online(self.library_combo, entries)
+
+    def target_library_chosen(self, *_):
+        identifier = self.library_combo.currentData()
+        if self.flowmix_client and identifier:
+            def received(curves):
+                if self.library_combo.currentData() == identifier:
+                    self.set_targets(curves)
+            self._task(lambda: self.flowmix_client.target(identifier), received, network=True)
 
     def import_target(self):
         path = self._choose("导入目标频响", "测量 (*.csv *.json *.har)")
@@ -486,13 +703,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.set_targets([copy.deepcopy(self.measurements[index])])
 
     def set_targets(self, curves):
+        self.targets = list(self.targets)
         for curve in curves:
             if curve not in self.targets:
                 self.targets.append(curve)
         self.fill_curves(self.target_combo, self.targets,
                          self.targets.index(curves[0]) if curves else -1)
         self.curve_selection_changed()
-        self.tabs.setCurrentIndex(1)
+        self.tabs.setCurrentIndex(0)
 
     def fill_curves(self, combo, curves, index):
         combo.blockSignals(True)
@@ -510,8 +728,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.desired_selection = dict(self.session.online_selection)
 
     def curve_selection_changed(self, *_):
+        if self._restoring:
+            return
+        index = self.measurement_combo.currentIndex()
+        binding = self.session.context.get('reference_bindings', {}).get(measurement_key(self.measurements[index])) \
+            if 0 <= index < len(self.measurements) and index != self.session.measurement_index else None
+        self.session.set_curves(self.measurements, self.targets, index, self.target_combo.currentIndex(), binding)
+        if binding:
+            self.restore_context_controls()
         self._changed()
-        self.reset_plots()
 
     def cancel_fit(self):
         self.fit_cancel.set()
@@ -527,16 +752,22 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog.setWindowTitle("拟合到固件完整预设")
         form = QtWidgets.QFormLayout(dialog)
         destination = QtWidgets.QComboBox()
-        destination.addItems(list(PRESETS))
-        current = self.preset_combo.currentText()
-        destination.setCurrentText(current if current in PRESETS and current != "丹拿原声" else "丹拿高解析")
+        baseline = self.current_key()
+        source_config = config(self.firmware.profiles, baseline)
+        for preset in configurations(self.firmware.profiles):
+            if len(preset["indices"]) == len(source_config["indices"]):
+                destination.addItem(preset["title"], preset["key"])
+        preferred = "丹拿高解析" if baseline == "丹拿原声" else baseline
+        destination.setCurrentIndex(max(0, destination.findData(preferred)))
         preamp = QtWidgets.QDoubleSpinBox()
         preamp.setRange(-24, 0)
+        preamp.setValue(self.session.context.get('preamp_db', 0.))
         preamp.setSuffix(" dB")
         form.addRow("替换预设", destination)
         form.addRow("整体衰减", preamp)
-        note = QtWidgets.QLabel("以各路径、状态对应的丹拿原声为基线，加上当前修正 EQ。\n"
-                               "处理四条路径和全部九个内部状态，保留基线 HP/LP/AP。\n"
+        count = len(self.firmware.profiles["tables"])*len(source_config["indices"])
+        note = QtWidgets.QLabel(f"以当前 {source_config['title']} 为基底，加上当前修正 EQ。\n"
+                               f"同时处理所有输出、区域和对应状态，共 {count} 条；保留基底 HP/LP/AP。\n"
                                "完成后加入修改计划；可以继续为其他预设准备不同 EQ。")
         note.setWordWrap(True)
         form.addRow(note)
@@ -546,12 +777,14 @@ class MainWindow(QtWidgets.QMainWindow):
         buttons.rejected.connect(dialog.reject)
         form.addRow(buttons)
         if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
-            self.fit_firmware_preset(destination.currentText(), preamp.value())
+            self.fit_firmware_preset(destination.currentData(), preamp.value())
 
     def fit_firmware_preset(self, destination, preamp=0):
         if not self.firmware or not self.firmware.profiles or self.workers:
             return
         firmware, doc = self.firmware, copy.deepcopy(self.session.document)
+        baseline = self.current_key()
+        self.session.set_context({'preamp_db': preamp}, '调整整体衰减')
         generation = self.edit_generation
         self.fit_cancel = threading.Event()
         cancelled = self.fit_cancel
@@ -562,8 +795,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.session.stage_plan(plan)
             self._changed()
             maximum = max(m["max_db"] for r in plan["records"] for m in r["record"]["metrics"].values())
-            self.statusBar().showMessage(f"{destination} 已加入计划：36 条记录，最大误差 {maximum:.3f} dB。")
-        self._task(lambda progress: make_plan(firmware, doc, destination, preamp, cancelled, progress),
+            self.statusBar().showMessage(f"{destination} 已加入计划：{len(plan['records'])} 条记录，最大误差 {maximum:.3f} dB。")
+        self._task(lambda progress: make_plan(firmware, doc, destination, preamp, cancelled, progress, baseline=baseline),
                    received, with_progress=True)
 
     def edit_metadata(self):
@@ -722,6 +955,14 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         generation = self.edit_generation
         original, target = copy.deepcopy(original), copy.deepcopy(target)
+        try:
+            difference = self.difference(np.asarray(original.frequencies))
+            if difference:
+                original.spl_values = (np.asarray(original.spl_values)+difference["delta"]).tolist()
+                original.title += " · 当前固件估计"
+        except (ValueError, KeyError, IndexError) as exc:
+            self.statusBar().showMessage(f"无法按当前固件估计生成修正：{exc}")
+            return
         self.fit_cancel = threading.Event()
         def received(result):
             if generation != self.edit_generation:
@@ -733,13 +974,14 @@ class MainWindow(QtWidgets.QMainWindow):
             text = " · ".join(f"{rate} Hz: RMS {v['rms_db']:.3f} / 最大 {v['max_db']:.3f} dB"
                                for rate, v in report["rates"].items())
             self.quality_label.setText("相对于平滑/限幅后的期望修正："+text)
-            self.tabs.setCurrentIndex(1)
+            self.tabs.setCurrentIndex(0)
         self._task(lambda: fit_response(original, target, mode, options, self.fit_cancel), received)
 
     def open_firmware(self):
         path = self._choose("打开固件")
         if path:
-            self._task(lambda: inspect_firmware(path), self.set_firmware)
+            mapping = copy.deepcopy(self.session.context.get("mapping"))
+            self._task(lambda: inspect_firmware(path, mapping), self.set_firmware)
 
     def set_firmware(self, firmware):
         if self.session.firmware_sha256 not in (None, firmware.sha256):
@@ -748,11 +990,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.firmware = firmware
         self.session.firmware_sha256 = firmware.sha256
         self.session.firmware_path = firmware.path
-        self.path_combo.blockSignals(True)
-        self.path_combo.clear()
-        if firmware.profiles:
-            self.path_combo.addItems([t["name"] for t in firmware.profiles["tables"]])
-        self.path_combo.blockSignals(False)
+        if firmware.mapping:
+            self.session.context["mapping"] = firmware.mapping
+        if firmware.profiles and not self.session.context.get("reference") and firmware.package["summary"]["product_id"] == "06EC10":
+            self.session.context.update({"reference": builtin_reference(), "reference_preset": "丹拿原声",
+                                         "reference_assumed": True})
+        self.configure_firmware()
         self.metadata_text.setPlainText(json.dumps(firmware.package["summary"], ensure_ascii=False, indent=2))
         self.device = device_identity(firmware)
         self.desired_selection = self.memory.selection(self.device["key"]) or bound_selection
@@ -788,13 +1031,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self._task(lambda: load_measurements(path), self.set_measurements)
 
     def set_measurements(self, curves):
+        self.measurements = list(self.measurements)
         for curve in curves:
             if curve not in self.measurements:
                 self.measurements.append(curve)
         self.fill_curves(self.measurement_combo, self.measurements,
                          self.measurements.index(curves[0]) if curves else -1)
         self.curve_selection_changed()
-        self.online_toggle.setChecked(False)
         self.statusBar().showMessage(f"已导入 {len(curves)} 条实测。")
 
     def new_project(self):
@@ -805,7 +1048,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.firmware = None
         self.device = None
         self.restore_curves()
-        self.path_combo.clear()
+        self.configure_firmware()
         self.metadata_text.clear()
         self._changed()
 
@@ -815,6 +1058,7 @@ class MainWindow(QtWidgets.QMainWindow):
             try:
                 self.session.restore(path, self.firmware.sha256 if self.firmware else None)
                 self.restore_curves()
+                self.restore_context_controls()
                 self._changed()
                 self.reset_plots()
             except (ValueError, OSError, KeyError, TypeError) as exc:
@@ -930,17 +1174,20 @@ class MainWindow(QtWidgets.QMainWindow):
     def undo(self):
         self._preview_document = None
         self.session.undo()
+        self.restore_curves()
+        self.restore_context_controls()
         self._changed()
 
     def redo(self):
         self._preview_document = None
         self.session.redo()
+        self.restore_curves()
+        self.restore_context_controls()
         self._changed()
 
     def _changed(self):
         self.edit_generation += 1
         self.fit_report = None
-        self.quality_label.setText("估计 = 所选实测 + 当前修正；尚未包含导入固件相对测量固件的差异。")
         self.session.measurements, self.session.targets = self.measurements, self.targets
         self.session.measurement_index = self.measurement_combo.currentIndex()
         self.session.target_index = self.target_combo.currentIndex()
@@ -951,66 +1198,40 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusBar().showMessage(f"自动保存失败：{exc}")
 
     def refresh(self, *_):
-        if not hasattr(self, "gains_label"):
+        if not hasattr(self, 'gains_label'):
             return
         doc = self._preview_document or self.session.document
-        writable = bool(self.firmware and self.firmware.profiles)
+        bank = self.firmware.profiles if self.firmware else None
+        writable = bool(bank)
         for action in self.firmware_actions:
             action.setEnabled(writable)
-        queued = ", ".join(p["destination"]+" ← "+p["eq"]["name"] for p in self.session.firmware_plans)
-        self.firmware_edits_label.setText("待导出预设："+(queued or "无")+
-                                         f" · 元数据修改 {len(self.session.metadata_edits)} 项")
+        queued = ', '.join(p['destination']+' ← '+p['eq']['name'] for p in self.session.firmware_plans)
+        self.firmware_edits_label.setText('待导出：'+(queued or '无')+f' · 元数据 {len(self.session.metadata_edits)} 项')
         self.firmware_edits_label.setVisible(bool(queued or self.session.metadata_edits))
         if self.firmware:
-            self.metadata_text.setPlainText(json.dumps({"original": self.firmware.package["summary"],
-                "pending_presets": [{"destination": p["destination"], "eq": p["eq"]["name"],
-                                     "records": len(p["records"])} for p in self.session.firmware_plans],
-                "pending_metadata": self.session.metadata_edits}, ensure_ascii=False, indent=2))
-        frequency = np.geomspace(20, 20000, 4096)
-        fs = int(self.rate_combo.currentText())
-        self.digital_plot.clear_curves()
-        raw_doc = copy.deepcopy(doc)
-        raw_doc.filters = []
-        raw_values = correction(raw_doc, frequency, fs)
-        self.digital_plot.zero_line()
-        if doc.raw or doc.filters:
-            self.digital_plot.plot(frequency, correction(doc, frequency, fs),
-                                   color="#efb55a", name="当前修正 RAW + PEQ")
-        self._peq_map = [i for i, f in enumerate(doc.filters) if f.enabled]
-        record = None
-        if self.firmware and self.firmware.profiles and self.path_combo.currentIndex() >= 0:
-            bank = self.firmware.profiles
-            table = bank["tables"][self.path_combo.currentIndex()]
-            name = self.preset_combo.currentText()
-            index = 45 if name == "特殊记录 45" else PRESETS[name]+self.state_combo.currentIndex()
-            record = bank["profiles"][table["profile_indices"][index]]
-            self.digital_plot.plot(frequency, firmware_curve(record, frequency, fs),
-                                   color="#67afd1", name="固件滤波链 · 不含整体增益")
-            plan = next((p for p in self.session.firmware_plans if p["destination"] == name), None)
-            if plan:
-                planned = next(c["record"] for c in plan["records"] if c["table"] == table["name"]
-                               and c["state"] == self.state_combo.currentIndex())
-                self.digital_plot.plot(frequency, firmware_response(planned["filters"], frequency, fs),
-                                       color="#32cbb9", name="待导出固件滤波链")
+            self.metadata_text.setPlainText(json.dumps({'original': self.firmware.package['summary'],
+                'configuration': bank['configuration'] if bank else None,
+                'pending_presets': [{'destination': p['destination'], 'baseline': p.get('baseline'),
+                                      'records': len(p['records'])} for p in self.session.firmware_plans],
+                'pending_metadata': self.session.metadata_edits}, ensure_ascii=False, indent=2))
+        key = self.current_key()
         for name, button in self.preset_buttons.items():
-            button.setChecked(name == self.preset_combo.currentText())
-            button.setEnabled(writable)
-            button.setVisible(writable)
-        label = "未打开固件 · 可直接导入频响或编辑 EQ"
+            button.setChecked(name == key)
+        special = bool(bank and key and config(bank, key).get('special'))
+        self.state_combo.setEnabled(bool(bank) and not special)
+        label = '未打开固件 · 可直接编辑 EQ／导入频响'
         if self.firmware:
-            label = f"{Path(self.firmware.path).name} · {self.firmware.recognition}"
-            self.firmware_label.setToolTip(f"{self.firmware.path}\nSHA-256 {self.firmware.sha256}")
-        elif self.session.firmware_sha256:
-            label += f" · 工程绑定 {self.session.firmware_sha256}"
+            label = f'{Path(self.firmware.path).name} · {self.firmware.recognition}'
+            self.firmware_label.setToolTip(f'{self.firmware.path}\nSHA-256 {self.firmware.sha256}')
         self.firmware_label.setText(label)
-        self.state_combo.setEnabled(self.preset_combo.currentText() != "特殊记录 45")
-        self.gains_label.setText(f"gain0 = {record['gain0']:.6g} dB · gain1 = {record['gain1']:.6g} dB\n原始地址 {record['raw_offset']:#x} · {record['count']}/18 槽" if record else "固件字段与滤波器只读")
-        self.firmware_table.setRowCount(record["count"] if record else 0)
-        if record:
-            for row, f in enumerate(record["slots"][:record["count"]]):
-                for column, key in enumerate(("type_id", "gain", "fc", "q")):
-                    self.firmware_table.setItem(row, column, QtWidgets.QTableWidgetItem(str(f[key])))
-        self.eq_label.setText(f"{doc.name} · RAW {len(doc.raw)} 点 · PEQ {len(doc.filters)} 个")
+        self.undo_action.setEnabled(bool(self.session._undo))
+        self.redo_action.setEnabled(bool(self.session._redo))
+        for action, history, title in ((self.undo_action, self.session._undo, '撤销'),
+                                        (self.redo_action, self.session._redo, '重做')):
+            name = history[-1]['action'] if history else ''
+            action.setText(title+('：'+name[:6]+('…' if len(name) > 6 else '') if name else ''))
+            action.setToolTip(title+'：'+name if name else title)
+        self.eq_label.setText(f'{doc.name} · RAW {len(doc.raw)} 点 · PEQ {len(doc.filters)} 个')
         self.filters_table.blockSignals(True)
         self.filters_table.setRowCount(len(doc.filters))
         for row, f in enumerate(doc.filters):
@@ -1021,44 +1242,109 @@ class MainWindow(QtWidgets.QMainWindow):
             for column, value in enumerate((f.id, f.kind, f.frequency, f.gain, f.q), 1):
                 self.filters_table.setItem(row, column, QtWidgets.QTableWidgetItem(str(value)))
         self.filters_table.blockSignals(False)
-        self.undo_action.setEnabled(bool(self.session._undo))
-        self.redo_action.setEnabled(bool(self.session._redo))
-        self.acoustic_plot.clear_curves()
-        acoustic_base = np.zeros_like(frequency)
-        relative = self.relative_check.isChecked()
-        if relative:
-            self.acoustic_plot.zero_line()
-        def displayed(curve):
-            values = np.asarray(curve.spl_values)
-            if relative and curve.frequencies[0] <= 1000 <= curve.frequencies[-1]:
-                values = values-np.interp(np.log(1000), np.log(curve.frequencies), values)
-            return values
-        if self.measurements and self.measurement_combo.currentIndex() >= 0:
-            m = self.measurements[self.measurement_combo.currentIndex()]
-            x = np.asarray(m.frequencies)
-            values = displayed(m)
-            acoustic_base = np.interp(np.log(frequency), np.log(x), values)
-            if self.curve_checks["original"].isChecked():
-                self.acoustic_plot.plot(x, values, color="#759ecb", name="原始实测")
-            if self.curve_checks["estimated"].isChecked():
-                visible = (frequency >= x[0]) & (frequency <= x[-1])
-                self.acoustic_plot.plot(frequency[visible], (acoustic_base+correction(doc, frequency, fs))[visible],
-                                        color="#32cbb9", name="实测＋当前修正估计")
-        if self.targets and self.target_combo.currentIndex() >= 0 and self.curve_checks["target"].isChecked():
-            target = self.targets[self.target_combo.currentIndex()]
-            self.acoustic_plot.plot(target.frequencies, displayed(target),
-                color="#e3ad55", dashed=True, name="目标频响")
-
-        filters = [asdict(f) for f in doc.filters]
-        self.digital_plot.set_editor(label="修正 EQ 与所选固件链", filters=filters, raw=doc.raw,
-            nodeBase=np.column_stack((frequency, raw_values)).tolist(), rawBase=[],
-            addBase=np.column_stack((frequency, correction(doc, frequency, fs))).tolist(),
-            empty="双击添加 PEQ，或导入 EQ。打开固件后可在这里检查两路数字滤波链。")
-        self.acoustic_plot.set_editor(label="频响与调音", filters=filters, raw=doc.raw,
-            nodeBase=np.column_stack((frequency, acoustic_base+raw_values)).tolist(),
-            rawBase=np.column_stack((frequency, acoustic_base)).tolist(),
-            addBase=np.column_stack((frequency, acoustic_base+correction(doc, frequency, fs))).tolist(),
-            empty="选择或导入原始测量，再调曲线。也可以直接双击添加 PEQ。")
+        self._peq_map = [i for i, f in enumerate(doc.filters) if f.enabled]
+        frequency = np.geomspace(20, 20000, 4096)
+        fs = int(self.rate_combo.currentText())
+        state = 0 if special else max(0, self.state_combo.currentIndex())
+        raw_doc = copy.deepcopy(doc)
+        raw_doc.filters = []
+        raw_values, eq_values = correction(raw_doc, frequency, fs), correction(doc, frequency, fs)
+        self.main_plot.clear_curves()
+        difference, difference_error = None, ''
+        try:
+            difference = self.difference(frequency)
+        except (ValueError, KeyError, IndexError, TypeError) as exc:
+            difference_error = str(exc)
+        records = []
+        plan = next((p for p in self.session.firmware_plans if p['destination'] == key), None)
+        if plan is None:
+            plan = next((p for p in reversed(self.session.firmware_plans) if p.get('baseline') == key), None)
+        if bank and key:
+            for role in sorted(tables_for(bank, self.region_combo.currentText()), key=lambda r: r['output']):
+                record = record_at(bank, role['name'], key, state)
+                records.append((role, record))
+                if self.curve_checks.get('dac'+role['output']) and self.curve_checks['dac'+role['output']].isChecked():
+                    color = '#bf8ae8' if role['output'] == '1' else '#e484a4'
+                    show_difference = self.dac_mode_combo.currentData() == 'difference'
+                    if show_difference and difference:
+                        self.main_plot.plot(frequency, difference['branches'][role['output']], color=color,
+                            name=f"DAC{role['output']} · 相对参考差分")
+                    elif not show_difference:
+                        self.main_plot.plot(frequency, firmware_curve(record, frequency, fs), color=color,
+                            name=f"DAC{role['output']} · 当前滤波增益")
+                    if plan and not show_difference:
+                        planned = next(c['record'] for c in plan['records'] if c['table'] == role['name'] and c['state'] == state)
+                        self.main_plot.plot(frequency, firmware_response(planned['filters'], frequency, fs), color=color,
+                            dashed=True, name=f"DAC{role['output']} · 待导出 {plan['destination']}")
+        self.firmware_table.setRowCount(sum(r['count'] for _,r in records))
+        row = 0
+        gains = []
+        for role, record in records:
+            gains.append(f"DAC{role['output']}: gain0 {record['gain0']:.4g} / gain1 {record['gain1']:.4g} dB")
+            for f in record['slots'][:record['count']]:
+                for col, value in enumerate((role['output'], f['type_id'], f['gain'], f['fc'], f['q'])):
+                    self.firmware_table.setItem(row, col, QtWidgets.QTableWidgetItem(str(value)))
+                row += 1
+        self.gains_label.setText('\n'.join(gains) or '固件滤波器和增益字段只读；通过拟合或粘贴生成修改计划。')
+        base, spl_offset, bands = np.zeros_like(frequency), 0., []
+        measurement_index = self.measurement_combo.currentIndex()
+        has_measurement = 0 <= measurement_index < len(self.measurements)
+        if has_measurement:
+            m = self.measurements[measurement_index]
+            x, values = np.asarray(m.frequencies), np.asarray(m.spl_values)
+            spl_offset = float(np.interp(np.log(1000), np.log(x), values))
+            values = values-spl_offset
+            base = np.interp(np.log(frequency), np.log(x), values)
+            if self.curve_checks['original'].isChecked():
+                self.main_plot.plot(x, values, color='#759ecb', name='原始实测')
+            if difference:
+                base += difference['delta']
+                if self.curve_checks['current'].isChecked():
+                    visible = (frequency >= x[0]) & (frequency <= x[-1])
+                    self.main_plot.plot(frequency[visible], base[visible], color='#a8c5f0', dashed=True,
+                                        name='当前固件估计')
+                if difference['uncertain_band']:
+                    bands.append({'low': difference['uncertain_band'][0], 'high': difference['uncertain_band'][1],
+                                  'label': '双单元交叠 · 模型近似'})
+            visible = (frequency >= x[0]) & (frequency <= x[-1])
+            if self.curve_checks['estimated'].isChecked():
+                self.main_plot.plot(frequency[visible], (base+eq_values)[visible], color='#32cbb9', name='编辑后估计')
+            if plan and self.curve_checks['planned'].isChecked():
+                try:
+                    pending = self.difference(frequency, [plan], plan['destination'])
+                    if pending:
+                        original = np.interp(np.log(frequency), np.log(x), values)
+                        self.main_plot.plot(frequency[visible], (original+pending['delta'])[visible], color='#f38b5d',
+                            dashed=True, name=f"待导出估计 · {plan['destination']}")
+                except (ValueError, KeyError, IndexError, TypeError) as exc:
+                    difference_error = str(exc)
+        target_index = self.target_combo.currentIndex()
+        if 0 <= target_index < len(self.targets) and self.curve_checks['target'].isChecked():
+            target = self.targets[target_index]
+            target_values = np.asarray(target.spl_values)
+            target_values = target_values-np.interp(np.log(1000), np.log(target.frequencies), target_values)
+            self.main_plot.plot(target.frequencies, target_values, color='#e3ad55', dashed=True, name='目标频响 · 1kHz 对齐')
+        if (self.curve_checks['correction'].isChecked() or not has_measurement) and (doc.raw or doc.filters):
+            self.main_plot.plot(frequency, eq_values, color='#e7d6ae', name='修正 EQ · 0dB 基准')
+        self.curve_checks['current'].setEnabled(bool(difference and has_measurement))
+        self.curve_checks['planned'].setEnabled(bool(plan))
+        for output in ('1', '2'):
+            self.curve_checks['dac'+output].setEnabled(bool(bank))
+        self.main_plot.setLabel('left', 'dB · EQ 增益／相对声压')
+        self.main_plot.set_editor(label=f"调音 · {fs/1000:g} kHz"+(f' · {self.region_combo.currentText()}' if bank else ''),
+            filters=[asdict(f) for f in doc.filters], raw=doc.raw,
+            nodeBase=np.column_stack((frequency, base+raw_values)).tolist(),
+            rawBase=np.column_stack((frequency, base)).tolist(),
+            addBase=np.column_stack((frequency, base+eq_values)).tolist(), bands=bands,
+            splOffset=spl_offset if has_measurement and not self.relative_check.isChecked() else None,
+            empty='选择原始测量，或双击添加 PEQ。固件两路滤波链可用复选框叠加。')
+        if difference and has_measurement:
+            assumption = '参考关系为假定；' if self.reference_assumed.isChecked() else ''
+            self.quality_label.setText(assumption+difference['mode']+'。编辑后估计 = 当前固件估计 + 修正；虚线橙色来自待写入参数。')
+        elif difference_error:
+            self.quality_label.setText('固件差分未计算：'+difference_error+'。编辑后曲线暂为实测＋修正。')
+        else:
+            self.quality_label.setText('编辑后估计 = 实测＋修正。绑定参考固件后加入当前固件差分；所有曲线共享频率轴和 dB 比例。')
 
     def closeEvent(self, event):
         if self.workers or self.network_workers:

@@ -207,7 +207,9 @@ def test_gui_firmware_fit_metadata_export_and_recovery(monkeypatch, tmp_path, qt
         threading.Event().wait(.01)
     assert len(window.session.firmware_plans) == 1
     window.preset_combo.setCurrentText("丹拿高解析")
-    assert len(window.digital_plot.listDataItems()) == 3
+    window.curve_checks["dac1"].setChecked(True)
+    window.curve_checks["dac2"].setChecked(True)
+    assert len(window.main_plot.listDataItems()) == 5
     window.set_metadata_edits({"version_digits": "119"})
     output = tmp_path/"gui-edited.bin"
     window.export_to_path(output)
@@ -226,3 +228,44 @@ def test_gui_firmware_fit_metadata_export_and_recovery(monkeypatch, tmp_path, qt
     assert restored.session.metadata_edits == {"version_digits": "119"}
     restored.undo()
     restored.close()
+
+
+def test_single_view_both_outputs_and_no_phantom_chain(monkeypatch, tmp_path, qt_app):
+    from tests.firmware_fixture import synthetic_firmware
+    window = MainWindow(recover=False, auto_path=tmp_path/"layers.json")
+    assert window.digital_plot is window.acoustic_plot is window.main_plot
+    assert not window.main_plot.listDataItems()
+    monkeypatch.setattr(window, "connect_flowmix", lambda: None)
+    window.set_firmware(synthetic_firmware(monkeypatch, tmp_path))
+    assert not window.main_plot.listDataItems()
+    window.curve_checks["dac1"].setChecked(True)
+    window.curve_checks["dac2"].setChecked(True)
+    assert {c["name"] for c in window.main_plot.listDataItems()} == {
+        "DAC1 · 当前滤波增益", "DAC2 · 当前滤波增益"}
+    window.curve_checks["dac1"].setChecked(False)
+    assert len(window.main_plot.listDataItems()) == 1
+    window.close()
+
+
+def test_clipboard_curve_selection_and_metadata_share_history(monkeypatch, tmp_path, qt_app):
+    from tests.firmware_fixture import synthetic_firmware
+    window = MainWindow(recover=False, auto_path=tmp_path/"clipboard.json")
+    monkeypatch.setattr(window, "connect_flowmix", lambda: None)
+    window.set_firmware(synthetic_firmware(monkeypatch, tmp_path))
+    window.set_document(parse_text("GraphicEQ: 20 1; 20000 0"))
+    window.set_measurements([Measurement("First", [20, 20000], [80, 90])])
+    window.set_targets([Measurement("Target", [20, 20000], [1, 0])])
+    window.copy_tuning()
+    window.set_document(parse_text("[PEQ]\nPEQ9: 2000 -3 2 PEAK"))
+    before = window.session.document.to_dict()
+    window.set_metadata_edits({"version_digits": "119"})
+    window.paste_tuning()
+    assert window.session.document.raw == [[20., 1.], [20000., 0.]]
+    window.undo()
+    assert window.session.document.to_dict() == before
+    assert window.session.metadata_edits == {"version_digits": "119"}
+    window.undo()
+    assert not window.session.metadata_edits
+    window.redo()
+    assert window.session.metadata_edits == {"version_digits": "119"}
+    window.close()

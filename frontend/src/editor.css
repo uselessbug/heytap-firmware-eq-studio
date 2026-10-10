@@ -25,3 +25,5 @@ button:hover { background: #304560; }
 .inspector input[type=number], .inspector select { width: 125px; color: #e2ecf8; background: #101c2e; border: 1px solid #45617e; border-radius: 5px; padding: 5px; }
 .inspector footer { display: flex; justify-content: space-between; margin-top: 10px; }
 .danger { color: #ffb1b1; }
+.spl-tick { position: absolute; right: 0; width: 47px; text-align: left; transform: translateY(-50%); color: #a8b9cf; font-size: 11px; }
+.spl-label { position: absolute; right: 0; top: -18px; color: #96a9c2; font-size: 11px; }

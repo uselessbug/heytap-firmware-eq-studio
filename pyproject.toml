@@ -16,7 +16,7 @@ heytap-eq = "heytap_eq.app:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-heytap_eq = ["web/*"]
+heytap_eq = ["web/*", "data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
