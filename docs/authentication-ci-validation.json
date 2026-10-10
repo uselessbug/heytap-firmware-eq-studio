@@ -1,0 +1,60 @@
+{
+  "date_utc": "2026-10-09",
+  "source_commit": "035a0219d2ce7d3998b171370faf573711e16dac",
+  "user_authentication_commit": "b23c92fa7aee09316d3293fad4a4cb77d87cca4f",
+  "workflow_run_id": 37874267639,
+  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639",
+  "github_actions": "success",
+  "root_cause": "test_independent_api_profile_loads_beside_frozen_executable assumed absent files imply no built-in authentication. The user's configured default made this assertion invalid.",
+  "changes": [
+    "Validate any configured fallback without requiring it to be absent.",
+    "Verify adjacent file and environment overrides, then restoration of the fallback after removing the file.",
+    "Require actual frozen executable authentication state to match source configuration and have no APK dependency."
+  ],
+  "workflow_changed": false,
+  "user_default_credential_changed": false,
+  "checks": [
+    {
+      "job": "check (ubuntu-24.04)",
+      "conclusion": "success",
+      "tests": 39,
+      "seconds": 3.69,
+      "ruff_passed": true
+    },
+    {
+      "job": "check (windows-latest)",
+      "conclusion": "success",
+      "tests": 39,
+      "seconds": 15.71,
+      "ruff_passed": true
+    }
+  ],
+  "windows_frozen_startup": {
+    "status": "passed",
+    "frozen": true,
+    "qt": "6.8.3",
+    "qt_binding": "PySide6",
+    "sha": "035a0219d2ce7d3998b171370faf573711e16dac",
+    "window_visible": true,
+    "screenshot": "frozen-startup.png",
+    "raw_points": 5,
+    "peq_filters": 1,
+    "measurements": 1,
+    "targets": 1,
+    "apk_dependency": false,
+    "service_configured": true,
+    "firmware_export_available": true,
+    "metadata_editor_available": true,
+    "project_schema": "heytap-project-v3",
+    "executable_sha256": "3733a612634825f3e69f02ffba0b1166462a719a792c083bc3db97bbe18e75d4"
+  },
+  "frozen_evidence_digest": "dbfdb7a4218f8b94576a1da25be53f0de44e876d85bee584486e2017abcf6d4f",
+  "windows_package": {
+    "artifact_id": 11591473190,
+    "artifact_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639/artifacts/11591473190",
+    "size_bytes": 104033432,
+    "digest": "sha256:e63ba1c71aee01ce549d375cfbaaf96446f894cd5ecf10a1d8d3a5a1342dcfae"
+  },
+  "validation_scope": "Startup validates presence and packaging of authentication; no live measurement service request is made by this CI run. Existing model and physical-device validation limits remain unchanged."
+}
+

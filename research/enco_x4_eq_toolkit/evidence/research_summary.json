@@ -1,0 +1,190 @@
+{
+  "created_date": "2026-10-08",
+  "preset_mapping": {
+    "丹拿原声": {
+      "protocol_id": 0,
+      "mode_type": 42,
+      "start": 0
+    },
+    "清亮高音": {
+      "protocol_id": 1,
+      "mode_type": 46,
+      "start": 9
+    },
+    "纯享人声": {
+      "protocol_id": 2,
+      "mode_type": 28,
+      "start": 18
+    },
+    "澎湃低音": {
+      "protocol_id": 3,
+      "mode_type": 29,
+      "start": 27
+    },
+    "丹拿高解析": {
+      "protocol_id": 7,
+      "mode_type": 43,
+      "start": 36
+    }
+  },
+  "fit_metrics": [
+    [
+      "AZ80",
+      "output1",
+      "44.1 kHz",
+      "0.1223",
+      "0.6191"
+    ],
+    [
+      "AZ80",
+      "output1",
+      "48 kHz",
+      "0.1176",
+      "0.6190"
+    ],
+    [
+      "AZ80",
+      "output1",
+      "96 kHz",
+      "0.1204",
+      "0.7892"
+    ],
+    [
+      "AZ80",
+      "output2",
+      "44.1 kHz",
+      "0.0692",
+      "0.2084"
+    ],
+    [
+      "AZ80",
+      "output2",
+      "48 kHz",
+      "0.0677",
+      "0.1932"
+    ],
+    [
+      "AZ80",
+      "output2",
+      "96 kHz",
+      "0.0665",
+      "0.2164"
+    ],
+    [
+      "Optimized",
+      "output1",
+      "44.1 kHz",
+      "0.1228",
+      "0.6289"
+    ],
+    [
+      "Optimized",
+      "output1",
+      "48 kHz",
+      "0.1120",
+      "0.6290"
+    ],
+    [
+      "Optimized",
+      "output1",
+      "96 kHz",
+      "0.1214",
+      "0.8462"
+    ],
+    [
+      "Optimized",
+      "output2",
+      "44.1 kHz",
+      "0.0683",
+      "0.2308"
+    ],
+    [
+      "Optimized",
+      "output2",
+      "48 kHz",
+      "0.0655",
+      "0.1907"
+    ],
+    [
+      "Optimized",
+      "output2",
+      "96 kHz",
+      "0.0630",
+      "0.2020"
+    ]
+  ],
+  "input_eq": {
+    "az80": {
+      "points": 127,
+      "personal_peqs": 0,
+      "target": "丹拿高解析",
+      "source_sha256": "2f9f09e58e4a511e440860467ecb1c7bf4f9f4d1070931e7dfffc20abe1b7490"
+    },
+    "optimized": {
+      "points": 127,
+      "personal_peqs": 5,
+      "target": "清亮高音",
+      "source_sha256": "83a7612388fc1210c56649e2d9915145906f69eaf32be19c5b4d95bb9f1faeba"
+    }
+  },
+  "validation": {
+    "parsing_pass": true,
+    "raw_rounding_max_difference_db": 0.050000000000000266,
+    "all_5_peqs_applied": true,
+    "allpass_magnitude_pass": true,
+    "packages": [
+      {
+        "sha256": "bfbaff835cab049076d909e1393388773526075e49befef74634b9832b29d7ad",
+        "selected_record_count": 72,
+        "changed_blocks": [
+          29,
+          30
+        ],
+        "raw_length_unchanged": true,
+        "outside_target_records_unchanged": true,
+        "all_opkg_checks_pass": true,
+        "on_device_test": false,
+        "version_changed": false,
+        "version": 112,
+        "changed_profile_count": 72,
+        "corrupted_opkg_rejected": true,
+        "overlapping_plans_rejected": true,
+        "modified_highpass_rejected": true,
+        "forged_fit_metrics_rejected": true,
+        "original_input_unchanged": true
+      },
+      {
+        "sha256": "38f4d9f7729f904ee0d89b113d178137c614e0a996e3852e8a7ae2db55fda1b4",
+        "selected_record_count": 72,
+        "changed_blocks": [
+          29
+        ],
+        "raw_length_unchanged": true,
+        "outside_target_records_unchanged": true,
+        "all_opkg_checks_pass": true,
+        "on_device_test": false,
+        "version_changed": false,
+        "version": 116,
+        "changed_profile_count": 72,
+        "corrupted_opkg_rejected": true,
+        "overlapping_plans_rejected": true,
+        "modified_highpass_rejected": true,
+        "forged_fit_metrics_rejected": true,
+        "original_input_unchanged": true
+      }
+    ],
+    "over_capacity_rejected": true
+  },
+  "arm_evidence": [
+    {
+      "version": 112,
+      "max_coefficient_error": 2.2020228707120282e-07,
+      "passed": true
+    },
+    {
+      "version": 116,
+      "max_coefficient_error": 2.2020228707120282e-07,
+      "passed": true
+    }
+  ]
+}

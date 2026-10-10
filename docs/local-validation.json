@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "status": "historical_desktop_results_source_not_recovered",
+  "notice": "这是此前桌面实现的历史本地结果。其源码和 32 项 pytest 未恢复，不能从当前仓库复现，也不是 CI 结果。恢复后的旧 CLI 保持原版本；本次可重跑验证见 docs/recovered-validation.json。",
+  "local_checks": {
+    "pytest": {
+      "passed": 32
+    },
+    "ruff": "passed",
+    "runtime_version_emulation": {
+      "versions": 1000,
+      "address_alignments": 2,
+      "total_executions": 2000,
+      "registers_preserved": [
+        "r1",
+        "r4"
+      ],
+      "adjacent_bytes_preserved": true
+    }
+  },
+  "firmware_checks": [
+    {
+      "input_version": "112",
+      "output_version": "123",
+      "eq_records_changed": 72,
+      "raw_bytes_changed": 16066,
+      "changed_compressed_blocks": [
+        3,
+        29,
+        30,
+        34
+      ],
+      "output_sha256": "1c6aff80e137e9e703044c95dc54f8243e0501694ded6228909fd4870473cfbd",
+      "crc_and_sha_verified": true,
+      "undeclared_raw_bytes_unchanged": true,
+      "special_record_45_unchanged": true
+    },
+    {
+      "input_version": "116",
+      "output_version": "123",
+      "eq_records_changed": 72,
+      "raw_bytes_changed": 16066,
+      "changed_compressed_blocks": [
+        3,
+        29,
+        33
+      ],
+      "output_sha256": "d7ea5a0faa940789720900f45ceb7e46d8066371250d169c446fc04d2a655f5f",
+      "crc_and_sha_verified": true,
+      "undeclared_raw_bytes_unchanged": true,
+      "special_record_45_unchanged": true
+    }
+  ],
+  "sample_fit": {
+    "input": "Flowmix optimized",
+    "sample_rate_hz": 48000,
+    "audible_rms_error_db": 0.1119114,
+    "max_error_db": 0.4835314,
+    "scope": "one verified main path; not all records"
+  },
+  "build": {
+    "linux": "PyInstaller COLLECT failed with duplicate Qt shared-library symlink in a system-site-packages environment",
+    "windows": "not run; Actions configuration and source upload pending"
+  },
+  "flowmix_online": {
+    "anonymous_requests": "567 / 502; no measurement data retrieved",
+    "embedded_credential_request": "rejected by automatic approval review; not retried"
+  },
+  "device_flash": "not tested",
+  "vendor_binary_files_committed": false,
+  "desktop_source_recovered": false,
+  "previous_32_test_suite_recovered": false,
+  "current_validation": "docs/recovered-validation.json"
+}
+

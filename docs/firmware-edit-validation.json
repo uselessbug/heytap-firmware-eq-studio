@@ -1,0 +1,97 @@
+{
+  "date_utc": "2026-10-08",
+  "source_commit": "8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a",
+  "workflow_run_id": 37815741589,
+  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589",
+  "github_actions": "success",
+  "static_checks": {
+    "Linux": "passed",
+    "Windows": "passed"
+  },
+  "pytest": {
+    "Linux": {
+      "passed": 39,
+      "seconds": 3.57
+    },
+    "Windows": {
+      "passed": 39,
+      "seconds": 9.03
+    }
+  },
+  "source_gui_startup": {
+    "Linux": "passed",
+    "Windows": "passed"
+  },
+  "windows_frozen_startup": {
+    "status": "passed",
+    "frozen": true,
+    "qt": "6.8.3",
+    "qt_binding": "PySide6",
+    "sha": "8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a",
+    "window_visible": true,
+    "screenshot": "frozen-startup.png",
+    "raw_points": 5,
+    "peq_filters": 1,
+    "measurements": 1,
+    "targets": 1,
+    "apk_dependency": false,
+    "service_configured": false,
+    "firmware_export_available": true,
+    "metadata_editor_available": true,
+    "project_schema": "heytap-project-v3",
+    "executable_sha256": "40e98c6a8240f14c73d633f2670e6da914f02736a7a5cc3b56a562b5b6449482"
+  },
+  "windows_package": {
+    "artifact_id": 11567181875,
+    "artifact_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37815741589/artifacts/11567181875",
+    "size_bytes": 104034608,
+    "artifact_sha256": "ac31af7a84e82ec719a5fadfe480ffe242c81cfb18939eb18dbbb9771d7551f8",
+    "portable_zip_sha256": "75bc20c7ed8f673957041426b243fe8957179348a7ae6b959ac5aeff1dbaf9dd",
+    "source_sha_file": "8878dfddc78726ee1e4a00b7452eb0d1c9ec6c0a",
+    "executable_sha256": "40e98c6a8240f14c73d633f2670e6da914f02736a7a5cc3b56a562b5b6449482",
+    "has_private_profile": false,
+    "has_unicorn_dll": false,
+    "has_capstone_dll": false
+  },
+  "visual_qa": "Downloaded actual frozen Windows startup screenshot inspected: Chinese text and audio axes readable; firmware controls present; independent original/target/estimated controls and collapsible parameter panel.",
+  "firmware_gui_end_to_end": "Fit whole preset, stage version, export new OPKG, reopen, restore project v3; passed on Linux and Windows.",
+  "getter_execution_validation": {
+    "versions": "000..999",
+    "aligned_and_unaligned": true,
+    "executions_per_platform": 2000,
+    "engine": "Unicorn Cortex-M4 with independent Capstone decoding",
+    "checks": [
+      "three output bytes",
+      "adjacent canary bytes",
+      "r0",
+      "r1",
+      "r4"
+    ]
+  },
+  "real_inputs": {
+    "full_preset_fitting": "firmware-real-fit-validation.json",
+    "metadata_editing": "metadata-real-validation.json",
+    "provided_optimized_sample": "modified-sample-validation.json"
+  },
+  "flowmix": {
+    "runtime_apk_dependency": false,
+    "public_package_authorization_present": false,
+    "live_sources_previously_verified": [
+      "realab",
+      "huihifi",
+      "woodenears",
+      "hangoutaudio5128",
+      "hangoutaudio711",
+      "hobbytalk"
+    ],
+    "live_targets_previously_verified": 21,
+    "authorization_handling": "User will manually configure after waking; service_profile.py unchanged."
+  },
+  "scope_limits": [
+    "No physical headset, OTA or acoustic validation",
+    "Unknown model parameter semantics still require adaptation",
+    "Real-input fitting validation used existing local NumPy 2.3.5 / SciPy 1.17.0; Actions used locked NumPy 2.2.6 / SciPy 1.15.3 with synthetic fixtures"
+  ],
+  "windows_test_native_message": "Unicorn may print an intended Windows internal access violation while mapping guest memory; all assertions and tests passed with exit code zero. This library is CI-only and absent from the portable package.",
+  "unicorn_faq": "https://github.com/unicorn-engine/unicorn/blob/master/docs/FAQ.md"
+}

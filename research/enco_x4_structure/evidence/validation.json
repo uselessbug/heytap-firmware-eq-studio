@@ -1,0 +1,27 @@
+{
+  "integrity_samples": 4,
+  "validated_block_count": 135,
+  "unchanged_repack_byte_exact_samples": 4,
+  "synthetic_eq_edit": {
+    "offset": 7559016,
+    "before": 0.1,
+    "after": 0.2,
+    "changed_blocks": [
+      29
+    ],
+    "all_checks_pass": true,
+    "remaining_blocks_preserved": true
+  },
+  "corruption_rejections": [
+    "CRC32 with repaired package SHA256",
+    "raw hash with repaired package SHA256",
+    "compressed hash with repaired package SHA256",
+    "package SHA256 mismatch"
+  ],
+  "device_flash_test": false,
+  "official_112_116_eq_bank_bytes_identical": true,
+  "official_112_116_eq_pointer_index_mapping_identical": true,
+  "eq_bank_sha256": "4fe414fad4938f547db9fa2327462942c55014cfbb7a700a71e9f01e906ac866",
+  "eq_bank_size": 55200,
+  "apk_sha256": "a4137666c21aa279c23c96cdc0c00bd698fe156de547aa851471768159a67a90"
+}

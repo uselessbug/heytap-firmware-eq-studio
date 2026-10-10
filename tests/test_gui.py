@@ -1,0 +1,318 @@
+import threading
+from pathlib import Path
+
+from PySide6 import QtTest
+
+from heytap_eq.eq_formats import parse_text
+from heytap_eq.gui import MainWindow
+from heytap_eq.measurements import Measurement
+
+
+def test_edit_undo_project_and_measurement_preview(tmp_path, qt_app):
+    app = qt_app
+    window = MainWindow(recover=False, auto_path=tmp_path/"recovery.json")
+    window.show()
+    window.set_document(parse_text("GraphicEQ: 20 1; 20000 0"))
+    window.add_filter()
+    app.processEvents()
+    assert window.filters_table.rowCount() == 1
+    window.filters_table.item(0, 4).setText("3")
+    assert window.session.document.filters[0].gain == 3
+    window.undo()
+    assert window.session.document.filters[0].gain == 0
+    window.redo()
+    assert window.session.document.filters[0].gain == 3
+    window.edit_peq((0, 1500, 2))
+    assert window.session.document.filters[0].frequency == 1500
+    window.undo()
+    assert window.session.document.filters[0].frequency == 1000
+    window.edit_raw((0, -2))
+    assert window.session.document.raw[0][1] == -2
+    window.undo()
+    assert window.session.document.raw[0][1] == 1
+    window.set_measurements([Measurement("Synthetic", [20, 1000, 20000], [80, 90, 80]).validate()])
+    assert len(window.acoustic_plot.listDataItems()) == 2
+    assert (tmp_path/"recovery.json").exists()
+    assert window.grab().save(str(tmp_path/"gui.png"))
+    window.close()
+
+
+def test_web_gesture_previews_live_and_is_one_undo_step(tmp_path, qt_app):
+    window = MainWindow(recover=False, auto_path=tmp_path/"drag.json")
+    window.show()
+    window.set_document(parse_text("GraphicEQ: 20 0; 1000 1; 20000 0"))
+    window.editor_event({"op": "begin"})
+    window.editor_event({"op": "raw", "phase": "change", "index": 1, "gain": 4})
+    QtTest.QTest.qWait(35)
+    assert window.session.document.raw[1][1] == 1
+    assert window._preview_document.raw[1][1] == 4
+    assert len(window.session._undo) == 1
+    window.editor_event({"op": "raw", "phase": "end", "index": 1, "gain": 4})
+    assert window.session.document.raw[1][1] == 4
+    assert len(window.session._undo) == 2
+    window.undo()
+    assert window.session.document.raw[1][1] == 1
+    window.editor_event({"op": "add", "frequency": 2300, "gain": -3})
+    assert window.session.document.filters[0].frequency == 2300
+    count = len(window.session._undo)
+    window.editor_event({"op": "filter", "phase": "end", "index": 0,
+        "filter": {"frequency": 2500, "gain": 0, "q": 1.3, "kind": "HS", "enabled": True}})
+    assert window.session.document.filters[0].q == 1.3
+    assert window.session.document.filters[0].gain == 0
+    assert len(window.session._undo) == count+1
+    window.undo()
+    assert window.session.document.filters[0].kind == "PEAK"
+    window.close()
+
+
+def test_actual_web_channel_renders_and_delivers_edit(tmp_path, qt_app):
+    window = MainWindow(recover=False, auto_path=tmp_path/"web.json")
+    window.show()
+    for _ in range(200):
+        qt_app.processEvents()
+        if window.digital_plot.is_ready and window.acoustic_plot.is_ready:
+            break
+        QtTest.QTest.qWait(50)
+    assert window.digital_plot.is_ready and window.acoustic_plot.is_ready
+    window.digital_plot.page().runJavaScript(
+        'window.studioEdit({op:"add",frequency:1250,gain:2})')
+    for _ in range(100):
+        qt_app.processEvents()
+        if window.session.document.filters:
+            break
+        QtTest.QTest.qWait(25)
+    QtTest.QTest.qWait(100)
+    received = []
+    window.digital_plot.inspect(received.append)
+    for _ in range(100):
+        qt_app.processEvents()
+        if received and received[0]["svgPaths"]:
+            break
+        QtTest.QTest.qWait(25)
+    assert received and received[0]["svgPaths"] > 0
+    assert window.session.document.filters[0].frequency == 1250
+    assert not window.advanced_controls.isVisible()
+    window.close()
+
+
+def test_online_selection_uses_file_id_without_network(tmp_path, qt_app):
+    app = qt_app
+    window = MainWindow(recover=False, auto_path=tmp_path/"online.json")
+    calls = []
+    class Client:
+        from_cache = False
+        def brands(self, source):
+            return [{"name": "OPPO", "display": "OPPO"}]
+        def headphones(self, source, brand):
+            return [{"name": "File_ID", "display": "Display name"}]
+        def measurements(self, source, brand, headphone):
+            calls.append((source, brand, headphone))
+            return [Measurement("Synthetic", [20, 1000], [80, 90]).validate()]
+    window.flowmix_client = Client()
+    window.set_online_sources([{"name": "fixture", "display": "Fixture"}])
+    assert window.source_combo.currentIndex() == -1
+    window.source_combo.setCurrentIndex(0)
+    window.source_chosen()
+    for _ in range(100):
+        app.processEvents()
+        if window.brand_combo.count() and not window.network_workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert window.brand_combo.currentIndex() == -1
+    window.brand_combo.setCurrentIndex(0)
+    window.brand_chosen()
+    for _ in range(100):
+        app.processEvents()
+        if window.headphone_combo.count() and not window.network_workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert window.headphone_combo.currentIndex() == -1
+    window.headphone_combo.setCurrentIndex(0)
+    assert window.headphone_combo.currentData() == "File_ID"
+    window.load_online_measurements()
+    for _ in range(100):
+        app.processEvents()
+        if window.measurements and not window.network_workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert calls == [("fixture", "OPPO", "File_ID")]
+    assert len(window.measurements) == 1
+    window.close()
+
+
+def test_pending_network_does_not_block_offline_file_task(tmp_path, qt_app):
+    app = qt_app
+    window = MainWindow(recover=False, auto_path=tmp_path/"independent.json")
+    release = threading.Event()
+    def slow_network():
+        release.wait(timeout=3)
+        return []
+    window._task(slow_network, lambda result: None, network=True)
+    try:
+        window._task(lambda: parse_text("GraphicEQ: 20 1; 20000 0"), window.set_document)
+        for _ in range(100):
+            app.processEvents()
+            if window.session.document.raw and not window.workers:
+                break
+            QtTest.QTest.qWait(10)
+        assert window.session.document.raw[0] == [20, 1]
+        assert window.network_workers
+    finally:
+        release.set()
+        for _ in range(100):
+            app.processEvents()
+            if not window.network_workers:
+                break
+            QtTest.QTest.qWait(10)
+        window.close()
+
+
+def test_source_browser_and_target_library_load_independently(monkeypatch, tmp_path, qt_app):
+    window = MainWindow(recover=False, auto_path=tmp_path/"parallel-indexes.json")
+    release = threading.Event()
+    class Client:
+        from_cache = False
+        def __init__(self, *args):
+            pass
+        def sources(self):
+            return [{"name": "fixture", "display": "Fixture"}]
+        def targets(self):
+            release.wait(timeout=5)
+            return [{"name": "target-id", "display": "Target"}]
+        def brands(self, source):
+            return [{"name": "OPPO", "display": "OPPO"}]
+        def headphones(self, source, brand):
+            return [{"name": "File_ID", "display": "Display name"}]
+        def measurements(self, source, brand, headphone):
+            return [Measurement("Synthetic", [20, 1000], [80, 90])]
+    monkeypatch.setattr("heytap_eq.gui.FlowmixClient", Client)
+    monkeypatch.setattr("heytap_eq.gui.builtin_authorization", lambda *args: "fixture")
+    window.desired_selection = {"source": "fixture", "brand": "OPPO", "headphone": "File_ID"}
+    window.connect_flowmix()
+    try:
+        for _ in range(200):
+            qt_app.processEvents()
+            if window.measurements:
+                break
+            QtTest.QTest.qWait(10)
+        assert window.measurements and window.network_workers
+        release.set()
+        for _ in range(200):
+            qt_app.processEvents()
+            if not window.network_workers:
+                break
+            QtTest.QTest.qWait(10)
+        assert window.library_combo.count() == 1
+        assert window.library_combo.itemData(0) == "target-id"
+    finally:
+        release.set()
+        for _ in range(200):
+            qt_app.processEvents()
+            if not window.network_workers:
+                break
+            QtTest.QTest.qWait(10)
+        window.close()
+
+
+def test_target_fit_and_project_curve_recovery(tmp_path, qt_app):
+    path = tmp_path/"fit.json"
+    window = MainWindow(recover=False, auto_path=path)
+    original = Measurement("Flat", [20, 1000, 20000], [80, 80, 80])
+    target = Measurement("Target", [20, 1000, 20000], [2, 0, -1])
+    window.set_measurements([original])
+    window.set_targets([target])
+    assert len(window.acoustic_plot.listDataItems()) == 3
+    from heytap_eq.fitting import FitOptions
+    window.fit_measurements(original, target, "RAW", FitOptions(smoothing_octaves=0))
+    for _ in range(100):
+        qt_app.processEvents()
+        if window.fit_report and not window.workers:
+            break
+        QtTest.QTest.qWait(10)
+    assert window.fit_report and len(window.session.document.raw) == 127
+    window.close()
+    restored = MainWindow(recover=True, auto_path=path)
+    assert restored.measurements == [original] and restored.targets == [target]
+    assert restored.target_combo.currentIndex() == 0
+    assert [restored.digital_plot.low, restored.digital_plot.high] == [-24., 24.]
+    restored.close()
+
+
+def test_gui_firmware_fit_metadata_export_and_recovery(monkeypatch, tmp_path, qt_app):
+    from heytap_eq.adapters import inspect_firmware
+    from tests.firmware_fixture import synthetic_firmware
+    firmware = synthetic_firmware(monkeypatch, tmp_path)
+    window = MainWindow(recover=False, auto_path=tmp_path/"firmware-project.json")
+    monkeypatch.setattr(window, "connect_flowmix", lambda: None)
+    window.set_firmware(firmware)
+    window.set_document(parse_text("[PEQ]\nPEQ1: 1200 -2 1 PEAK"))
+    window.fit_firmware_preset("丹拿高解析")
+    for _ in range(400):
+        qt_app.processEvents()
+        if window.session.firmware_plans and not window.workers:
+            break
+        threading.Event().wait(.01)
+    assert len(window.session.firmware_plans) == 1
+    window.preset_combo.setCurrentText("丹拿高解析")
+    window.curve_checks["dac1"].setChecked(True)
+    window.curve_checks["dac2"].setChecked(True)
+    assert len(window.main_plot.listDataItems()) == 5
+    window.set_metadata_edits({"version_digits": "119"})
+    output = tmp_path/"gui-edited.bin"
+    window.export_to_path(output)
+    for _ in range(400):
+        qt_app.processEvents()
+        if not window.workers:
+            break
+        threading.Event().wait(.01)
+    assert hasattr(window, "last_export_report"), window.statusBar().currentMessage()
+    assert window.last_export_report["changed_records"] == 36
+    assert inspect_firmware(output).package["summary"]["version_digits"] == "119"
+    assert Path(str(output)+".report.json").exists()
+    window.close()
+    restored = MainWindow(recover=True, auto_path=tmp_path/"firmware-project.json")
+    assert len(restored.session.firmware_plans) == 1
+    assert restored.session.metadata_edits == {"version_digits": "119"}
+    restored.undo()
+    restored.close()
+
+
+def test_single_view_both_outputs_and_no_phantom_chain(monkeypatch, tmp_path, qt_app):
+    from tests.firmware_fixture import synthetic_firmware
+    window = MainWindow(recover=False, auto_path=tmp_path/"layers.json")
+    assert window.digital_plot is window.acoustic_plot is window.main_plot
+    assert not window.main_plot.listDataItems()
+    monkeypatch.setattr(window, "connect_flowmix", lambda: None)
+    window.set_firmware(synthetic_firmware(monkeypatch, tmp_path))
+    assert not window.main_plot.listDataItems()
+    window.curve_checks["dac1"].setChecked(True)
+    window.curve_checks["dac2"].setChecked(True)
+    assert {c["name"] for c in window.main_plot.listDataItems()} == {
+        "DAC1 · 当前滤波增益", "DAC2 · 当前滤波增益"}
+    window.curve_checks["dac1"].setChecked(False)
+    assert len(window.main_plot.listDataItems()) == 1
+    window.close()
+
+
+def test_clipboard_curve_selection_and_metadata_share_history(monkeypatch, tmp_path, qt_app):
+    from tests.firmware_fixture import synthetic_firmware
+    window = MainWindow(recover=False, auto_path=tmp_path/"clipboard.json")
+    monkeypatch.setattr(window, "connect_flowmix", lambda: None)
+    window.set_firmware(synthetic_firmware(monkeypatch, tmp_path))
+    window.set_document(parse_text("GraphicEQ: 20 1; 20000 0"))
+    window.set_measurements([Measurement("First", [20, 20000], [80, 90])])
+    window.set_targets([Measurement("Target", [20, 20000], [1, 0])])
+    window.copy_tuning()
+    window.set_document(parse_text("[PEQ]\nPEQ9: 2000 -3 2 PEAK"))
+    before = window.session.document.to_dict()
+    window.set_metadata_edits({"version_digits": "119"})
+    window.paste_tuning()
+    assert window.session.document.raw == [[20., 1.], [20000., 0.]]
+    window.undo()
+    assert window.session.document.to_dict() == before
+    assert window.session.metadata_edits == {"version_digits": "119"}
+    window.undo()
+    assert not window.session.metadata_edits
+    window.redo()
+    assert window.session.metadata_edits == {"version_digits": "119"}
+    window.close()

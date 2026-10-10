@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-10",
+  "source_sha": "b1b931097d18b5789825c93e26267710d7dd8764",
+  "actions_run": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38061458404",
+  "windows_artifact": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38061458404/artifacts/11673506072",
+  "conclusion": "success",
+  "python_tests": {
+    "Linux": 49,
+    "Windows": 49,
+    "skipped": 0
+  },
+  "ruff": "passed",
+  "frontend_math_tests": 3,
+  "chromium_interaction": "passed",
+  "source_windows": {
+    "status": "passed",
+    "frozen": false,
+    "qt": "6.8.3",
+    "qt_binding": "PySide6",
+    "sha": "b1b931097d18b5789825c93e26267710d7dd8764",
+    "window_visible": true,
+    "screenshot": "source-startup.png",
+    "raw_points": 5,
+    "peq_filters": 1,
+    "measurements": 1,
+    "targets": 1,
+    "apk_dependency": false,
+    "service_configured": true,
+    "firmware_export_available": true,
+    "metadata_editor_available": true,
+    "project_schema": "heytap-project-v4",
+    "single_plot": true,
+    "reference_template_presets": 6,
+    "plot_engine": "DSSSP 0.8.0",
+    "web_editor": {
+      "ready": true,
+      "curves": 3,
+      "filters": 1,
+      "view": {
+        "minFreq": 20,
+        "maxFreq": 20000,
+        "minGain": -24,
+        "maxGain": 24
+      },
+      "svgPaths": 3,
+      "width": 914,
+      "height": 253,
+      "selected": null
+    }
+  },
+  "frozen_windows": {
+    "status": "passed",
+    "frozen": true,
+    "qt": "6.8.3",
+    "qt_binding": "PySide6",
+    "sha": "b1b931097d18b5789825c93e26267710d7dd8764",
+    "window_visible": true,
+    "screenshot": "frozen-startup.png",
+    "raw_points": 5,
+    "peq_filters": 1,
+    "measurements": 1,
+    "targets": 1,
+    "apk_dependency": false,
+    "service_configured": true,
+    "firmware_export_available": true,
+    "metadata_editor_available": true,
+    "project_schema": "heytap-project-v4",
+    "single_plot": true,
+    "reference_template_presets": 6,
+    "plot_engine": "DSSSP 0.8.0",
+    "web_editor": {
+      "ready": true,
+      "curves": 3,
+      "filters": 1,
+      "view": {
+        "minFreq": 20,
+        "maxFreq": 20000,
+        "minGain": -24,
+        "maxGain": 24
+      },
+      "svgPaths": 3,
+      "width": 914,
+      "height": 253,
+      "selected": null
+    },
+    "executable_sha256": "94bed6879fe3b0d9277e93ed2a8b486a505d5b77260abb0337642f619b19e8b8"
+  },
+  "reference_template": {
+    "presets": 6,
+    "records": 184,
+    "deduplicated_filter_chains": 35,
+    "origin": "Stock Enco X4 112; 116 has identical EQ parameters",
+    "publication_authorized": "2026-10-10"
+  },
+  "covered_changes": [
+    "single frequency/gain view and DAC overlays",
+    "dynamic adapter configuration and actual pointer resolution",
+    "selected-preset baseline; full-region/state fits; separate special configuration",
+    "reference-relative complex transfer comparison and explicit power approximation",
+    "lossless tuning and complete preset clipboard; destination mapping preservation",
+    "global history including metadata and curve/reference selection",
+    "independent measurement-source and target-library loading"
+  ],
+  "limits": [
+    "DAC labels are output aliases; physical DAC numbering is not fully verified",
+    "special configuration runtime use is not identified",
+    "different output changes require an assumed acoustic mixing model",
+    "gain0/gain1 acoustic interpretation remains an explicit assumption",
+    "real hardware OTA and post-change acoustic measurements are pending"
+  ],
+  "original_binary_inputs_uploaded": false
+}
