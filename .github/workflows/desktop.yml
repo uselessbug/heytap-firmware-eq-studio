@@ -51,7 +51,9 @@ jobs:
           npm run test:browser
       - name: Linux GUI libraries
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 xvfb xauth fonts-noto-cjk
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libopengl0 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-sync1 libxcb-shm0 libxcb-xfixes0 libxcb-glx0 libx11-xcb1 libsm6 libice6 xvfb xauth fonts-noto-cjk
       - name: Clean virtual environment
         shell: bash
         run: |
@@ -62,6 +64,19 @@ jobs:
           python -m pip install -r requirements-ci.txt
           python -m pip install --no-deps --no-build-isolation -e .
           python -m pip check
+      - name: Linux Qt platform dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+          import PySide6
+          plugin = Path(PySide6.__file__).parent / "Qt/plugins/platforms/libqxcb.so"
+          result = subprocess.run(["ldd", str(plugin)], check=True, text=True, capture_output=True)
+          print(result.stdout)
+          assert "not found" not in result.stdout, "Missing Qt X11 runtime dependency"
+          PY
       - name: Static checks and tests
         shell: bash
         env:
