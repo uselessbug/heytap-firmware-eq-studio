@@ -22,7 +22,7 @@ python -m pip install --no-deps --no-build-isolation -e .
 python -m heytap_eq.app
 ```
 
-Windows 可下载 [当前便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639/artifacts/11591473190)，解开产物内的 ZIP，运行 EXE 并保留 `_internal`。用户已在 `b23c92f` 内置共享认证，新成品直接点“获取在线测量”，无需 APK 或 Action Secret；配置文件/环境变量仍可覆写默认值。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
+Windows 可下载 [当前便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928/artifacts/11669767539)，解开产物内的 ZIP，运行 EXE 并保留 `_internal`。用户已在 `b23c92f` 内置共享认证，新成品直接点“获取在线测量”，无需 APK 或 Action Secret；配置文件/环境变量仍可覆写默认值。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
 
 ## 接手开发
 
@@ -47,7 +47,7 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 
 ## 当前桌面验证
 
-当前提交 `035a021` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639) 全部成功：Linux / Windows 各 39 项测试、Ruff、源码 GUI、Windows 便携包及真实冻结 EXE 启动。用户内置认证已保留；成品启动报告 `service_configured: true`，与源码一致。配置文件和环境变量覆盖及回退验证通过；Workflow 未修改。见 [认证与成品验证](docs/authentication-ci-validation.json)。
+当前图形编辑提交 `41a6dc195e3e9fe9a092b9ab408c280cb999ccad` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928) 全部成功：Linux / Windows 各 40 项 Python 检查、Ruff、3 项前端坐标检查、Chromium 实际鼠标交互、真实 Qt WebChannel 编辑和 Windows 冻结 EXE 启动。已下载核对源码与冻结截图；成品内实际绘出三条 SVG 曲线，小屏图形高度 271 px。共享认证仍为 `service_configured: true`，APK 依赖为 false。见 [图形编辑验证](docs/dsssp-validation.json)。此前认证修复的记录保留在 [认证验证](docs/authentication-ci-validation.json)。
 
 GUI 的“完整预设拟合 → 版本修改 → 导出 → 重开 → 工程恢复”已通过；getter 000..999 的对齐/未对齐写入独立仿真 2,000 次。主功能和真实输入验证的原始来源提交为 `8878dfd`，见 [记录](docs/firmware-edit-validation.json)；[此前测量阶段记录](docs/desktop-validation.json) 保留其原始范围。实际测量配置已验证六个来源和 21 条目标。
 

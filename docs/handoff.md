@@ -1,8 +1,20 @@
 # HeyTap Firmware EQ Studio 交接文档
 
-更新时间：2026-10-09（Asia/Shanghai）。此文档可直接交给后续对话继续开发。
+更新时间：2026-10-10（Asia/Shanghai）。此文档可直接交给后续对话继续开发。
 
-## 桌面固件编辑阶段（2026-10-09，当前）
+## DSSSP 编辑器阶段（2026-10-10，当前）
+
+代码提交 `41a6dc195e3e9fe9a092b9ab408c280cb999ccad`，继续使用 `feat/python-desktop-studio` 与草稿 PR #1，main 未合并。[Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928) 全部成功：两平台各 40 项 Python 检查、Ruff、3 项坐标数学检查、Linux Chromium 真鼠标交互、Qt 网页握手/编辑以及实际冻结 EXE 启动。[Windows 便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928/artifacts/11669767539) 已包含网页资源与 Qt WebEngine，无需 Node、浏览器服务器或 APK。用户填写的共享认证保持原样，冻结报告仍为 true。报告见 `dsssp-validation.json`。
+
+已用内嵌 DSSSP 0.8.0 / React 替换 pyqtgraph；Python 继续计算修正、固件响应、拟合与导出。前端源码在 `frontend/`，Qt 桥在 `src/heytap_eq/web_plot.py`；Actions 构建资源后再安装/冻结 Python 包。支持双击添加、连续拖动预览、一次手势一次撤销、滚轮 Q（0.01..100）、右键完整参数、鼠标位置缩放、Shift 纵向缩放、平移和复位。非等距测量按当前对数视野重采样，剪裁到实际覆盖频段；普通编辑保留缩放。
+
+默认「频响与调音」；路径/状态/采样率、固件字段与参数表折叠；在线来源用「在线测量…」展开，加载后收起。工程/导入/导出辅助操作移到菜单。Windows 1028×749 实际截图图形高度 271 px，源码与冻结 EXE 截图一致，避免只检查窗口打开而网页空白。
+
+本轮未改变固件拟合基线：仍以对应丹拿原声为基线，再写入选定目标预设的四路径×九状态。声学估计仍为所选实测＋当前修正，未自动补上导入固件相对测量固件的差异，界面明确标注。第三方 113 比 112 修改 180/184 个普通记录、两处版本字节，两路 EQ 不同，output2 高通参数也改了；不能把两路 dB 直接相加当作实际声学频响。当前 preset 的声学基线选择、参考固件差分和未知机型语义仍是后续工作。
+
+操作细节见 `dsssp-editor.md`。CI 和打包继续由 GitHub Actions 完成；仓库操作继续只用 GitHub 连接器。下面各阶段是历史记录。
+
+## 桌面固件编辑阶段（2026-10-09，上一阶段）
 
 当前源码提交 `035a0219d2ce7d3998b171370faf573711e16dac`，位于 `feat/python-desktop-studio`，沿用草稿 PR #1；main 未合并。[Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639) 全部通过：Linux/Windows 各 39 项测试和 Ruff、源码 GUI、Windows 便携构建及实际冻结 EXE 启动。用户添加的共享认证已保留，下载并核对的冻结报告 `service_configured: true`，见 [认证验证](authentication-ci-validation.json)。[Windows 成品](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/37874267639/artifacts/11591473190) 直接获取在线测量，无需 APK 或额外配置。主功能与真实输入验证的原始来源提交为 `8878dfd`，见 [固件编辑验证](firmware-edit-validation.json)。
 
