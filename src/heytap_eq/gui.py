@@ -547,7 +547,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _task(self, fn, callback, network=False, with_progress=False):
         workers = self.network_workers if network else self.workers
-        if workers:
+        if workers and not network:
             self.statusBar().showMessage("正在读取文件，请等待当前任务完成。")
             return
         worker = Worker(fn, callback, network, self)
@@ -572,7 +572,7 @@ class MainWindow(QtWidgets.QMainWindow):
         workers.discard(worker)
         if worker.network:
             for control in self.online_controls:
-                control.setEnabled(True)
+                control.setEnabled(not workers)
         try:
             value, error = worker.result
             if error:

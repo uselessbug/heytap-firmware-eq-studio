@@ -167,6 +167,53 @@ def test_pending_network_does_not_block_offline_file_task(tmp_path, qt_app):
         window.close()
 
 
+def test_source_browser_and_target_library_load_independently(monkeypatch, tmp_path, qt_app):
+    window = MainWindow(recover=False, auto_path=tmp_path/"parallel-indexes.json")
+    release = threading.Event()
+    class Client:
+        from_cache = False
+        def __init__(self, *args):
+            pass
+        def sources(self):
+            return [{"name": "fixture", "display": "Fixture"}]
+        def targets(self):
+            release.wait(timeout=5)
+            return [{"name": "target-id", "display": "Target"}]
+        def brands(self, source):
+            return [{"name": "OPPO", "display": "OPPO"}]
+        def headphones(self, source, brand):
+            return [{"name": "File_ID", "display": "Display name"}]
+        def measurements(self, source, brand, headphone):
+            return [Measurement("Synthetic", [20, 1000], [80, 90])]
+    monkeypatch.setattr("heytap_eq.gui.FlowmixClient", Client)
+    monkeypatch.setattr("heytap_eq.gui.builtin_authorization", lambda *args: "fixture")
+    window.desired_selection = {"source": "fixture", "brand": "OPPO", "headphone": "File_ID"}
+    window.connect_flowmix()
+    try:
+        for _ in range(200):
+            qt_app.processEvents()
+            if window.measurements:
+                break
+            QtTest.QTest.qWait(10)
+        assert window.measurements and window.network_workers
+        release.set()
+        for _ in range(200):
+            qt_app.processEvents()
+            if not window.network_workers:
+                break
+            QtTest.QTest.qWait(10)
+        assert window.library_combo.count() == 1
+        assert window.library_combo.itemData(0) == "target-id"
+    finally:
+        release.set()
+        for _ in range(200):
+            qt_app.processEvents()
+            if not window.network_workers:
+                break
+            QtTest.QTest.qWait(10)
+        window.close()
+
+
 def test_target_fit_and_project_curve_recovery(tmp_path, qt_app):
     path = tmp_path/"fit.json"
     window = MainWindow(recover=False, auto_path=path)

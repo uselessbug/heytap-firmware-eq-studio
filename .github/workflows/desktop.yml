@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: true
 env:
   PYTHONNOUSERSITE: '1'
+  PYTHONFAULTHANDLER: '1'
   QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu
   QTWEBENGINE_DISABLE_SANDBOX: '1'
   QT_QUICK_BACKEND: software
@@ -50,7 +51,7 @@ jobs:
           npm run test:browser
       - name: Linux GUI libraries
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxkbcommon0 fonts-noto-cjk
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 xvfb xauth fonts-noto-cjk
       - name: Clean virtual environment
         shell: bash
         run: |
@@ -64,14 +65,24 @@ jobs:
       - name: Static checks and tests
         shell: bash
         env:
-          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'offscreen' || 'windows' }}
+          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'windows' }}
         run: |
           python -m ruff check .
-          python -m pytest --junitxml=reports/pytest.xml
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a -s "-screen 0 1440x1000x24" python -m pytest --junitxml=reports/pytest.xml
+          else
+            python -m pytest --junitxml=reports/pytest.xml
+          fi
       - name: GUI event loop and screenshot
+        shell: bash
         env:
-          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'offscreen' || 'windows' }}
-        run: python -m heytap_eq.app --smoke-test --report reports/source-startup.json
+          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'windows' }}
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a -s "-screen 0 1440x1000x24" python -m heytap_eq.app --smoke-test --report reports/source-startup.json
+          else
+            python -m heytap_eq.app --smoke-test --report reports/source-startup.json
+          fi
       - name: PowerShell diagnostic syntax
         if: runner.os == 'Windows'
         shell: pwsh

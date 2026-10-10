@@ -4,12 +4,13 @@ body { background: #101722; color: #dce6f3; font: 13px "Segoe UI", "Noto Sans CJ
 button, input, select { font: inherit; }
 button { color: #dce6f3; background: #233047; border: 1px solid #3b4e68; border-radius: 7px; padding: 6px 10px; cursor: pointer; }
 button:hover { background: #304560; }
-.editor { height: 100%; display: flex; flex-direction: column; padding: 6px 12px; gap: 4px; }
+.editor { height: 100%; display: flex; flex-direction: column; padding: 4px 12px; gap: 4px; }
 .top, .legend, .footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.top { min-height: 32px; }
+.top { min-height: 28px; }
+.top button { padding: 4px 10px; }
 .title { font-weight: 600; margin-right: auto; }
 .hint, .footer { color: #96a9c2; font-size: 12px; }
-.legend { min-height: 20px; }
+.legend { min-height: 16px; }
 .legend span { display: inline-flex; gap: 6px; align-items: center; }
 .swatch { width: 20px; height: 3px; border-radius: 2px; }
 .graph-shell { flex: 1; min-height: 150px; position: relative; }
