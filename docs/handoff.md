@@ -1,8 +1,18 @@
+# 当前改版检查点（2026-10-10）
+
+用户已确认统一工作区、双输出复选、动态配置映射、当前预设基底、特殊配置编辑、参考差分、完整剪贴板和工程级历史。
+
+当前功能代码：`b1b931097d18b5789825c93e26267710d7dd8764`，沿用 feat/python-desktop-studio 与草稿 PR #1，main 未合并。[Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38061458404) 全部通过：两平台各 49 项测试（无跳过）、Ruff、3 项坐标数学检查、Chromium 交互、源码与真实冻结 EXE 启动。已核对 Windows 截图与报告：统一主图、六组参考配置、工程 v4、共享认证保持可读取，图形高度 253 px。[Windows 便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38061458404/artifacts/11673506072)。详见 [统一工作区](unified-workspace.md) 与 [验证记录](unified-validation.json)。
+
+用户于 2026-10-10 明确授权原版 112／116 的参考 EQ 数值模板公开提交至 uselessbug/heytap-firmware-eq-studio；此前自动审批要求补充明确授权已解决。模板已纳入源码与打包数据，原始固件没有上传。保留远端 service_profile.py 的用户认证配置，不用本地旧版本覆盖。
+
+以下为此前交接与历史证据；界面和拟合基底以当前实现为准。
+
 # HeyTap Firmware EQ Studio 交接文档
 
 更新时间：2026-10-10（Asia/Shanghai）。此文档可直接交给后续对话继续开发。
 
-## DSSSP 编辑器阶段（2026-10-10，当前）
+## DSSSP 编辑器阶段（2026-10-10，上一阶段）
 
 代码提交 `41a6dc195e3e9fe9a092b9ab408c280cb999ccad`，继续使用 `feat/python-desktop-studio` 与草稿 PR #1，main 未合并。[Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928) 全部成功：两平台各 40 项 Python 检查、Ruff、3 项坐标数学检查、Linux Chromium 真鼠标交互、Qt 网页握手/编辑以及实际冻结 EXE 启动。[Windows 便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928/artifacts/11669767539) 已包含网页资源与 Qt WebEngine，无需 Node、浏览器服务器或 APK。用户填写的共享认证保持原样，冻结报告仍为 true。报告见 `dsssp-validation.json`。
 
@@ -101,7 +111,7 @@
 - 显示人工耳原始测量和修改后的估计频响；方便从 Flowmix 或离线文件取得测量数据。
 - 用 GitHub Actions 检查并打包，减少重复安装和本地打包工作。
 
-用户已授权仓库访问和推送当前代码。保持现有工作分支和草稿 PR；没有收到合并 main 的指令。不要上传原厂固件或完整 APK / HAR。Flowmix APK 中的共享测量令牌已获用户明确入库授权，但实际操作被平台自动审批拦截，见文首。
+用户已授权仓库访问和推送当前代码。保持现有工作分支和草稿 PR；没有收到合并 main 的指令。不要上传原厂固件或完整 APK / HAR。Flowmix APK 中的共享测量认证由用户自行提交到 service_profile.py；后续修改保留远端默认值，当前 CI 及成品检查验证该配置仍可读取。
 
 ## 3. 已上传源码的位置
 

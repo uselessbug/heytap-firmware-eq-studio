@@ -2,7 +2,9 @@
 
 面向 OPPO / HeyTap 耳机固件的本地 EQ 编辑项目，首个研究对象为 Enco X4。
 
-当前有 **Python / PySide6 本地桌面工程** 与原 **Python CLI 研究原型**。DSSSP 图形编辑区支持双击添加 PEQ、实时拖点、滚轮调 Q、参数浮窗和鼠标位置缩放，操作见 [图形编辑](docs/dsssp-editor.md)。桌面支持固件校验、Wavelet / Flowmix EQ 编辑、RAW / PEQ 拖动、通用频响拟合，以及已确认 Enco X4 的完整预设替换、元数据/版本修改和重新封包。工程 v3 保存测量、目标、固件拟合计划和元数据修改，支持撤销重做与自动恢复。
+当前已支持统一主图、两路输出复选、原版参考差分估算、特殊配置、完整调音／预设复制粘贴和包含元数据的全局撤销。
+
+当前有 **Python / PySide6 本地桌面工程** 与原 **Python CLI 研究原型**。DSSSP 图形编辑区支持双击添加 PEQ、实时拖点、滚轮调 Q、参数浮窗和鼠标位置缩放，操作见 [统一工作区](docs/unified-workspace.md) 与 [图形编辑](docs/dsssp-editor.md)。桌面支持固件校验、Wavelet / Flowmix EQ 编辑、RAW / PEQ 拖动、通用频响拟合，以及已确认 Enco X4 的完整预设替换、元数据/版本修改和重新封包。工程 v4 保存测量、目标、固件拟合计划和元数据修改，支持撤销重做与自动恢复。
 
 测量来源动态读取（当前六个，含 Woodenears），可以选在线目标、本地目标或另一副耳机的测量，生成 RAW / PEQ 修正。首次使用选择为空，之后记住上次和各固件的选择；已确认机型可精确匹配测量。独立 HTTP 客户端在运行和构建时均不依赖 APK。深色大图使用稳定的音频坐标，实测 / 目标 / 估计可独立显示。原 CLI 保留固件拟合和重新封包能力。
 
@@ -22,7 +24,7 @@ python -m pip install --no-deps --no-build-isolation -e .
 python -m heytap_eq.app
 ```
 
-Windows 可下载 [当前便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928/artifacts/11669767539)，解开产物内的 ZIP，运行 EXE 并保留 `_internal`。用户已在 `b23c92f` 内置共享认证，新成品直接点“获取在线测量”，无需 APK 或 Action Secret；配置文件/环境变量仍可覆写默认值。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
+Windows 可下载 [当前便携包](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38061458404/artifacts/11673506072)，解开产物内的 ZIP，运行 EXE 并保留 `_internal`。用户已在 `b23c92f` 内置共享认证，新成品自动连接测量服务，在原始频响区域直接选择来源／品牌／型号，无需 APK 或 Action Secret；配置文件/环境变量仍可覆写默认值。详细操作见 [本地验证步骤](docs/local-checks.md)，测量和拟合见 [说明](docs/measurement-fitting.md)。
 
 ## 接手开发
 
@@ -47,7 +49,7 @@ python eq_tool.py inspect examples/Technics-AZ80-Optimized.txt
 
 ## 当前桌面验证
 
-当前图形编辑提交 `41a6dc195e3e9fe9a092b9ab408c280cb999ccad` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928) 全部成功：Linux / Windows 各 40 项 Python 检查、Ruff、3 项前端坐标检查、Chromium 实际鼠标交互、真实 Qt WebChannel 编辑和 Windows 冻结 EXE 启动。已下载核对源码与冻结截图；成品内实际绘出三条 SVG 曲线，小屏图形高度 271 px。共享认证仍为 `service_configured: true`，APK 依赖为 false。见 [图形编辑验证](docs/dsssp-validation.json)。此前认证修复的记录保留在 [认证验证](docs/authentication-ci-validation.json)。
+当前统一工作区代码 `b1b931097d18b5789825c93e26267710d7dd8764` 的 [Actions](https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38061458404) 全部成功：Linux / Windows 各 49 项 Python 检查，无跳过；Ruff、3 项前端坐标检查、Chromium 实际鼠标交互、Qt WebChannel 编辑和 Windows 冻结 EXE 启动均通过。已核对源码与冻结截图，三条 SVG 曲线共用主图，小屏图形高度 253 px。冻结报告确认六组内置参考配置、工程 v4、共享认证可读取，APK 依赖为 false。见 [本轮验证](docs/unified-validation.json) 和 [使用说明](docs/unified-workspace.md)。
 
 GUI 的“完整预设拟合 → 版本修改 → 导出 → 重开 → 工程恢复”已通过；getter 000..999 的对齐/未对齐写入独立仿真 2,000 次。主功能和真实输入验证的原始来源提交为 `8878dfd`，见 [记录](docs/firmware-edit-validation.json)；[此前测量阶段记录](docs/desktop-validation.json) 保留其原始范围。实际测量配置已验证六个来源和 21 条目标。
 
