@@ -30,6 +30,7 @@ def main(argv=None):
     result = 0
     if args.smoke_test:
         from heytap_eq.eq_formats import Filter, parse_text
+        from heytap_eq.estimation import builtin_reference
         from heytap_eq.measurements import Measurement
 
         preview = parse_text("GraphicEQ: 20 0; 100 -1; 1000 2; 5000 -2; 20000 0", "Synthetic preview")
@@ -66,6 +67,8 @@ def main(argv=None):
                 assert window.grab().save(str(image))
                 assert web and web["ready"] and web["svgPaths"] >= 3, web
                 assert web["height"] >= 250, web
+                reference = builtin_reference()
+                assert reference and len(reference["presets"]) == 6
                 assert not any(k.startswith(("PyQt5", "PyQt6", "PySide2")) for k in sys.modules)
                 args.report.write_text(json.dumps({
                     "status": "passed", "frozen": bool(getattr(sys, "frozen", False)),
@@ -80,6 +83,7 @@ def main(argv=None):
                     "metadata_editor_available": callable(getattr(window, "set_metadata_edits", None)),
                     "project_schema": "heytap-project-v4",
                     "single_plot": window.digital_plot is window.acoustic_plot,
+                    "reference_template_presets": len(reference["presets"]),
                     "plot_engine": "DSSSP 0.8.0", "web_editor": web,
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
