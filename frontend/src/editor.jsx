@@ -54,7 +54,7 @@ function Editor() {
     window.studioInspect = () => ({ ready: true, curves: latest.current.data.curves.length,
       filters: latest.current.data.filters.length, view: latest.current.view,
       svgPaths: document.querySelectorAll('.plot svg path').length,
-      width: latest.current.size.width, selected: latest.current.selected })
+      width: latest.current.size.width, height: latest.current.size.height, selected: latest.current.selected })
     if (window.qt && window.QWebChannel) {
       new window.QWebChannel(window.qt.webChannelTransport, channel => {
         bridge = channel.objects.bridge
@@ -101,7 +101,7 @@ function Editor() {
     send({ op: 'add', frequency, gain: clamp(gain, -60, 60) })
   }
   const ticks = useMemo(() => frequencyTicks(view, size.width), [view, size.width])
-  const step = (view.maxGain - view.minGain) <= 12 ? 2 : (view.maxGain - view.minGain) <= 36 ? 5 : 10
+  const step = (view.maxGain - view.minGain) <= 12 ? 2 : (view.maxGain - view.minGain) <= 60 ? 5 : 10
   const yTicks = []
   for (let v = Math.ceil(view.minGain / step) * step; v <= view.maxGain; v += step) yTicks.push(v)
   const scale = useMemo(() => ({ ...view, dbSteps: step, dbLabels: false, majorTicks: ticks, octaveTicks: 0, octaveLabels: [] }), [view, step, ticks])
@@ -113,13 +113,12 @@ function Editor() {
   const selectedFilter = selected === null ? null : data.filters[selected]
 
   return <main className="editor">
-    <div className="top"><span className="title">{data.label}</span>
+    <div className="top"><span className="title">{data.label}</span><span className="hint">{data.axisLabel || "dB"}</span>
       <button onClick={() => send({ op: 'add', frequency: Math.sqrt(view.minFreq * view.maxFreq), gain: 0 })}>＋ PEQ</button>
       <button onClick={() => setView({ ...defaultView, minGain: data.low ?? -24, maxGain: data.high ?? 24 })}>复位视图</button>
     </div>
     <div className="legend">{data.curves.map(c => <span key={c.name}><i className="swatch" style={{ background: c.color }} />{c.name}</span>)}</div>
     <div className="graph-shell">
-      <span className="axis-label">{data.axisLabel || 'dB'}</span>
       {ticks.map(f => <span className="x-tick" key={f} style={{ left: 54 + xAt(f, size.width, view) }}>{formatHz(f)}</span>)}
       {yTicks.map(v => <span className="y-tick" key={v} style={{ top: 6 + yAt(v, size.height, view) }}>{v}</span>)}
       <div className="plot" ref={plotRef} onDoubleClick={addPoint}

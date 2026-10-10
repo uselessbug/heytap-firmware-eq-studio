@@ -15,6 +15,8 @@ QTableWidget, QPlainTextEdit { background: #12171e; gridline-color: #2e3b4c;
 QHeaderView::section { background: #263243; color: #c8d6e7; padding: 5px; border: 0; }
 QTabBar::tab { background: #202936; padding: 7px 14px; border: 1px solid #334256; }
 QTabBar::tab:selected { background: #174b50; color: #59e1d3; }
+QMenu, QMenuBar { background: #202836; color: #dce4ef; }
+QMenu::item:selected, QMenuBar::item:selected { background: #35475e; }
 QStatusBar { background: #12171e; color: #adbdcf; }
 QSplitter::handle { background: #334256; }
 QCheckBox { spacing: 5px; }

@@ -75,6 +75,8 @@ class ResponsePlot(QtWebEngineWidgets.QWebEngineView):
 
     def plot(self, frequency, values, color="#efb55a", name="", dashed=False):
         points = np.column_stack((frequency, values))
+        if len(points) < 2:
+            return
         if not np.all(np.isfinite(points)):
             raise ValueError("Non-finite plot points")
         self.curves.append({"name": name, "points": points.tolist(),

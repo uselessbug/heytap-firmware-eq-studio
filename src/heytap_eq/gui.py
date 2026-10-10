@@ -91,31 +91,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStyleSheet(DARK_STYLE)
         toolbar = self.addToolBar("文件与编辑")
         toolbar.setMovable(False)
-        for label, fn in (("新建工程", self.new_project), ("打开固件", self.open_firmware),
-                          ("导入 EQ", self.import_eq), ("导出 EQ", self.export_eq),
-                          ("导入测量", self.import_measurements), ("打开工程", self.open_project)):
-            self._action(toolbar, label, fn)
+        files = self.menuBar().addMenu("文件")
+        for label, fn in (("新建工程", self.new_project), ("打开工程", self.open_project),
+                          ("导入测量文件", self.import_measurements), ("导出 EQ", self.export_eq),
+                          ("导入目标文件", self.import_target)):
+            self._action(files, label, fn)
+        self._action(toolbar, "打开固件", self.open_firmware)
+        self._action(toolbar, "导入 EQ", self.import_eq)
         self._action(toolbar, "保存工程", self.save_project, "Ctrl+S")
-        self._action(toolbar, "候选结构扫描", self.scan_candidates)
         self.undo_action = self._action(toolbar, "撤销", self.undo, "Ctrl+Z")
         self.redo_action = self._action(toolbar, "重做", self.redo, "Ctrl+Shift+Z")
-        self.addToolBarBreak()
-        firmware_toolbar = self.addToolBar("固件编辑")
-        firmware_toolbar.setMovable(False)
+        toolbar.addSeparator()
+        firmware_menu = self.menuBar().addMenu("固件")
         self.firmware_actions = [
-            self._action(firmware_toolbar, "拟合到固件预设", self.start_firmware_fit),
-            self._action(firmware_toolbar, "编辑固件信息", self.edit_metadata),
-            self._action(firmware_toolbar, "清空固件修改", self.clear_firmware_edits),
-            self._action(firmware_toolbar, "导出固件", self.start_firmware_export),
+            self._action(toolbar, "拟合到固件预设", self.start_firmware_fit),
+            self._action(toolbar, "导出固件", self.start_firmware_export),
+            self._action(firmware_menu, "编辑固件信息", self.edit_metadata),
+            self._action(firmware_menu, "清空固件修改", self.clear_firmware_edits),
         ]
-        self._action(firmware_toolbar, "取消拟合/封包", self.cancel_fit)
+        self._action(firmware_menu, "候选结构扫描", self.scan_candidates)
+        self._action(firmware_menu, "取消拟合/封包", self.cancel_fit)
         body = QtWidgets.QWidget()
         self.setCentralWidget(body)
         layout = QtWidgets.QVBoxLayout(body)
         self.firmware_label = QtWidgets.QLabel("未打开固件")
         self.firmware_label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.firmware_label)
-        selectors = QtWidgets.QHBoxLayout()
         self.path_combo = QtWidgets.QComboBox()
         self.preset_combo = QtWidgets.QComboBox()
         self.preset_combo.addItems([*PRESETS, "特殊记录 45"])
@@ -124,18 +125,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rate_combo = QtWidgets.QComboBox()
         self.rate_combo.addItems(["44100", "48000", "96000"])
         self.rate_combo.setCurrentText("48000")
-        selectors.addWidget(QtWidgets.QLabel("当前预设"))
-        selectors.addWidget(self.preset_combo)
         self.preset_combo.currentIndexChanged.connect(self.refresh)
         advanced = QtWidgets.QPushButton("高级预览")
         advanced.setCheckable(True)
-        selectors.addWidget(advanced)
-        selectors.addStretch()
-        layout.addLayout(selectors)
         self.advanced_controls = QtWidgets.QWidget()
         advanced_layout = QtWidgets.QHBoxLayout(self.advanced_controls)
         advanced_layout.setContentsMargins(0, 0, 0, 0)
-        for label, combo in (("输出路径", self.path_combo), ("内部状态", self.state_combo),
+        for label, combo in (("预设", self.preset_combo), ("输出路径", self.path_combo), ("内部状态", self.state_combo),
                              ("预览采样率 Hz", self.rate_combo)):
             advanced_layout.addWidget(QtWidgets.QLabel(label))
             advanced_layout.addWidget(combo)
@@ -147,7 +143,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.firmware_edits_label = QtWidgets.QLabel("尚未准备固件修改")
         self.firmware_edits_label.setWordWrap(True)
         layout.addWidget(self.firmware_edits_label)
-        online = QtWidgets.QHBoxLayout()
+        self.online_panel = QtWidgets.QWidget()
+        online = QtWidgets.QHBoxLayout(self.online_panel)
+        online.setContentsMargins(0, 0, 0, 0)
         connect = QtWidgets.QPushButton("获取在线测量")
         connect.clicked.connect(self.connect_flowmix)
         self.source_combo = QtWidgets.QComboBox()
@@ -171,7 +169,8 @@ class MainWindow(QtWidgets.QMainWindow):
             combo.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
             combo.completer().setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
             combo.completer().setCompletionMode(QtWidgets.QCompleter.CompletionMode.PopupCompletion)
-        layout.addLayout(online)
+        self.online_panel.setVisible(False)
+        layout.addWidget(self.online_panel)
         presets = QtWidgets.QHBoxLayout()
         self.preset_buttons = {}
         for name in PRESETS:
@@ -181,6 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.preset_buttons[name] = button
             presets.addWidget(button)
         presets.addStretch()
+        presets.addWidget(advanced)
         self.eq_range_combo = QtWidgets.QComboBox()
         self.eq_range_combo.addItems(["±12 dB", "±24 dB", "±48 dB"])
         self.eq_range_combo.setCurrentIndex(1)
@@ -192,9 +192,6 @@ class MainWindow(QtWidgets.QMainWindow):
         side_toggle.setChecked(False)
         side_toggle.toggled.connect(lambda visible: self.side.setVisible(visible))
         presets.addWidget(side_toggle)
-        reset = QtWidgets.QPushButton("复位视图")
-        reset.clicked.connect(self.reset_plots)
-        presets.addWidget(reset)
         layout.addLayout(presets)
         split = QtWidgets.QSplitter()
         layout.addWidget(split, 1)
@@ -208,12 +205,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.measurement_combo.currentIndexChanged.connect(self.curve_selection_changed)
         acoustic_controls = QtWidgets.QGridLayout()
         acoustic_controls.addWidget(QtWidgets.QLabel("原始频响"), 0, 0)
-        acoustic_controls.addWidget(self.measurement_combo, 0, 1, 1, 5)
+        acoustic_controls.addWidget(self.measurement_combo, 0, 1, 1, 2)
         self.target_combo = QtWidgets.QComboBox()
         self.target_combo.setPlaceholderText("选择目标频响")
         self.target_combo.currentIndexChanged.connect(self.curve_selection_changed)
-        acoustic_controls.addWidget(QtWidgets.QLabel("目标频响"), 1, 0)
-        acoustic_controls.addWidget(self.target_combo, 1, 1, 1, 5)
+        acoustic_controls.addWidget(QtWidgets.QLabel("目标频响"), 0, 3)
+        acoustic_controls.addWidget(self.target_combo, 0, 4, 1, 2)
         for column, title, fn in ((0, "目标曲线库", self.browse_targets),
                                   (1, "导入目标", self.import_target),
                                   (2, "当前实测设为目标", self.measurement_as_target),
@@ -221,11 +218,11 @@ class MainWindow(QtWidgets.QMainWindow):
                                   (4, "取消拟合", self.cancel_fit)):
             button = QtWidgets.QPushButton(title)
             button.clicked.connect(fn)
-            acoustic_controls.addWidget(button, 2, column)
+            acoustic_controls.addWidget(button, 1, column)
         self.relative_check = QtWidgets.QCheckBox("1 kHz 对齐显示")
         self.relative_check.setChecked(True)
         self.relative_check.toggled.connect(self.reset_plots)
-        acoustic_controls.addWidget(self.relative_check, 2, 5)
+        acoustic_controls.addWidget(self.relative_check, 1, 5)
         acoustic_layout.addLayout(acoustic_controls)
         visibility = QtWidgets.QHBoxLayout()
         self.curve_checks = {}
@@ -236,6 +233,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.curve_checks[key] = check
             visibility.addWidget(check)
         visibility.addStretch()
+        self.online_toggle = QtWidgets.QPushButton("在线测量…")
+        self.online_toggle.setCheckable(True)
+        self.online_toggle.toggled.connect(self.online_panel.setVisible)
+        visibility.addWidget(self.online_toggle)
         acoustic_layout.addLayout(visibility)
         self.acoustic_plot = self._plot("人工耳 SPL dB")
         acoustic_layout.addWidget(self.acoustic_plot)
@@ -790,6 +791,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fill_curves(self.measurement_combo, self.measurements,
                          self.measurements.index(curves[0]) if curves else -1)
         self.curve_selection_changed()
+        self.online_toggle.setChecked(False)
         self.statusBar().showMessage(f"已导入 {len(curves)} 条实测。")
 
     def new_project(self):
@@ -955,6 +957,7 @@ class MainWindow(QtWidgets.QMainWindow):
         queued = ", ".join(p["destination"]+" ← "+p["eq"]["name"] for p in self.session.firmware_plans)
         self.firmware_edits_label.setText("待导出预设："+(queued or "无")+
                                          f" · 元数据修改 {len(self.session.metadata_edits)} 项")
+        self.firmware_edits_label.setVisible(bool(queued or self.session.metadata_edits))
         if self.firmware:
             self.metadata_text.setPlainText(json.dumps({"original": self.firmware.package["summary"],
                 "pending_presets": [{"destination": p["destination"], "eq": p["eq"]["name"],
@@ -988,7 +991,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                        color="#32cbb9", name="待导出固件滤波链")
         for name, button in self.preset_buttons.items():
             button.setChecked(name == self.preset_combo.currentText())
-            button.setEnabled(self.firmware is not None and self.firmware.profiles is not None)
+            button.setEnabled(writable)
+            button.setVisible(writable)
         label = "未打开固件 · 可直接导入频响或编辑 EQ"
         if self.firmware:
             label = f"{Path(self.firmware.path).name} · {self.firmware.recognition}"

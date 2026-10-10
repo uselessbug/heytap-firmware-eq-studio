@@ -63,6 +63,7 @@ def main(argv=None):
                 image = args.report.with_suffix(".png")
                 assert window.isVisible() and window.width() >= 600
                 assert web and web["ready"] and web["svgPaths"] >= 3, web
+                assert web["height"] >= 250, web
                 assert window.grab().save(str(image))
                 assert not any(k.startswith(("PyQt5", "PyQt6", "PySide2")) for k in sys.modules)
                 args.report.write_text(json.dumps({
