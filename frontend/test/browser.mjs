@@ -66,6 +66,13 @@ try {
   await page.waitForTimeout(100)
   assert.ok((await page.evaluate(() => window.fixture.filters[0].q)) > 0.7)
   assert.deepEqual(await page.evaluate(() => window.studioInspect().view), zoomed)
+  await page.evaluate(() => {
+    window.fixture.filters[0].q = 24
+    window.studioUpdate(window.fixture)
+  })
+  await page.waitForTimeout(50)
+  await page.mouse.wheel(0, 100)
+  await page.waitForFunction(() => window.fixture.filters[0].q > 24)
   await node.click({ button: 'right' })
   await page.getByLabel('增益 dB', { exact: true }).fill('0')
   await page.getByLabel('增益 dB', { exact: true }).press('Enter')

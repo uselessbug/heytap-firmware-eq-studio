@@ -73,8 +73,17 @@ function Editor() {
   useEffect(() => {
     const el = plotRef.current
     const wheel = e => {
-      if (e.target.closest('[data-node]')) return
       e.preventDefault()
+      const node = e.target.closest('[data-node]')
+      if (node) {
+        if (node.dataset.filter !== undefined) {
+          const index = Number(node.dataset.filter)
+          const f = latest.current.data.filters[index]
+          if (f) send({ op: 'filter', phase: 'end', index,
+            filter: { ...f, q: Number(clamp(f.q + (e.deltaY > 0 ? 0.1 : -0.1), 0.01, 100).toFixed(2)) } })
+        }
+        return
+      }
       const rect = el.getBoundingClientRect()
       const x = clamp((e.clientX - rect.left) / rect.width, 0, 1)
       const y = clamp((e.clientY - rect.top) / rect.height, 0, 1)
@@ -161,7 +170,7 @@ function Editor() {
               onClick={() => setSelected(index)}>
               <FilterPoint filter={{ type: 'PEAK', freq: f.frequency,
                 gain: (noGain.has(f.kind) ? 0 : f.gain) + interpolate(data.nodeBase, f.frequency), q: f.q }}
-                index={index} color="#59debc" label={String(f.id)} active={selected === index} dragY={!noGain.has(f.kind)}
+                index={index} color="#59debc" label={String(f.id)} active={selected === index} dragY={!noGain.has(f.kind)} wheelQ={false}
                 onDrag={active => { activeRef.current = active; if (active) send({ op: 'begin' }) }}
                 onChange={e => changeFilter(f, index, e)} />
             </g>)}

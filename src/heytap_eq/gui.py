@@ -125,7 +125,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.rate_combo = QtWidgets.QComboBox()
         self.rate_combo.addItems(["44100", "48000", "96000"])
         self.rate_combo.setCurrentText("48000")
-        self.preset_combo.currentIndexChanged.connect(self.refresh)
         advanced = QtWidgets.QPushButton("高级预览")
         advanced.setCheckable(True)
         self.advanced_controls = QtWidgets.QWidget()
