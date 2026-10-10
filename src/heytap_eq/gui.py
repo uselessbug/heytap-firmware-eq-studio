@@ -529,7 +529,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.session.set_context(changes, '绑定参考固件')
                 self.restore_context_controls()
                 self._changed()
-            self._task(lambda: inspect_firmware(path), received)
+            mapping = copy.deepcopy(self.session.context.get('mapping'))
+            self._task(lambda: inspect_firmware(path, mapping), received)
 
     def difference(self, frequency, plans=(), current_key=None):
         context = self.session.context

@@ -103,6 +103,10 @@ class Session:
         context = state.get("context", {})
         if not isinstance(context, dict):
             raise ValueError("Invalid clipboard reference context")
+        context = copy.deepcopy(context)
+        context.pop("mapping", None)
+        if "mapping" in self.context:
+            context["mapping"] = copy.deepcopy(self.context["mapping"])
         json.dumps(context, allow_nan=False)
         self._checkpoint("粘贴完整调音")
         self.document = doc

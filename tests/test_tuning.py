@@ -2,7 +2,6 @@ import copy
 import json
 
 import numpy as np
-import pytest
 
 from heytap_eq import opkg
 from heytap_eq.adapters import verified_bank
@@ -101,11 +100,13 @@ def test_lossless_tuning_clipboard_and_one_global_undo():
     payload = decode_text(json.dumps(tuning_payload(source)))
     assert "mapping" not in payload["state"]["context"]
     target = Session()
+    target.set_context({"mapping": {"layout": "destination address"}})
     target.set_metadata({"version_digits": "119"})
     before = target.snapshot()
     target.paste_tuning(payload["state"])
     assert target.document == source.document and target.measurements == source.measurements
     assert not target.document.filters[0].enabled
+    assert target.context["mapping"] == {"layout": "destination address"}
     target.undo()
     assert target.snapshot() == before
     target.redo()
@@ -117,8 +118,7 @@ def test_lossless_tuning_clipboard_and_one_global_undo():
 
 def test_builtin_reference_contains_both_outputs_regions_and_special():
     reference = builtin_reference()
-    if reference is None:
-        pytest.skip("Reference template publication awaits explicit approval; manual reference import is available")
+    assert reference is not None
     assert len(reference["presets"]) == 6
     special = reference["presets"][-1]
     assert special["special"] and len(special["records"]) == 4
