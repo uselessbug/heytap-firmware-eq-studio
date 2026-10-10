@@ -61,6 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, recover=True, auto_path=None):
         super().__init__()
         self.setWindowTitle("HeyTap Firmware EQ Studio")
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         self.resize(1380, 880)
         self.session = Session()
         self.firmware = None
@@ -140,8 +141,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self._action(firmware_menu, "候选结构扫描", self.scan_candidates)
         body = QtWidgets.QWidget()
         self.setCentralWidget(body)
-        layout = QtWidgets.QVBoxLayout(body)
-        layout.setContentsMargins(8, 6, 8, 6)
+        workspace = QtWidgets.QVBoxLayout(body)
+        workspace.setContentsMargins(8, 6, 8, 6)
+        workspace.setSpacing(5)
+        self.selection_area = QtWidgets.QScrollArea()
+        self.selection_area.setWidgetResizable(True)
+        self.selection_area.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
+        self.selection_area.setMinimumHeight(130)
+        self.selection_area.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Maximum)
+        selection_body = QtWidgets.QWidget()
+        self.selection_area.setWidget(selection_body)
+        workspace.addWidget(self.selection_area)
+        layout = QtWidgets.QVBoxLayout(selection_body)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
         self.firmware_label = QtWidgets.QLabel("未打开固件 · 可直接编辑 EQ")
         self.firmware_label.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -267,6 +279,7 @@ class MainWindow(QtWidgets.QMainWindow):
         reference_row.addWidget(self.reference_assumed)
         reference_row.addStretch()
         layout.addLayout(reference_row)
+        layout = workspace
         visibility = QtWidgets.QHBoxLayout()
         digital_visibility = QtWidgets.QHBoxLayout()
         self.curve_checks = {}
@@ -1364,3 +1377,9 @@ class MainWindow(QtWidgets.QMainWindow):
             event.ignore()
         else:
             event.accept()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, 'selection_area'):
+            # Keep the graph usable on short screens; selections remain accessible by scrolling.
+            self.selection_area.setMaximumHeight(max(130, self.height()-610))

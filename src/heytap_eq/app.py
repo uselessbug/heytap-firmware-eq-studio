@@ -25,6 +25,7 @@ def main(argv=None):
     app.setOrganizationName("HeyTapEQStudio")
     auto_path = args.report.parent/"smoke-project.json" if args.smoke_test else None
     window = MainWindow(recover=not args.smoke_test, auto_path=auto_path)
+    app.aboutToQuit.connect(window.deleteLater)
     window.show()
     result = 0
     if args.smoke_test:
@@ -91,6 +92,8 @@ def main(argv=None):
     else:
         QtCore.QTimer.singleShot(0, window.connect_flowmix)
     app.exec()
+    # Flush window/page destruction while QApplication is still alive.
+    QtCore.QCoreApplication.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
     return result
 
 

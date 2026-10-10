@@ -50,7 +50,7 @@ class ResponsePlot(QtWebEngineWidgets.QWebEngineView):
         self.settings().setAttribute(
             QtWebEngineCore.QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, False)
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.NoContextMenu)
-        self.setMinimumSize(300, 210)
+        self.setMinimumSize(300, 360)
         assets = Path(__file__).with_name("web")/"index.html"
         if not assets.exists():
             self.setHtml("<body style='background:#101722;color:white'>"
