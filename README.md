@@ -11,6 +11,10 @@
 ## 桌面启动
 
 ```bash
+cd frontend
+npm install
+npm run build
+cd ..
 python -m venv .venv
 # Windows: .venv\Scripts\activate；Linux: source .venv/bin/activate
 python -m pip install -r requirements-ci.txt

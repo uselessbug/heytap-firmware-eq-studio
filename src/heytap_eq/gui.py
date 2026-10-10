@@ -20,10 +20,10 @@ from heytap_eq.fitting import FitOptions, fit_response
 from heytap_eq.flowmix import FlowmixClient
 from heytap_eq.measurements import load_measurements
 from heytap_eq.plot import DARK_STYLE
-from heytap_eq.web_plot import ResponsePlot
 from heytap_eq.preferences import BrowserMemory, device_identity
 from heytap_eq.service_profile import builtin_authorization
 from heytap_eq.session import Session, atomic_json
+from heytap_eq.web_plot import ResponsePlot
 
 
 class Worker(QtCore.QThread):
@@ -189,7 +189,7 @@ class MainWindow(QtWidgets.QMainWindow):
         presets.addWidget(self.eq_range_combo)
         side_toggle = QtWidgets.QPushButton("参数面板")
         side_toggle.setCheckable(True)
-        side_toggle.setChecked(True)
+        side_toggle.setChecked(False)
         side_toggle.toggled.connect(lambda visible: self.side.setVisible(visible))
         presets.addWidget(side_toggle)
         reset = QtWidgets.QPushButton("复位视图")
@@ -273,6 +273,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.gains_label = QtWidgets.QLabel()
         side_layout.addWidget(self.gains_label)
         split.addWidget(side)
+        side.setVisible(False)
+        self.firmware_table.setVisible(False)
+        self.gains_label.setVisible(False)
+        advanced.toggled.connect(self.firmware_table.setVisible)
+        advanced.toggled.connect(self.gains_label.setVisible)
         split.setSizes([1050, 330])
         self.digital_plot.editRequested.connect(self.editor_event)
         self.acoustic_plot.editRequested.connect(self.editor_event)

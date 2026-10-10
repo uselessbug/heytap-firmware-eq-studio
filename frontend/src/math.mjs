@@ -61,7 +61,7 @@ export function pan(view, dxRatio, dyRatio) {
 export function frequencyTicks(view, width) {
   const result = []
   for (let decade = 1; decade <= 4; decade++) {
-    for (let n = 1; n <= 9; n++) {
+    for (const n of (Math.log10(view.maxFreq / view.minFreq) > 1 ? [1, 2, 5] : [1, 2, 3, 4, 5, 6, 7, 8, 9])) {
       const f = n * 10 ** decade
       if (f >= view.minFreq && f <= view.maxFreq) result.push(f)
     }
