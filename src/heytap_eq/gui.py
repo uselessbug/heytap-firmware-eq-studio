@@ -1034,7 +1034,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.curve_checks["original"].isChecked():
                 self.acoustic_plot.plot(x, values, color="#759ecb", name="原始实测")
             if self.curve_checks["estimated"].isChecked():
-                self.acoustic_plot.plot(frequency, np.interp(np.log(frequency), np.log(x), values)+correction(doc, frequency, fs),
+                visible = (frequency >= x[0]) & (frequency <= x[-1])
+                self.acoustic_plot.plot(frequency[visible], (acoustic_base+correction(doc, frequency, fs))[visible],
                                         color="#32cbb9", name="实测＋当前修正估计")
         if self.targets and self.target_combo.currentIndex() >= 0 and self.curve_checks["target"].isChecked():
             target = self.targets[self.target_combo.currentIndex()]

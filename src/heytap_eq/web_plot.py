@@ -97,7 +97,11 @@ class ResponsePlot(QtWebEngineWidgets.QWebEngineView):
         self.reset_requested = False
 
     def inspect(self, callback):
-        self.page().runJavaScript("window.studioInspect ? window.studioInspect() : null", callback)
+        # PySide/Qt versions differ in conversion of JS objects to QVariant.
+        # Explicit JSON keeps source and frozen probes on the same wire format.
+        self.page().runJavaScript(
+            "JSON.stringify(window.studioInspect ? window.studioInspect() : null)",
+            lambda value: callback(json.loads(value) if value else None))
 
 
 def initialize_web_engine():

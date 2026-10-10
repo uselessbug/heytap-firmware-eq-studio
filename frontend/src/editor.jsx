@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { FrequencyResponseGraph, FrequencyResponseCurve, FilterPoint } from 'dsssp'
 import { clamp, frequencyAt, gainAt, xAt, yAt, interpolate, resample, zoom, pan, frequencyTicks } from './math.mjs'
@@ -100,11 +100,16 @@ function Editor() {
     const gain = gainAt(p.y, size.height, view) - interpolate(data.addBase, frequency)
     send({ op: 'add', frequency, gain: clamp(gain, -60, 60) })
   }
-  const ticks = frequencyTicks(view, size.width)
+  const ticks = useMemo(() => frequencyTicks(view, size.width), [view, size.width])
   const step = (view.maxGain - view.minGain) <= 12 ? 2 : (view.maxGain - view.minGain) <= 36 ? 5 : 10
   const yTicks = []
   for (let v = Math.ceil(view.minGain / step) * step; v <= view.maxGain; v += step) yTicks.push(v)
-  const scale = { ...view, dbSteps: step, dbLabels: false, majorTicks: ticks, octaveTicks: 0, octaveLabels: [] }
+  const scale = useMemo(() => ({ ...view, dbSteps: step, dbLabels: false, majorTicks: ticks, octaveTicks: 0, octaveLabels: [] }), [view, step, ticks])
+  const curves = useMemo(() => data.curves.map(c => ({ ...c,
+    magnitudes: resample(c.points, view, Math.min(4000, Math.max(800, Math.ceil(size.width * 2)))),
+    left: clamp(xAt(c.points[0][0], size.width, view), 0, size.width),
+    right: clamp(xAt(c.points.at(-1)[0], size.width, view), 0, size.width)
+  })), [data.curves, view, size.width])
   const selectedFilter = selected === null ? null : data.filters[selected]
 
   return <main className="editor">
@@ -138,11 +143,14 @@ function Editor() {
         onPointerCancel={() => { panRef.current = null }}
         onPointerLeave={() => setPointer(null)}>
         <FrequencyResponseGraph width={size.width} height={size.height} scale={scale} ariaLabel="交互式频响与 PEQ 编辑器"
-          theme={{ background: { grid: { lineColor: '#2b3a50' }, label: { color: 'transparent' } }, filters: { point: { radius: 7 } } }}>
-          <defs><clipPath id="plot-clip"><rect width={size.width} height={size.height} /></clipPath></defs>
+          theme={{ background: { grid: { lineColor: '#2b3a50' }, label: { color: 'transparent' },
+            gradient: { start: '#131e2d', stop: '#0c131d' } }, filters: { point: { radius: 9, label: { fontSize: 11 } } } }}>
+          <defs><clipPath id="plot-clip"><rect width={size.width} height={size.height} /></clipPath>
+            {curves.map((c, i) => <clipPath id={`curve-clip-${i}`} key={c.name}><rect x={c.left} width={Math.max(0, c.right - c.left)} height={size.height} /></clipPath>)}
+          </defs>
           <g clipPath="url(#plot-clip)">
-            {data.curves.map(c => <FrequencyResponseCurve key={c.name} color={c.color} lineWidth={2} dotted={c.dashed}
-              magnitudes={resample(c.points, view, Math.min(4000, Math.max(800, Math.ceil(size.width * 2))))} />)}
+            {curves.map((c, i) => <g key={c.name} clipPath={`url(#curve-clip-${i})`}><FrequencyResponseCurve color={c.color} lineWidth={2} dotted={c.dashed}
+              magnitudes={c.magnitudes} /></g>)}
             {data.raw.map((point, index) => <g key={`raw-${index}`} data-node="raw">
               <FilterPoint filter={{ type: 'PEAK', freq: point[0], gain: point[1] + interpolate(data.rawBase, point[0]), q: 1 }}
                 index={index} dragX={false} wheelQ={false} radius={4} color="#efb55a" label=""
@@ -154,7 +162,7 @@ function Editor() {
               onClick={() => setSelected(index)}>
               <FilterPoint filter={{ type: 'PEAK', freq: f.frequency,
                 gain: (noGain.has(f.kind) ? 0 : f.gain) + interpolate(data.nodeBase, f.frequency), q: f.q }}
-                index={index} color="#59debc" label={String(f.id)} active={selected === index}
+                index={index} color="#59debc" label={String(f.id)} active={selected === index} dragY={!noGain.has(f.kind)}
                 onDrag={active => { activeRef.current = active; if (active) send({ op: 'begin' }) }}
                 onChange={e => changeFilter(f, index, e)} />
             </g>)}
