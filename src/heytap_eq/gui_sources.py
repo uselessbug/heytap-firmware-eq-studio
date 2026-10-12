@@ -130,7 +130,8 @@ class SourcesMixin:
             self._task(lambda: self.flowmix_client.target(identifier), received, network=True)
 
     def import_target(self):
-        path = self._choose("导入目标频响", "测量 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)")
+        path = self._choose("导入目标频响（不是 EQ 参数）",
+                            "频响数据 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)")
         if path:
             self._task(lambda: load_measurements(path), self.set_targets)
 
@@ -149,6 +150,7 @@ class SourcesMixin:
         self.fill_curves(self.target_combo, self.targets,
                          self.targets.index(curves[0]) if curves else -1)
         self.curve_selection_changed()
+        self.statusBar().showMessage(f"已导入 {len(curves)} 条目标频响。")
 
     def fill_curves(self, combo, curves, index):
         combo.blockSignals(True)
@@ -179,7 +181,8 @@ class SourcesMixin:
         self._changed()
 
     def import_measurements(self):
-        path = self._choose("导入人工耳测量", "测量 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)")
+        path = self._choose("导入原始测量频响（不是 EQ 参数）",
+                            "频响数据 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)")
         if path:
             self._task(lambda: load_measurements(path), self.set_measurements)
 
@@ -192,3 +195,4 @@ class SourcesMixin:
                          self.measurements.index(curves[0]) if curves else -1)
         self.curve_selection_changed()
         self.statusBar().showMessage(f"已导入 {len(curves)} 条实测。")
+

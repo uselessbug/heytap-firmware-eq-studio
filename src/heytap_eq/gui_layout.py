@@ -282,12 +282,17 @@ class LayoutMixin:
         self.quality_label = label("", "muted")
         self.quality_label.hide()
         card.add(self.quality_label)
+        self.eq_import_warning = label("", "warn")
+        self.eq_import_warning.hide()
+        card.add(self.eq_import_warning)
         self.fit_target_button = button("▸ 生成修正 EQ", checkable=True,
                                         tooltip="根据原始与目标频响生成 RAW 或 PEQ 修正，应用前实时预览")
         self.fit_target_button.toggled.connect(self.generator_toggled)
         card.add(self.fit_target_button)
         card.add(self._build_generator())
-        card.add(row(button("导入…", self.import_eq), button("导出…", self.export_eq)))
+        card.add(row(button("导入…", self.import_eq,
+                            tooltip="EQ 参数：Flowmix、Wavelet、AutoEQ、APO、REW Generic；Preamp 仅保存"),
+                     button("导出…", self.export_eq)))
         self.side_button = button("参数表", checkable=True, tooltip="显示 PEQ 与当前固件滤波器表格")
         card.add(self.side_button)
         layout.addWidget(card)
@@ -548,3 +553,4 @@ class LayoutMixin:
         if event.type() == QtCore.QEvent.Type.ThemeChange:
             self.system_scheme_changed()
         super().changeEvent(event)
+

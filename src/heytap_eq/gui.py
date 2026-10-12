@@ -168,7 +168,7 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                 self.restore_context_controls()
             self._preview_document = None
             self._changed()
-            self.statusBar().showMessage("已粘贴；本次操作可一步撤销。")
+            self.statusBar().showMessage("已粘贴；本次操作可一步撤销。"+self.eq_import_notice())
         except (ValueError, KeyError, TypeError, UnicodeError) as exc:
             self.statusBar().showMessage(f"粘贴未完成：{exc}")
 
@@ -236,7 +236,8 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
     # ------------------------------------------------------------------ files
 
     def import_eq(self):
-        path = self._choose("导入 EQ", "EQ 文本（Flowmix / GraphicEQ / Equalizer APO）(*.txt);;所有文件 (*)")
+        path = self._choose("导入 EQ 参数（不是测量频响）",
+                            "EQ 参数（Flowmix / Wavelet / AutoEQ / APO / REW）(*.txt);;所有文件 (*)")
         if path:
             self._task(lambda: load_eq(path), self.set_document)
 
@@ -244,6 +245,12 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
         self._preview_document = None
         self.session.replace(doc)
         self._changed()
+        self.statusBar().showMessage("已载入修正 EQ。"+self.eq_import_notice())
+
+    def eq_import_notice(self):
+        preamp = self.session.document.metadata.get("PREAMP_DB")
+        return (f" Preamp {preamp} dB 仅保存为元数据，未应用到修正曲线或固件整体增益。"
+                if preamp is not None else "")
 
     def new_project(self):
         if self.workers:
@@ -567,6 +574,8 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
             self.main_plot.plot(curve["x"], curve["y"], color=curve["color"], name=curve["name"],
                                 dashed=curve["dashed"], width=curve["width"])
         self._update_tables(doc, scene.records)
+        self.eq_import_warning.setText(self.eq_import_notice().strip())
+        self.eq_import_warning.setVisible(bool(self.eq_import_warning.text()))
         self._update_chrome(doc, bank, key, scene.has_measurement, scene.has_target, len(self.session.firmware_plans))
         frequency, base = scene.frequency, scene.base
         self.main_plot.setLabel("left", "dB · EQ 增益／相对声压")
@@ -591,5 +600,10 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
         else:
             self.discard_correction_preview()
             if self.preview_worker is not None:
-                self.preview_worker.wait(3000)
-            event.accept()
+                # Keep the window and child QThread alive until cancellation finishes.
+                # A bounded wait followed by destruction can abort the process on a slow fit.
+                self.statusBar().showMessage("正在取消修正预览，完成后即可关闭窗口。")
+                event.ignore()
+            else:
+                event.accept()
+

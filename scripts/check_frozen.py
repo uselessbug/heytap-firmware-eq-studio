@@ -40,6 +40,7 @@ assert data["firmware_export_available"] and data["metadata_editor_available"]
 assert data["project_schema"] == "heytap-project-v4"
 assert data["single_plot"] and data["reference_template_presets"] == 6
 assert not data["apk_dependency"]
+assert data["third_party_imports"] and data["imported_preamp_applied"] is False
 assert data["plot_engine"] == "DSSSP 0.8.0"
 assert data["web_editor"]["ready"] and data["web_editor"]["svgPaths"] >= 3
 assert data["web_editor"]["height"] >= 250
@@ -50,3 +51,4 @@ assert data["svg_icons"] and data["qt_translation_zh_CN"] and data["blas_threads
 data["executable_sha256"] = hashlib.sha256(exe.read_bytes()).hexdigest()
 data["gui_smoke_elapsed_seconds"] = elapsed
 report.write_text(json.dumps(data, indent=2))
+

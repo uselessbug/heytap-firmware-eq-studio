@@ -1,5 +1,7 @@
 # 界面审查与重构记录（2026-10-11）
 
+2026-10-12 整合更新：此文保留 PR #3 的原始审查记录。第三方 EQ／测量导入已在 [集成 PR #4](https://github.com/uselessbug/heytap-firmware-eq-studio/pull/4) 接入新版模块化界面，格式和 Preamp 安全语义见 [eq-formats.md](eq-formats.md)。同仓库 PR 的检查／打包依赖条件已修正；预览取消期间暂缓窗口销毁，待 QThread 完成再关闭。最新源码的验证与双打包结果以 PR #4 的 Actions 链接为准，原 PR #3 保持未合并。
+
 分支 `feat/claude-ux`，基线 `feat/python-desktop-studio` 的 `e73704c`（与交接文档的 `e62d5d1` 只差一个文档提交）。本记录对应提交 `8366b70` 起的 `feat/claude-ux` 系列提交。
 
 ## 截图方法
@@ -128,7 +130,7 @@
 
 1. 固件预设拟合慢，且超限只在导出时才知道。用内置的真实 Enco X4 参考预设测量：每个预设 36 条记录里有 6–7 组不同的基底滤波器，一次“拟合到固件预设”约 16 s（每组 1.4–3.1 s，`firmware_edit.fit_record`）。修正幅度较大时，7 组中有 5 组 RMS 为 0.45–0.71 dB，超过导出默认限值 0.45 dB；计划阶段只显示最大误差，导出时才报错。建议：计划列表与导出对话框按限值标出通过／超限；`fit_record` 可以用与 PEQ 相同的向量化目标函数提速，但属于固件写入链路，需要逐位对照的回归测试并单独提交。
 2. 原有 `tests/test_gui.py` 仍用 `QTest.qWait` 等待后台任务；PySide6 6.8 在 `qWait` 期间持有 GIL，后台 Python 线程会慢约 200 倍（0.3 s 的拟合超过 60 s）。改为事件循环等待即可，测试更快、更不容易超时。
-3. AutoEQ／Equalizer APO／REW 导入（`feat/import-autoeq-apo-rew`）还没有并入这条分支。
+3. AutoEQ／Equalizer APO／REW 导入在原 PR #3 中尚未并入；已在集成 PR #4 完成，与原测量、目标、EQ 文件及剪贴板入口共用严格解析器。
 4. 撤销快照每次都复制并逐点校验全部测量和目标（最多 100 步），曲线多时每次编辑的开销随总点数增长；可以改为共享不可变曲线，只记录选择变化。
 5. 图上的 PEQ 节点不能用键盘选择或微调，只能用“参数表”面板；高对比度用户更需要这条路径（例如 Tab 切换节点、方向键调频率／增益）。
 6. 两种 EXE 都没有程序图标、版本信息资源和代码签名，Windows 会显示 SmartScreen 警告；Nuitka 可加 `--windows-icon-from-ico`、`--product-name`、`--file-version`，PyInstaller 用 `--icon`、`--version-file`。另外 Nuitka 版使用 `--windows-console-mode=attach`，从终端启动时会把输出写到该终端，PyInstaller 版（`--windowed`）不会，两者行为略有不同。

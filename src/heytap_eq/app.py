@@ -44,13 +44,26 @@ def main(argv=None):
     window.show()
     result = 0
     if args.smoke_test:
-        from heytap_eq.eq_formats import Filter, parse_text
+        from heytap_eq.eq_formats import parse_text
         from heytap_eq.estimation import builtin_reference
-        from heytap_eq.measurements import Measurement
+        from heytap_eq.measurements import Measurement, parse_table
 
         preview = parse_text("GraphicEQ: 20 0; 100 -1; 1000 2; 5000 -2; 20000 0", "Synthetic preview")
-        preview.filters.append(Filter(1, 1000, 2, .7))
+        # Exercise the integrated parsers inside both actual frozen executables.
+        imported = parse_text("Preamp: -6.2 dB\n"
+                              "Filter 1: ON LSC Fc 105 Hz Gain 6.4 dB Q 0.7\n"
+                              "Filter 2: OFF PK Fc 2000 Hz Gain -3.1 dB Q 1.41")
+        assert imported.metadata["PREAMP_DB"] == "-6.2"
+        assert imported.filters[0].kind == "LS" and not imported.filters[1].enabled
+        preview.filters = imported.filters
+        preview.metadata = imported.metadata
+        table_samples = ("frequency,raw\n20,80\n1000,90\n20000,82",
+                         "* REW\n20 80 0\n1000 90 0\n20000 82 0",
+                         "Frequency [Hz];SPL [dB]\n20;80\n1000;90\n20000;82")
+        assert all(parse_table(text, "Synthetic import").spl_values == [80, 90, 82]
+                   for text in table_samples)
         window.set_document(preview)
+        assert "-6.2" in window.eq_import_warning.text() and "未应用" in window.eq_import_warning.text()
         window.set_measurements([Measurement("Synthetic test fixture", [20, 1000, 20000], [80, 90, 80]).validate()])
 
         window.set_targets([Measurement("Synthetic target", [20, 1000, 20000], [83, 90, 78]).validate()])
@@ -108,6 +121,7 @@ def main(argv=None):
                     "plot_engine": "DSSSP 0.8.0", "web_editor": web,
                     "svg_icons": svg_icons, "qt_translation_zh_CN": translated,
                     "blas_threads": os.environ.get("OPENBLAS_NUM_THREADS"),
+                    "third_party_imports": True, "imported_preamp_applied": False,
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
                 result = 1
@@ -126,3 +140,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
