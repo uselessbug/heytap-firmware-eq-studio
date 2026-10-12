@@ -24,7 +24,7 @@ from heytap_eq.gui_correction import CorrectionMixin
 from heytap_eq.gui_firmware import FirmwareMixin
 from heytap_eq.gui_layout import DAC_MODES, LayoutMixin
 from heytap_eq.gui_sources import SourcesMixin
-from heytap_eq.preferences import BrowserMemory
+from heytap_eq.preferences import BrowserMemory, FileDialogMemory
 from heytap_eq.service_profile import builtin_authorization
 from heytap_eq.session import Session
 from heytap_eq.widgets import mark
@@ -84,6 +84,7 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
             QtCore.QStandardPaths.StandardLocation.AppDataLocation)
         self.auto_path = Path(auto_path) if auto_path else Path(default_path)/"recovery.heytap.json"
         self.memory = BrowserMemory(self.auto_path.parent/"browser-memory.json")
+        self.file_memory = FileDialogMemory(self.auto_path.parent/"file-dialogs.json")
         self.desired_selection = self.memory.selection()
         self.appearance_path = self.auto_path.parent/"appearance.json"
         self.appearance = themes.load(self.appearance_path)
@@ -173,9 +174,18 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
             self.statusBar().showMessage(f"粘贴未完成：{exc}")
 
     # ------------------------------------------------------------------ tasks
-    def _choose(self, title, pattern="所有文件 (*)", save=False):
+    def _choose(self, title, pattern="所有文件 (*)", save=False, *, kind, initial=""):
         method = QtWidgets.QFileDialog.getSaveFileName if save else QtWidgets.QFileDialog.getOpenFileName
-        return method(self, title, "", pattern)[0]
+        fallback = str(Path(initial).parent) if initial else QtCore.QStandardPaths.writableLocation(
+            QtCore.QStandardPaths.StandardLocation.DocumentsLocation)
+        directory = self.file_memory.directory(kind, fallback)
+        start = str(Path(directory)/Path(initial).name) if initial else directory
+        selected = method(self, title, start, pattern)[0]
+        try:
+            self.file_memory.remember(kind, selected)
+        except OSError as exc:
+            self.statusBar().showMessage(f"文件路径偏好未保存：{exc}")
+        return selected
 
     def _task(self, fn, callback, network=False, with_progress=False):
         workers = self.network_workers if network else self.workers
@@ -237,7 +247,8 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
 
     def import_eq(self):
         path = self._choose("导入 EQ 参数（不是测量频响）",
-                            "EQ 参数（Flowmix / Wavelet / AutoEQ / APO / REW）(*.txt);;所有文件 (*)")
+                            "EQ 参数（Flowmix / Wavelet / AutoEQ / APO / REW）(*.txt);;所有文件 (*)",
+                            kind="eq_import")
         if path:
             self._task(lambda: load_eq(path), self.set_document)
 
@@ -266,7 +277,7 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
         self._changed()
 
     def open_project(self):
-        path = self._choose("打开工程", "HeyTap 工程 (*.json)")
+        path = self._choose("打开工程", "HeyTap 工程 (*.json)", kind="project_open")
         if path:
             try:
                 self.session.restore(path, self.firmware.sha256 if self.firmware else None)
@@ -279,7 +290,7 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                 self.statusBar().showMessage(f"工程未加载：{exc}")
 
     def save_project(self):
-        path = self._choose("保存工程", "HeyTap 工程 (*.heytap.json)", save=True)
+        path = self._choose("保存工程", "HeyTap 工程 (*.heytap.json)", save=True, kind="project_save")
         if path:
             try:
                 self.session.save(path)
@@ -288,7 +299,7 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                 self.statusBar().showMessage(f"保存失败：{exc}")
 
     def export_eq(self):
-        path = self._choose("导出 Flowmix EQ", "EQ 文本 (*.txt)", save=True)
+        path = self._choose("导出 Flowmix EQ", "EQ 文本 (*.txt)", save=True, kind="eq_export")
         if path:
             try:
                 Path(path).write_text(dump_eq(self.session.document), encoding="utf-8")

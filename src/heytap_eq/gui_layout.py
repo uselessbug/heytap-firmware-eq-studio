@@ -198,8 +198,12 @@ class LayoutMixin:
         scroll.setMaximumWidth(460)
         body = QtWidgets.QWidget()
         body.setObjectName("railBody")
+        body.setSizePolicy(QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Preferred)
         scroll.setWidget(body)
         layout = QtWidgets.QVBoxLayout(body)
+        # Restyling invalidates size hints. Keep vertical scrolling, but do not let the
+        # content layout install a minimum width larger than the splitter's viewport.
+        layout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetNoConstraint)
         layout.setContentsMargins(8, 6, 6, 8)
         layout.setSpacing(8)
         header = QtWidgets.QHBoxLayout()
@@ -370,6 +374,17 @@ class LayoutMixin:
         card.add(self.export_button)
         layout.addWidget(card)
         layout.addStretch()
+        for combo in body.findChildren(QtWidgets.QComboBox):
+            combo.setSizeAdjustPolicy(QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            combo.setMinimumContentsLength(8)
+            policy = combo.sizePolicy()
+            policy.setHorizontalPolicy(QtWidgets.QSizePolicy.Policy.Ignored)
+            combo.setSizePolicy(policy)
+        for text in body.findChildren(QtWidgets.QLabel):
+            if text.wordWrap():
+                policy = text.sizePolicy()
+                policy.setHorizontalPolicy(QtWidgets.QSizePolicy.Policy.Ignored)
+                text.setSizePolicy(policy)
         return scroll
 
     def _build_strip(self):

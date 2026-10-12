@@ -68,7 +68,23 @@ def main(argv=None):
 
         window.set_targets([Measurement("Synthetic target", [20, 1000, 20000], [83, 90, 78]).validate()])
 
+        # Source and both actual EXEs exercise persistent dialog preferences and live restyling.
+        from heytap_eq.preferences import FileDialogMemory
+
+        for kind in ("eq_import", "project_open"):
+            folder = (args.report.parent/"dialog-memory-probe"/kind).resolve()
+            folder.mkdir(parents=True, exist_ok=True)
+            window.file_memory.remember(kind, folder/"sample.txt")
+        restored_memory = FileDialogMemory(window.file_memory.path)
+        assert restored_memory.directory("eq_import") != restored_memory.directory("project_open")
+        assert all(restored_memory.directory(kind) == window.file_memory.directory(kind)
+                   for kind in ("eq_import", "project_open"))
+        window.set_rail_expanded(True)
+        theme_steps = [("dark", "violet", "standard"), ("light", "amber", "high"),
+                       ("dark", "blue", "standard")]
+        theme_layouts = []
         attempts = 0
+        paint_ready = False
 
         def probe():
             nonlocal result
@@ -83,11 +99,46 @@ def main(argv=None):
                 args.report.write_text(json.dumps({"status": "failed", "error": "Web editor did not initialize"}))
                 app.quit()
                 return
-            window.acoustic_plot.inspect(finish_probe)
+            try:
+                viewport = window.rail.viewport()
+                assert window.rail.widget().width() == viewport.width()
+                assert window.rail.horizontalScrollBar().maximum() == 0
+                for card in window.cards.values():
+                    point = card.mapTo(viewport, QtCore.QPoint())
+                    assert point.x() >= 0 and point.x()+card.width() <= viewport.width()
+                width = window.rail.width()
+                if theme_layouts:
+                    assert abs(width-theme_layouts[0]["rail_width"]) <= 2
+                theme_layouts.append({"mode": window.theme["mode"], "accent": window.theme["accent"],
+                                      "contrast": window.theme["contrast"], "rail_width": width,
+                                      "body_width": window.rail.widget().width(), "viewport_width": viewport.width()})
+                if theme_steps:
+                    mode, accent, contrast = theme_steps.pop(0)
+                    window.set_appearance(mode=mode, accent=accent, contrast=contrast)
+                    QtCore.QTimer.singleShot(100, probe)
+                    return
+                window.acoustic_plot.inspect(finish_probe)
+            except Exception as exc:
+                result = 1
+                args.report.parent.mkdir(parents=True, exist_ok=True)
+                args.report.write_text(json.dumps({"status": "failed", "error": str(exc),
+                                                   "theme_layouts": theme_layouts}))
+                app.quit()
 
         def finish_probe(web):
             nonlocal result
+            nonlocal attempts, paint_ready
+            attempts += 1
+            matches = web and web.get("theme") == window.theme["mode"] \
+                and web.get("contrast") == window.theme["contrast"]
+            if attempts < 200 and (not matches or not paint_ready):
+                paint_ready = bool(matches)
+                # DOM inspection can precede WebEngine's compositor repaint, especially
+                # in frozen Windows builds. Allow it to paint before grabbing the window.
+                QtCore.QTimer.singleShot(250, lambda: window.acoustic_plot.inspect(finish_probe))
+                return
             try:
+                assert matches and paint_ready, "Web editor did not paint the final theme"
                 args.report.parent.mkdir(parents=True, exist_ok=True)
                 image = args.report.with_suffix(".png")
                 assert window.isVisible() and window.width() >= 600
@@ -122,6 +173,8 @@ def main(argv=None):
                     "svg_icons": svg_icons, "qt_translation_zh_CN": translated,
                     "blas_threads": os.environ.get("OPENBLAS_NUM_THREADS"),
                     "third_party_imports": True, "imported_preamp_applied": False,
+                    "theme_layout_validated": True, "theme_layouts": theme_layouts,
+                    "file_dialog_memory_validated": True,
                 }, indent=2), encoding="utf-8")
             except Exception as exc:
                 result = 1

@@ -5,7 +5,7 @@ import json
 import threading
 from pathlib import Path
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore
 
 from heytap_eq import dialogs, metadata
 from heytap_eq.adapters import inspect_firmware
@@ -136,14 +136,14 @@ class FirmwareMixin:
         if not self.firmware:
             self.statusBar().showMessage("先打开固件，再载入它的配置映射。")
             return
-        path = self._choose("载入配置映射", "配置映射 (*.json)")
+        path = self._choose("载入配置映射", "配置映射 (*.json)", kind="mapping_import")
         if path:
             firmware_path = self.firmware.path
             self._task(lambda: inspect_firmware(firmware_path, json.loads(Path(path).read_text(encoding="utf-8"))),
                        self.set_firmware)
 
     def import_reference(self):
-        path = self._choose("选择测量所对应的参考固件")
+        path = self._choose("选择测量所对应的参考固件", kind="firmware_open")
         if path:
             def received(firmware):
                 if not firmware.profiles:
@@ -252,8 +252,8 @@ class FirmwareMixin:
         if not limits:
             return
         original = Path(self.firmware.path)
-        output = QtWidgets.QFileDialog.getSaveFileName(self, "导出修改后的固件",
-                  str(original.with_name(original.stem+"-edited.bin")), "固件 (*.bin);;所有文件 (*)")[0]
+        output = self._choose("导出修改后的固件", "固件 (*.bin);;所有文件 (*)", save=True,
+                              kind="firmware_export", initial=str(original.with_name(original.stem+"-edited.bin")))
         if output:
             self.export_to_path(output, *limits)
 
@@ -275,7 +275,7 @@ class FirmwareMixin:
         self._task(lambda: export_firmware(firmware, plans, edits, output, cancelled, max_rms, max_error), received)
 
     def open_firmware(self):
-        path = self._choose("打开固件")
+        path = self._choose("打开固件", kind="firmware_open")
         if path:
             mapping = copy.deepcopy(self.session.context.get("mapping"))
             self._task(lambda: inspect_firmware(path, mapping), self.set_firmware)
@@ -312,3 +312,4 @@ class FirmwareMixin:
         self.info_dock.show()
         self.info_dock.raise_()
         self.statusBar().showMessage("仅显示候选参数和可能指针；没有赋予名称或写入权限。")
+

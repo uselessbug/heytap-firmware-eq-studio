@@ -95,6 +95,17 @@ jobs:
           else
             python -m pytest --junitxml=reports/pytest.xml
           fi
+      - name: Scaled Qt layout regression
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'windows' }}
+          QT_SCALE_FACTOR: '1.5'
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a -s "-screen 0 1920x1080x24" python -m pytest tests/test_gui_layout_preferences.py -k rail_width --junitxml=reports/scaled-layout.xml
+          else
+            python -m pytest tests/test_gui_layout_preferences.py -k rail_width --junitxml=reports/scaled-layout.xml
+          fi
       - name: GUI event loop and screenshot
         shell: bash
         env:
@@ -105,6 +116,18 @@ jobs:
           else
             python -m heytap_eq.app --smoke-test --report reports/source-startup.json
           fi
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          report = json.loads(Path("reports/source-startup.json").read_text(encoding="utf-8"))
+          assert report["status"] == "passed" and report["window_visible"]
+          assert report["sha"] == os.environ["HEYTAP_BUILD_SHA"]
+          assert report["theme_layout_validated"] and len(report["theme_layouts"]) == 4
+          assert report["file_dialog_memory_validated"]
+          assert report["web_editor"]["theme"] == "dark"
+          assert report["web_editor"]["contrast"] == "standard"
+          PY
       - name: Offline benchmark correctness
         env:
           OPENBLAS_NUM_THREADS: '1'

@@ -131,7 +131,7 @@ class SourcesMixin:
 
     def import_target(self):
         path = self._choose("导入目标频响（不是 EQ 参数）",
-                            "频响数据 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)")
+                            "频响数据 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)", kind="target_import")
         if path:
             self._task(lambda: load_measurements(path), self.set_targets)
 
@@ -182,7 +182,7 @@ class SourcesMixin:
 
     def import_measurements(self):
         path = self._choose("导入原始测量频响（不是 EQ 参数）",
-                            "频响数据 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)")
+                            "频响数据 (*.csv *.txt *.frd *.json *.har);;所有文件 (*)", kind="measurement_import")
         if path:
             self._task(lambda: load_measurements(path), self.set_measurements)
 
