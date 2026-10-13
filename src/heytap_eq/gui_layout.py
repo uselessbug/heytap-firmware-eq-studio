@@ -289,6 +289,7 @@ class LayoutMixin:
         self.eq_import_warning = label("", "warn")
         self.eq_import_warning.hide()
         card.add(self.eq_import_warning)
+        card.add(self._build_correction_range())
         self.fit_target_button = button("▸ 生成修正 EQ", checkable=True,
                                         tooltip="根据原始与目标频响生成 RAW 或 PEQ 修正，应用前实时预览")
         self.fit_target_button.toggled.connect(self.generator_toggled)

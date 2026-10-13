@@ -14,6 +14,7 @@ from scipy.optimize import least_squares
 from heytap_eq import metadata, opkg
 from heytap_eq.adapters import PRESETS, verified_bank
 from heytap_eq.configuration import config, record_at
+from heytap_eq.correction_range import OUTSIDE_REFERENCE_DB
 from heytap_eq.dsp import FIRMWARE_KIND, SAMPLE_RATES, correction
 from heytap_eq.eq_formats import EQDocument
 from heytap_eq.firmware_dsp import coefficients, response
@@ -39,17 +40,30 @@ def quantize(filters):
 
 def metrics(original, filters, doc):
     result = {}
+    frequency = np.unique(np.concatenate((FREQUENCY, doc.correction_range.knots(65))))
+    outside = doc.correction_range.outside(frequency)
     for rate in SAMPLE_RATES:
-        baseline = response(original, FREQUENCY, rate)
-        error = response(filters, FREQUENCY, rate)-baseline-correction(doc, FREQUENCY, rate)
+        baseline = response(original, frequency, rate)
+        delta = response(filters, frequency, rate)-baseline
+        error = delta-correction(doc, frequency, rate)
         audible = baseline >= np.max(baseline)-30
         result[str(rate)] = {
             "rms_db": float(np.sqrt(np.mean(error[audible]**2))),
             "max_db": float(np.max(np.abs(error[audible]))),
             "full_band_rms_db": float(np.sqrt(np.mean(error**2))),
-            "audible_min_hz": float(FREQUENCY[audible][0]),
-            "audible_max_hz": float(FREQUENCY[audible][-1]),
+            "audible_min_hz": float(frequency[audible][0]),
+            "audible_max_hz": float(frequency[audible][-1]),
         }
+        if doc.correction_range.limited:
+            worst = int(np.argmax(np.where(outside, np.abs(delta), -1.))) if np.any(outside) else None
+            maximum = float(abs(delta[worst])) if worst is not None else 0.
+            result[str(rate)].update({"outside_max_db": maximum,
+                "outside_worst_hz": float(frequency[worst]) if worst is not None else None,
+                "outside_reference_db": OUTSIDE_REFERENCE_DB,
+                "outside_samples": int(np.sum(outside)),
+                "outside_within_reference": maximum <= OUTSIDE_REFERENCE_DB if worst is not None else None,
+                "outside_includes_overall_gain": False,
+                "full_band_max_db": float(np.max(np.abs(error)))})
     return result
 
 
@@ -92,6 +106,7 @@ def fit_record(source, doc, cancelled=None, max_nfev=300):
     raw_neutral = not doc.raw or all(abs(p[1]) < 1e-12 for p in doc.raw)
     # Cascading a representable PEQ is exact and avoids unnecessary optimization.
     if (raw_neutral and all(f.kind in ("PEAK", "LS", "HS") for f in enabled)
+            and (not doc.correction_range.limited or not enabled)
             and len(original)+len(enabled) <= 18):
         fitted = quantize(original+[{"type_id": FIRMWARE_KIND[f.kind], "gain": f.gain,
                                    "fc": f.frequency, "q": f.q} for f in enabled])
@@ -110,11 +125,14 @@ def fit_record(source, doc, cancelled=None, max_nfev=300):
     grid = np.geomspace(20, 20000, 256)
     if doc.raw:
         grid = np.unique(np.concatenate([grid, np.asarray(doc.raw)[:, 0]]))
+    grid = np.unique(np.concatenate((grid, doc.correction_range.knots())))
     desired, weights, fixed_db = [], [], []
     for rate in SAMPLE_RATES:
         baseline = response(original, grid, rate)
         desired.append(baseline+correction(doc, grid, rate))
-        weights.append(np.clip(10**((baseline-np.max(baseline))/40), .035, 1))
+        weight = np.clip(10**((baseline-np.max(baseline))/40), .035, 1)
+        # Preserve the baseline beyond the transition edges, including its quieter bands.
+        weights.append(np.where(doc.correction_range.outside(grid), 3., weight))
         fixed_db.append(response(fixed, grid, rate))
 
     def decode(values):

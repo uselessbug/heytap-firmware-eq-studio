@@ -46,7 +46,30 @@ def correction(doc, frequency, fs=48000):
     if doc.raw:
         points = np.asarray(doc.raw)
         gain = np.interp(np.log(frequency), np.log(points[:, 0]), points[:, 1])
-    return gain + filter_response(doc.filters, frequency, fs)
+    return (gain + filter_response(doc.filters, frequency, fs))*doc.correction_range.weights(frequency)
+
+
+def flatten_correction(doc, fs=48000):
+    """Export the effective response once, as RAW at an explicit sample rate."""
+    import json
+    from dataclasses import asdict
+
+    from heytap_eq.eq_formats import EQDocument
+
+    if fs not in SAMPLE_RATES:
+        raise ValueError("Unsupported sample rate")
+    frequency = np.unique(np.concatenate((np.geomspace(20, 20000, 4096),
+                         doc.correction_range.knots(65), [p[0] for p in doc.raw],
+                         [f.frequency for f in doc.filters if f.enabled])))
+    # Match dump_eq's numeric precision before deduplicating coincident grid/edge points.
+    frequency = np.unique([float(f"{f:.9g}") for f in frequency])
+    values = correction(doc, frequency, fs)
+    result = EQDocument(name=doc.name, raw=np.column_stack((frequency, values)).tolist(),
+                        metadata={**doc.metadata, "HEYTAP_EFFECTIVE_CORRECTION": "1",
+                                  "SAMPLE_RATE_HZ": str(fs),
+                                  "APPLIED_CORRECTION_RANGE": json.dumps(asdict(doc.correction_range))})
+    result.validate()
+    return result
 
 
 def firmware_curve(record, frequency, fs=48000):

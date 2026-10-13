@@ -57,12 +57,13 @@ class Scene:
 
 
 def compose(view, frequency=None):
-    frequency = np.geomspace(20, 20000, 2048) if frequency is None else np.asarray(frequency)
+    frequency = (np.unique(np.concatenate((np.geomspace(20, 20000, 2048), view.doc.correction_range.knots())))
+                 if frequency is None else np.asarray(frequency))
     doc, fs, checks, colors = view.doc, view.rate, view.checks, view.colors
     bank, key = view.bank, view.key
     special = bool(bank and key and config(bank, key).get("special"))
     state = 0 if special else max(0, view.state_index)
-    raw_only = type(doc)(name=doc.name, raw=doc.raw)
+    raw_only = type(doc)(name=doc.name, raw=doc.raw, correction_range=doc.correction_range)
     raw_values, eq_values = correction(raw_only, frequency, fs), correction(doc, frequency, fs)
     curves = []
 

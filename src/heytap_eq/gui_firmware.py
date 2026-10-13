@@ -205,7 +205,14 @@ class FirmwareMixin:
             self.session.stage_plan(plan)
             self._changed()
             maximum = max(m["max_db"] for r in plan["records"] for m in r["record"]["metrics"].values())
-            self.statusBar().showMessage(f"{destination} 已加入计划：{len(plan['records'])} 条记录，最大误差 {maximum:.3f} dB。")
+            outside_values = [m for r in plan["records"] for m in r["record"]["metrics"].values()
+                              if m.get("outside_samples", 0)]
+            outside = max((m["outside_max_db"] for m in outside_values), default=0.)
+            detail = (f" 带外最大变化 {outside:.3f} dB（参考 0.2 dB"
+                      + ("，超过参考值）。" if outside > .2 else "）。")) if doc.correction_range.limited else ""
+            if doc.correction_range.limited and not outside_values:
+                detail = " 当前计算频段内没有完全保留基底的带外区间。"
+            self.statusBar().showMessage(f"{destination} 已加入计划：{len(plan['records'])} 条记录，最大误差 {maximum:.3f} dB。"+detail)
         self._task(lambda progress: make_plan(firmware, doc, destination, preamp, cancelled, progress, baseline=baseline),
                    received, with_progress=True)
 

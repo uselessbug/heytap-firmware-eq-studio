@@ -16,6 +16,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from heytap_eq import theme as themes
 from heytap_eq.clipboard import MIME, PRESET_SCHEMA, copy_plan, decode_text, tuning_payload
 from heytap_eq.composition import View, compose
+from heytap_eq.correction_range import CorrectionRange
 from heytap_eq.configuration import config, configurations
 from heytap_eq.eq_formats import Filter, dump_eq, load_eq
 from heytap_eq.firmware_dsp import FILTER_TYPES
@@ -164,7 +165,10 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                 self.preset_combo.setCurrentIndex(self.preset_combo.findData(destination))
                 self.preset_combo.blockSignals(False)
             else:
-                self.session.paste_tuning(payload["state"])
+                if payload.get("external_eq"):
+                    self.set_document(EQDocument.from_dict(payload["state"]["eq"]), imported=True)
+                else:
+                    self.session.paste_tuning(payload["state"])
                 self.restore_curves()
                 self.restore_context_controls()
             self._preview_document = None
@@ -250,9 +254,14 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                             "EQ 参数（Flowmix / Wavelet / AutoEQ / APO / REW）(*.txt);;所有文件 (*)",
                             kind="eq_import")
         if path:
-            self._task(lambda: load_eq(path), self.set_document)
+            self._task(lambda: load_eq(path), lambda doc: self.set_document(doc, imported=True))
 
-    def set_document(self, doc):
+    def set_document(self, doc, imported=False):
+        doc = copy.deepcopy(doc)
+        doc.correction_range = copy.deepcopy(self.session.document.correction_range)
+        if imported and doc.metadata.get("HEYTAP_EFFECTIVE_CORRECTION") == "1":
+            # A RAW export already includes its transition: retain settings, leave them off.
+            doc.correction_range.enabled = False
         self._preview_document = None
         self.session.replace(doc)
         self._changed()
@@ -302,8 +311,10 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
         path = self._choose("导出 Flowmix EQ", "EQ 文本 (*.txt)", save=True, kind="eq_export")
         if path:
             try:
-                Path(path).write_text(dump_eq(self.session.document), encoding="utf-8")
-                self.statusBar().showMessage("EQ 文本已导出")
+                rate = int(self.rate_combo.currentText())
+                Path(path).write_text(dump_eq(self.session.document, rate), encoding="utf-8")
+                self.statusBar().showMessage("已导出有效 RAW 修正（"+f"{rate/1000:g} kHz）；原参数请保存工程。"
+                    if self.session.document.correction_range.limited else "EQ 文本已导出")
             except (ValueError, OSError) as exc:
                 self.statusBar().showMessage(f"导出失败：{exc}")
 
@@ -326,11 +337,18 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                 self.edit_generation += 1
                 self.fit_report = None
                 return
+            if op == "cancel":
+                self._preview_document = None
+                self.preview_timer.stop()
+                self.refresh()
+                return
             doc = copy.deepcopy(self.session.document)
             if op == "add":
                 new_id = max((f.id for f in doc.filters), default=0)+1
                 doc.filters.append(Filter(new_id, float(event["frequency"]),
                                           float(event["gain"]), .7))
+            elif op == "range":
+                doc.correction_range = CorrectionRange.from_dict(event["range"])
             elif op in ("filter", "raw", "delete"):
                 index = event["index"]
                 if type(index) is not int or index < 0:
@@ -356,7 +374,12 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                     self.preview_timer.start()
             else:
                 self.preview_timer.stop()
-                self.set_document(doc)
+                if op == "range":
+                    self._preview_document = None
+                    self.session.replace(doc, "调整修正范围")
+                    self._changed()
+                else:
+                    self.set_document(doc)
         except (ValueError, IndexError, KeyError, TypeError, OverflowError) as exc:
             self._preview_document = None
             self.preview_timer.stop()
@@ -490,13 +513,22 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
                                        (self.redo_action, self.session._redo, "重做")):
             action.setToolTip(title+("："+history[-1]["action"] if history else ""))
         # Rebuild the plan list only when plans change, so a selection survives live previews.
-        plans = [(p["destination"], p["eq"]["name"], len(p["records"])) for p in self.session.firmware_plans]
+        plans = [(p["destination"], p["eq"]["name"], len(p["records"]),
+                  json.dumps([r["record"].get("metrics", {}) for r in p["records"]], sort_keys=True))
+                 for p in self.session.firmware_plans]
         if plans != self._plans_shown:
             self._plans_shown = plans
             self.plans_list.clear()
-            for destination, name, count in plans:
+            for destination, name, count, metric_text in plans:
                 item = QtWidgets.QListWidgetItem(f"{destination} ← {name or '复制的预设'} · {count} 条")
                 item.setData(QtCore.Qt.ItemDataRole.UserRole, destination)
+                values = [m for record in json.loads(metric_text) for m in record.values()
+                          if m.get("outside_samples", 0)]
+                if values:
+                    worst = max(values, key=lambda m: m["outside_max_db"])
+                    item.setToolTip(f"滤波器带外最大变化 {worst['outside_max_db']:.3f} dB @ "
+                                    f"{worst['outside_worst_hz']:.4g} Hz；参考 0.2 dB。"
+                                    +("超过参考值；查看导出报告。" if not worst["outside_within_reference"] else ""))
                 self.plans_list.addItem(item)
         self.remove_plan_button.setEnabled(bool(self.session.firmware_plans))
         queued = "、".join(p["destination"] for p in self.session.firmware_plans)
@@ -585,6 +617,7 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
             self.main_plot.plot(curve["x"], curve["y"], color=curve["color"], name=curve["name"],
                                 dashed=curve["dashed"], width=curve["width"])
         self._update_tables(doc, scene.records)
+        self.sync_correction_range(doc)
         self.eq_import_warning.setText(self.eq_import_notice().strip())
         self.eq_import_warning.setVisible(bool(self.eq_import_warning.text()))
         self._update_chrome(doc, bank, key, scene.has_measurement, scene.has_target, len(self.session.firmware_plans))
@@ -593,6 +626,8 @@ class MainWindow(LayoutMixin, SourcesMixin, CorrectionMixin, FirmwareMixin, QtWi
         self.main_plot.set_editor(
             label=f"调音 · {fs/1000:g} kHz"+(f" · {self.region_combo.currentText()}" if bank else ""),
             filters=[asdict(f) for f in doc.filters], raw=doc.raw, rawNodes=bool(raw_nodes),
+            correctionRange=doc.correction_range.payload(),
+            rangeWeights=self.main_plot.series(frequency, doc.correction_range.weights(frequency)),
             nodeBase=self.main_plot.offsets(frequency, base+scene.raw_values),
             rawBase=self.main_plot.offsets(frequency, base),
             addBase=self.main_plot.offsets(frequency, base+scene.eq_values), bands=scene.bands,

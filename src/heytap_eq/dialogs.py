@@ -102,6 +102,12 @@ def export_settings(parent, plans, edits, fields):
         text = f"{plan['destination']} ← {plan['eq']['name'] or '复制的预设'} · {len(plan['records'])} 条"
         if values:
             text += f" · 最差 RMS {max(v['rms_db'] for v in values):.3f} / 最大 {max(v['max_db'] for v in values):.3f} dB"
+        outside = [v for v in values if v.get("outside_samples", 0)]
+        if outside:
+            value = max(outside, key=lambda v: v["outside_max_db"])
+            text += f" · 带外 {value['outside_max_db']:.3f} dB @ {value['outside_worst_hz']:.4g} Hz"
+            if not value["outside_within_reference"]:
+                text += "（超过 0.2 dB 参考值）"
         rows.append(text)
     names = {f["id"]: f["label"] for f in fields}
     rows += [f"{names.get(key, key)} → {value}" for key, value in edits.items()]
@@ -110,6 +116,9 @@ def export_settings(parent, plans, edits, fields):
     summary.setMaximumHeight(28+22*min(6, len(rows)))
     layout.insertWidget(0, label("将写入以下修改：", "muted"))
     layout.insertWidget(1, summary)
+    if any("outside_max_db" in v for v in worst):
+        layout.insertWidget(2, label("带外从过渡外缘开始检查，参考值 0.2 dB；超过时列出实际变化。"
+                                    "这项检查不包含单独设置的全频整体衰减。", "muted"))
     rms, peak = _spin(.01, 20, .45, " dB"), _spin(.01, 60, 1.5, " dB")
     for spin in (rms, peak):
         spin.setEnabled(bool(worst))

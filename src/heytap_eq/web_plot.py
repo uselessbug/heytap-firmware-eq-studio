@@ -2,7 +2,7 @@
 
 Wire format (schema 2): Python publishes one JSON payload per refresh (curves, editable
 filters/RAW, legend toggles, notice, theme tokens, one-shot reset/fit view requests); the
-page submits gesture events {op: begin|add|filter|raw|delete|view|command}. Python
+page submits gesture events {op: begin|cancel|add|filter|raw|range|delete|view|command}. Python
 validates every event before it touches the session.
 """
 

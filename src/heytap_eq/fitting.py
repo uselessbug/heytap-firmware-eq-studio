@@ -7,6 +7,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import least_squares
 
+from heytap_eq.correction_range import CorrectionRange
 from heytap_eq.dsp import SAMPLE_RATES, correction, filter_response
 from heytap_eq.eq_formats import EQDocument, Filter
 
@@ -86,7 +87,7 @@ def peak_chain_response(params, frequency, rates):
     return 20*np.log10(np.maximum(abs(h), 1e-30))
 
 
-def fit_response(original, target, mode="RAW", options=None, cancelled=None):
+def fit_response(original, target, mode="RAW", options=None, cancelled=None, correction_range=None):
     options = options or FitOptions()
     cancelled = cancelled or threading.Event()
     frequency, desired, offset = common_grid(original, target, options)
@@ -139,10 +140,12 @@ def fit_response(original, target, mode="RAW", options=None, cancelled=None):
                     "TARGET": target.title.replace("\n", " "),
                     "FIT_LOW_HZ": str(float(frequency[0])), "FIT_HIGH_HZ": str(float(frequency[-1])),
                     "TARGET_OFFSET_DB": str(offset)}
+    doc.correction_range = CorrectionRange.from_dict(
+        correction_range.__dict__ if correction_range is not None else {})
     doc.validate()
     metrics = {}
     for rate in options.sample_rates:
-        error = correction(doc, frequency, rate)-desired
+        error = correction(doc, frequency, rate)-desired*doc.correction_range.weights(frequency)
         metrics[str(rate)] = {"rms_db": float(np.sqrt(np.mean(error**2))),
                               "max_db": float(np.max(abs(error)))}
     return doc, {"mode": mode, "target_offset_db": offset, "range_hz":

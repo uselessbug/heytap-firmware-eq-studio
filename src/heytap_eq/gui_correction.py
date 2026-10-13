@@ -8,6 +8,7 @@ signature no longer matches the window is discarded instead of being shown or ap
 import copy
 import json
 import threading
+from dataclasses import asdict
 
 import numpy as np
 from PySide6 import QtCore, QtWidgets
@@ -53,6 +54,98 @@ def _spin(low, high, value, suffix, decimals=1, step=1.):
 
 
 class CorrectionMixin:
+    def _build_correction_range(self):
+        panel = QtWidgets.QWidget()
+        outer = QtWidgets.QVBoxLayout(panel)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(6)
+        self.range_enabled = QtWidgets.QCheckBox("限制修正范围")
+        self.range_enabled.setToolTip("只限制本轮新增修正；原固件基底保留。细线为过渡中心，应用 50% 修正。")
+        outer.addWidget(self.range_enabled)
+        self.range_body = QtWidgets.QWidget()
+        form = QtWidgets.QFormLayout(self.range_body)
+        form.setContentsMargins(0, 0, 0, 0)
+        form.setHorizontalSpacing(8)
+        form.setFieldGrowthPolicy(QtWidgets.QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form.setRowWrapPolicy(QtWidgets.QFormLayout.RowWrapPolicy.WrapLongRows)
+        self.range_low = _spin(20, 19999, 20, " Hz", 0)
+        self.range_high = _spin(21, 20000, 20000, " Hz", 0)
+        form.addRow("低频中心", self.range_low)
+        form.addRow("高频中心", self.range_high)
+        self.range_sliders, self.range_values = {}, {}
+        for kind, title in (("low", "低频过渡宽度"), ("high", "高频过渡宽度")):
+            body = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout(body)
+            layout.setContentsMargins(0, 0, 0, 0)
+            slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+            slider.setRange(2, 12)
+            slider.setValue(6)
+            slider.setToolTip("过渡总宽度，细线两侧各一半；1/3–2 倍频程")
+            value = label("1 倍频程", "muted", wrap=False)
+            layout.addWidget(slider, 1)
+            layout.addWidget(value)
+            self.range_sliders[kind], self.range_values[kind] = slider, value
+            form.addRow(title, body)
+            slider.sliderPressed.connect(lambda: self.editor_event({"op": "begin"}))
+            slider.valueChanged.connect(lambda _, kind=kind: self._range_controls_changed(
+                "change" if self.range_sliders[kind].isSliderDown() else "end"))
+            slider.sliderReleased.connect(lambda: self._range_controls_changed("end"))
+        self.range_details = label("", "muted")
+        form.addRow(self.range_details)
+        form.addRow(button("全频", self.reset_correction_range,
+                           tooltip="关闭范围限制，并把两条线恢复到 20 Hz／20 kHz；保留过渡宽度"))
+        outer.addWidget(self.range_body)
+        self.range_body.hide()
+        self.range_enabled.toggled.connect(lambda _: self._range_controls_changed())
+        self.range_low.valueChanged.connect(lambda _: self._range_controls_changed())
+        self.range_high.valueChanged.connect(lambda _: self._range_controls_changed())
+        return panel
+
+    def _range_controls_changed(self, phase="end"):
+        low, high = self.range_low.value(), self.range_high.value()
+        if low >= high:
+            self.statusBar().showMessage("低频中心必须低于高频中心。")
+            self.sync_correction_range(self.session.document)
+            return
+        self.editor_event({"op": "range", "phase": phase, "range": {
+            "enabled": self.range_enabled.isChecked(), "low_hz": low, "high_hz": high,
+            "low_octaves": self.range_sliders["low"].value()/6,
+            "high_octaves": self.range_sliders["high"].value()/6}})
+
+    def reset_correction_range(self):
+        value = asdict(self.session.document.correction_range)
+        value.update(enabled=False, low_hz=20., high_hz=20000.)
+        self.editor_event({"op": "range", "range": value})
+
+    def sync_correction_range(self, doc):
+        settings = doc.correction_range
+        for control, value in ((self.range_enabled, settings.enabled), (self.range_low, settings.low_hz),
+                               (self.range_high, settings.high_hz)):
+            blocker = QtCore.QSignalBlocker(control)
+            if isinstance(control, QtWidgets.QCheckBox):
+                control.setChecked(value)
+            else:
+                control.setValue(value)
+            del blocker
+        self.range_body.setVisible(settings.enabled)
+        low, high = settings.widths()
+        for kind, effective in (("low", low), ("high", high)):
+            requested = getattr(settings, kind+"_octaves")
+            slider = self.range_sliders[kind]
+            blocker = QtCore.QSignalBlocker(slider)
+            slider.setValue(round(requested*6))
+            del blocker
+            shown = f"{requested:g}" if requested != 1/3 else "1/3"
+            self.range_values[kind].setText(shown+" 倍频程")
+            self.range_values[kind].setToolTip(f"实际过渡宽度 {effective:.4g} 倍频程")
+        a, b, c, d = settings.edges()
+        shortened = (low and low < settings.low_octaves-1e-6) or (high and high < settings.high_octaves-1e-6)
+        parts = [f"低频过渡 {a:.4g}–{b:.4g} Hz" if low else "低频端不限",
+                 f"高频过渡 {c:.4g}–{d:.4g} Hz" if high else "高频端不限"]
+        if shortened:
+            parts.append(f"范围较窄，实际宽度按比例缩短为 {low:.3g}／{high:.3g} 倍频程；原设置保留")
+        self.range_details.setText("\n".join(parts))
+
     def _build_generator(self):
         self.correction_preview = None
         self.preview_worker = None
@@ -174,7 +267,8 @@ class CorrectionMixin:
                     (context.get("reference") or {}).get("sha256"),
                     json.dumps({k: context.get(k) for k in CONTEXT_KEYS}, sort_keys=True, default=str))
         return (self._key(self.measurements[a]), self._key(self.targets[b]), mode,
-                json.dumps(options.__dict__, sort_keys=True, default=str), firmware)
+                json.dumps(options.__dict__, sort_keys=True, default=str), firmware,
+                asdict((self._preview_document or self.session.document).correction_range))
 
     def schedule_correction_preview(self, *_):
         self._preview_sig = UNSET
@@ -227,8 +321,10 @@ class CorrectionMixin:
             self._preview_message(f"无法生成预览：{exc}", warn=True)
             return
         target = copy.deepcopy(self.targets[self.target_combo.currentIndex()])
+        correction_range = copy.deepcopy((self._preview_document or self.session.document).correction_range)
         self.correction_cancel = cancelled = threading.Event()
-        worker = PreviewWorker(lambda: fit_response(original, target, mode, options, cancelled),
+        worker = PreviewWorker(lambda: fit_response(original, target, mode, options, cancelled,
+                                                    correction_range=correction_range),
                                self._preview_sig, self)
         worker.completed.connect(self._preview_finished, QtCore.Qt.ConnectionType.QueuedConnection)
         self.preview_worker = worker
@@ -287,6 +383,7 @@ class CorrectionMixin:
         if self.workers:
             return
         generation = self.edit_generation
+        correction_range = copy.deepcopy(self.session.document.correction_range)
         original, target = copy.deepcopy(original), copy.deepcopy(target)
         try:
             difference = self.difference(np.asarray(original.frequencies))
@@ -306,4 +403,5 @@ class CorrectionMixin:
             self.set_document(doc)
             self.fit_report = report
             self.refresh()
-        self._task(lambda: fit_response(original, target, mode, options, self.fit_cancel), received)
+        self._task(lambda: fit_response(original, target, mode, options, self.fit_cancel,
+                                       correction_range=correction_range), received)

@@ -27,7 +27,7 @@ def decode_text(text):
         value = json.loads(text)
         opkg.require(value.get("schema") in (TUNING_SCHEMA, PRESET_SCHEMA), "Unknown clipboard format")
         return value
-    return {"schema": TUNING_SCHEMA, "state": {"eq": parse_text(text).to_dict()}}
+    return {"schema": TUNING_SCHEMA, "external_eq": True, "state": {"eq": parse_text(text).to_dict()}}
 
 
 def preset_payload(firmware, key, plans=()):

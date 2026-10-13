@@ -7,10 +7,36 @@ import pytest
 
 from heytap_eq import metadata
 from heytap_eq.adapters import inspect_firmware
+from heytap_eq.correction_range import CorrectionRange
 from heytap_eq.eq_formats import EQDocument, Filter
 from heytap_eq.firmware_edit import apply_plans, export_firmware, fit_record, make_plan
 from heytap_eq.session import Session
 from tests.firmware_fixture import synthetic_firmware
+
+
+def test_range_whole_preset_float32_export_and_reopen(monkeypatch, tmp_path):
+    from heytap_eq.firmware_edit import active, metrics
+
+    firmware = synthetic_firmware(monkeypatch, tmp_path)
+    doc = EQDocument(filters=[Filter(1, 1800., -1., 1.)],
+                     correction_range=CorrectionRange(True, 100., 8000., .5, 1.5))
+    plan = make_plan(firmware, doc, "丹拿高解析", max_nfev=35)
+    assert len(plan["records"]) == 36 and plan["eq"]["correction_range"]["high_octaves"] == 1.5
+    output = tmp_path/"ranged.bin"
+    # Export recomputes from float32 records; saved report fields are not trusted.
+    for change in plan["records"]:
+        change["record"]["metrics"] = {}
+    report = export_firmware(firmware, [plan], {}, output)
+    reopened = inspect_firmware(output)
+    for change, row in zip(plan["records"], report["records"]):
+        source = next(r for r in firmware.profiles["profiles"] if r["record_sha256"] == change["baseline_sha256"])
+        written = next(r for r in reopened.profiles["profiles"] if r["raw_offset"] == change["raw_offset"])
+        recalculated = metrics(active(source), active(written), doc)
+        assert recalculated == row["metrics"]
+        assert all(m["outside_max_db"] < .2 and m["outside_within_reference"] for m in recalculated.values())
+        assert [f for f in active(written) if f["type_id"] in (3, 4, 5)] == [
+            f for f in active(source) if f["type_id"] in (3, 4, 5)]
+    assert report["outside_permitted_raw_ranges_unchanged"] and reopened.profiles
 
 
 def test_whole_preset_export_and_reopen(monkeypatch, tmp_path):

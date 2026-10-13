@@ -6,6 +6,8 @@ import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from heytap_eq.correction_range import CorrectionRange
+
 KINDS = ("PEAK", "LS", "HS", "LP", "HP", "NOTCH", "BAND_PASS", "ALL_PASS")
 ALIASES = {"PK": "PEAK", "LOW_SHELF": "LS", "HIGH_SHELF": "HS",
            "LOW_PASS": "LP", "HIGH_PASS": "HP", "AP": "ALL_PASS", "BP": "BAND_PASS"}
@@ -51,8 +53,10 @@ class EQDocument:
     filters: list[Filter] = field(default_factory=list)
     metadata: dict[str, str] = field(default_factory=dict)
     source_sha256: str | None = None
+    correction_range: CorrectionRange = field(default_factory=CorrectionRange)
 
     def validate(self):
+        self.correction_range.validate()
         if not isinstance(self.name, str) or not isinstance(self.metadata, dict):
             raise ValueError("Invalid EQ name or metadata")
         if any(not isinstance(k, str) or not re.fullmatch(r"[A-Z_0-9]+", k)
@@ -82,7 +86,8 @@ class EQDocument:
 
     @classmethod
     def from_dict(cls, data):
-        obj = cls(**{**data, "filters": [Filter(**f) for f in data["filters"]]})
+        obj = cls(**{**data, "filters": [Filter(**f) for f in data["filters"]],
+                     "correction_range": CorrectionRange.from_dict(data.get("correction_range", {}))})
         obj.validate()
         return obj
 
@@ -219,10 +224,14 @@ def load_eq(path):
     return doc
 
 
-def dump_eq(doc):
+def dump_eq(doc, fs=48000):
     doc.validate()
     if not doc.raw and not doc.filters:
         raise ValueError("No EQ points or filters to export")
+    if doc.correction_range.limited:
+        from heytap_eq.dsp import flatten_correction
+
+        doc = flatten_correction(doc, fs)
     if any(not f.enabled for f in doc.filters):
         raise ValueError("Flowmix text has no confirmed disabled-filter syntax; enable or remove filters")
     graphic = "; ".join(f"{f:.9g} {g:.9g}" for f, g in doc.raw)

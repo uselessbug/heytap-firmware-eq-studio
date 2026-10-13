@@ -44,6 +44,23 @@ select.mini { font-size: 12px; padding: 1px 4px; border-radius: 6px; background:
 .y-tick { position: absolute; left: 0; width: 42px; text-align: right; transform: translateY(-50%); color: var(--tick); font-size: 11px; }
 .spl-tick { position: absolute; right: 0; width: 42px; text-align: left; transform: translateY(-50%); color: var(--tick); font-size: 11px; }
 .spl-label { position: absolute; right: 0; top: -16px; color: var(--muted); font-size: 11px; }
+.axis { position: absolute; border-radius: 4px; }
+.axis:hover { background: var(--accent-soft); }
+.axis-x { left: 48px; bottom: 0; height: 22px; }
+.axis-left { left: 0; top: 4px; bottom: 22px; width: 48px; }
+.axis-right { right: 0; top: 4px; bottom: 22px; width: 48px; }
+.boundary-line { stroke: var(--accent); stroke-width: 1px; }
+.range-hit { cursor: col-resize; touch-action: none; }
+button.range-boundary { position: absolute; width: 26px; height: 44px; transform: translateX(-50%); padding: 0; background: transparent;
+  border: 0; border-radius: 0; cursor: col-resize; touch-action: none; }
+.boundary-grip { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 34px;
+  border: 1px solid var(--accent); border-radius: 20px; background: var(--surface); color: var(--accent); display: grid; place-items: center; }
+.range-boundary:hover .boundary-grip, .range-boundary:focus-visible .boundary-grip { background: var(--accent-soft); }
+.boundary-tag { position: absolute; pointer-events: none; transform: translateX(-50%); color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 5px; padding: 2px 5px; font-size: 11px; white-space: nowrap; }
+[data-contrast="high"] .boundary-line { stroke-width: 2px; }
+[data-contrast="high"] .boundary-grip { border-width: 2px; }
+@media (pointer: coarse) { button.range-boundary { width: 44px; } }
 .band rect { fill: var(--band); opacity: .1; }
 .band text { fill: var(--band); font-size: 11px; }
 .crosshair line { stroke: var(--crosshair); stroke-dasharray: 3 4; opacity: .5; }

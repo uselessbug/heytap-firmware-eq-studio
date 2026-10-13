@@ -63,6 +63,8 @@ def main(argv=None):
         assert all(parse_table(text, "Synthetic import").spl_values == [80, 90, 82]
                    for text in table_samples)
         window.set_document(preview)
+        window.editor_event({"op": "range", "range": {"enabled": True, "low_hz": 100.,
+                            "high_hz": 8000., "low_octaves": .5, "high_octaves": 1.5}})
         assert "-6.2" in window.eq_import_warning.text() and "未应用" in window.eq_import_warning.text()
         window.set_measurements([Measurement("Synthetic test fixture", [20, 1000, 20000], [80, 90, 80]).validate()])
 
@@ -144,6 +146,7 @@ def main(argv=None):
                 assert window.isVisible() and window.width() >= 600
                 assert window.grab().save(str(image))
                 assert web and web["ready"] and web["svgPaths"] >= 3, web
+                assert web["boundaries"] == 2 and web["correctionRange"]["low_octaves"] == .5, web
                 assert web["height"] >= 250, web
                 reference = builtin_reference()
                 assert reference and len(reference["presets"]) == 6

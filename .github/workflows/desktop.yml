@@ -102,9 +102,9 @@ jobs:
           QT_SCALE_FACTOR: '1.5'
         run: |
           if [ "$RUNNER_OS" = Linux ]; then
-            xvfb-run -a -s "-screen 0 1920x1080x24" python -m pytest tests/test_gui_layout_preferences.py -k rail_width --junitxml=reports/scaled-layout.xml
+            xvfb-run -a -s "-screen 0 1920x1080x24" python -m pytest tests/test_gui_layout_preferences.py tests/test_gui_correction_range.py -k 'rail_width or range_real_webchannel_preview_and_screenshots' --junitxml=reports/scaled-layout.xml
           else
-            python -m pytest tests/test_gui_layout_preferences.py -k rail_width --junitxml=reports/scaled-layout.xml
+            python -m pytest tests/test_gui_layout_preferences.py tests/test_gui_correction_range.py -k 'rail_width or range_real_webchannel_preview_and_screenshots' --junitxml=reports/scaled-layout.xml
           fi
       - name: GUI event loop and screenshot
         shell: bash

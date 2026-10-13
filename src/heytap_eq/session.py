@@ -44,11 +44,11 @@ class Session:
         self.view_options = {}
         self.last_action = ""
 
-    def replace(self, doc):
+    def replace(self, doc, action="编辑调音"):
         data = doc.to_dict()
         if self.document.to_dict() == data:
             return
-        self._checkpoint("编辑调音")
+        self._checkpoint(action)
         self.document = EQDocument.from_dict(data)
 
     def tuning_state(self):
