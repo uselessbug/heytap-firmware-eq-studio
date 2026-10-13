@@ -20,6 +20,8 @@ report.unlink(missing_ok=True)
 # Windowed interpreters may not have stderr during their early initialization.
 child_env = os.environ.copy()
 child_env.pop("PYTHONFAULTHANDLER", None)
+# Importing heytap_eq above set this in our own process; the executable must set it by itself.
+child_env.pop("OPENBLAS_NUM_THREADS", None)
 started = time.perf_counter()
 process = subprocess.run([str(exe), "--smoke-test", "--report", str(report)],
                          timeout=60, capture_output=True, text=True, errors="replace", env=child_env)
@@ -38,10 +40,17 @@ assert data["firmware_export_available"] and data["metadata_editor_available"]
 assert data["project_schema"] == "heytap-project-v4"
 assert data["single_plot"] and data["reference_template_presets"] == 6
 assert not data["apk_dependency"]
+assert data["third_party_imports"] and data["imported_preamp_applied"] is False
+assert data["theme_layout_validated"] and len(data["theme_layouts"]) == 4
+assert data["file_dialog_memory_validated"]
 assert data["plot_engine"] == "DSSSP 0.8.0"
 assert data["web_editor"]["ready"] and data["web_editor"]["svgPaths"] >= 3
 assert data["web_editor"]["height"] >= 250
 assert data["service_configured"] == (builtin_authorization() is not None)
+# Themed arrows are SVG files (qsvg plugin + Qt6Svg), dialogs use the zh_CN qtbase catalogue,
+# and the package sets single-threaded BLAS before numpy loads (removed from the child above).
+assert data["svg_icons"] and data["qt_translation_zh_CN"] and data["blas_threads"] == "1", data
 data["executable_sha256"] = hashlib.sha256(exe.read_bytes()).hexdigest()
 data["gui_smoke_elapsed_seconds"] = elapsed
 report.write_text(json.dumps(data, indent=2))
+

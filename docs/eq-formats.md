@@ -15,6 +15,27 @@ Flowmix 文件中的 `RAW_BANDS`、`PEQ_COUNT` 需要与实际条目一致；PEQ
 
 APK 中观察到的 PEQ 类型为 PEAK、LS、HS、LP、HP、NOTCH、BAND_PASS、ALL_PASS。没有显式类型的三参数 PEQ 行按 Peak 解释。解析应拒绝重复 ID、数量声明不匹配以及无效频率 / Q / 数值。
 
+## 第三方 EQ 与测量文本
+
+“导入 EQ”和“粘贴调音”还接受 Equalizer APO 参数文本，即 AutoEQ 的 `ParametricEQ.txt` 与 REW “Generic” 滤波器导出：
+
+| APO 类型 | 导入为 | 要求 |
+| --- | --- | --- |
+| PK / PEQ / Modal | PEAK | Fc、Gain、Q |
+| LSC / LS、HSC / HS | LS、HS | Fc、Gain、Q；Fc 为 RBJ 中点频率，与固件系数公式一致 |
+| LP / LPQ、HP / HPQ、BP、NO、AP | LP、HP、BAND_PASS、NOTCH、ALL_PASS | Fc、Q；不接受非零 Gain |
+
+- `OFF` 滤波器保留为未启用；REW 的 `OFF None` 空槽和文件开头说明被跳过。APO 不解释滤波器编号，导入后按文件顺序编号。
+- `Preamp` 只记录为元数据 `PREAMP_DB`，不计入修正形状，也不会自动修改固件整体增益。导入反馈及修正 EQ 面板持续显示“仅保存为元数据，未应用”；编辑、工程保存、复制粘贴和撤销保留该字段。固件预衰减仍需在拟合设置中单独选择。
+- 省略 Q、斜率写法（`LSC 10.8 dB`）、拐角频率搁架（`LS 6dB` / `LS 12dB`）、`BW Oct` 以及 Channel / Include / Copy 等路由命令语义不同，直接拒绝，避免多声道配置被静默合并。
+- 只含 PEAK / LS / HS 的 AutoEQ 参数在槽位足够时与固件逐级串接，不经优化器（与已有 Flowmix PEQ 路径相同）。
+
+测量与目标文件除原 `frequency_hz,spl_db` CSV、JSON、HAR 外，还接受 AutoEQ CSV（`frequency,raw`）、REW / FRD 文本（`*` 注释）、squig.link 两列文本、无表头两列数字；分隔符可为逗号、分号、制表符或空格，非逗号分隔时允许小数逗号。表头可带单位（如 `Freq(Hz)`、`SPL [dB]`）；找不到频率 / SPL 列、行不完整或频率不递增时拒绝。
+
+EQ 参数与测量数据是不同入口：`ParametricEQ.txt` 和 REW 滤波器文本用于“导入 EQ”或“粘贴调音”；AutoEQ CSV、REW 测量文本、FRD 和 squig.link 数字表用于“原始频响”或“目标频响”的文件导入。频率单位为 Hz，响应为 dB；显式 kHz、线性幅度等单位会报错。不会把 EQ 参数当作测量曲线。
+
+这不是完整 APO 配置解释器。支持 `#` 行尾注释；路由命令和未知前置命令明确拒绝，REW 仅接受 Generic 导出。Flowmix 文本导出不支持禁用状态，存在禁用滤波器时仍明确拒绝；工程 v4 和完整调音剪贴板可完整保存启用状态与 Preamp 元数据。
+
 ## 从外部 EQ 到固件
 
 不能将 127 个 GraphicEQ 点直接写入 18 槽的固件结构，也不能把外部滤波器类型编号直接套用到固件。
@@ -51,3 +72,4 @@ GraphicEQ 文本只提供幅度目标；由此拟合固件 IIR 不代表完整�
 可用原始声学测量叠加数字 EQ 修正，展示修改后的估计响应。图例应分别标明“测量”和“估计”。不能把数字 EQ 曲线直接称为人工耳测量，也不能将不同测量装置或归一化方式的曲线无条件比较。
 
 HAR 导入应只取所需 HTML / 频响数值，排除请求头、Cookie 和其他网络凭据。CSV / JSON 导入应验证频率排序、数组长度和有限数值。
+
