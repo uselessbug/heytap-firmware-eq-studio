@@ -178,6 +178,12 @@ try {
   await page.mouse.up()
   await page.waitForTimeout(100)
   assert.ok((await page.evaluate(() => window.fixture.correctionRange.low_hz)) > committedLow)
+  // Use a zoomed view here so an accidental scroll zoom cannot hide at full-range limits.
+  const overlapAxis = await page.locator('.axis-x').boundingBox()
+  await page.mouse.move(overlapAxis.x + overlapAxis.width / 2, overlapAxis.y + overlapAxis.height / 2)
+  await page.mouse.wheel(0, -100)
+  await page.waitForTimeout(100)
+  const overlapView = await page.evaluate(() => window.studioInspect().view)
   await page.evaluate(() => {
     window.fixture.correctionRange.low_hz = 1000
     window.fixture.filters = [{ id: 3, frequency: 1000, gain: 12, q: .7, kind: 'PEAK', enabled: true }]
@@ -188,7 +194,9 @@ try {
   await page.mouse.move(overlapBox.x + overlapBox.width / 2, overlapBox.y + overlapBox.height / 2)
   await page.mouse.wheel(0, 100)
   await page.waitForFunction(() => window.fixture.filters[0].q > .7)
-  assert.deepEqual(await page.evaluate(() => window.studioInspect().view), rangeBefore)
+  const afterNodeWheel = await page.evaluate(() => window.studioInspect().view)
+  for (const key of Object.keys(overlapView)) assert.ok(Math.abs(afterNodeWheel[key] - overlapView[key]) < 1e-8,
+    `${key} changed while adjusting Q`)
   await page.evaluate(() => { window.fixture.correctionRange.enabled = false; window.studioUpdate(JSON.stringify(window.fixture)) })
   await page.waitForFunction(() => window.studioInspect().boundaries === 0)
   await page.evaluate(() => { window.fixture.correctionRange.enabled = true; window.studioUpdate(JSON.stringify(window.fixture)) })

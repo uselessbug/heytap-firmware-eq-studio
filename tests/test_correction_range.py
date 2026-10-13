@@ -97,6 +97,14 @@ class CorrectionRangeTests(unittest.TestCase):
             restored.restore(path)
             self.assertFalse(restored.document.correction_range.enabled)
 
+    def test_sharp_peq_export_adapts_raw_sampling(self):
+        doc = EQDocument(filters=[Filter(1, 1234, 12, 100)],
+                         correction_range=CorrectionRange(True, 100, 8000))
+        frequency = np.geomspace(20, 20000, 65536)
+        for rate in SAMPLE_RATES:
+            baked = parse_text(dump_eq(doc, rate))
+            self.assertLess(np.max(abs(correction(baked, frequency, rate)-correction(doc, frequency, rate))), .003)
+
     def test_firmware_optimizer_and_independent_outside_metrics(self):
         doc = EQDocument(filters=[Filter(1, 1000, 2., 1.)],
                          correction_range=CorrectionRange(True, 100., 8000.))

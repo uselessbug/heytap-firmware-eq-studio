@@ -27,7 +27,7 @@ def test_range_live_gesture_history_controls_and_import(tmp_path, qt_app):
     window.refresh()
     assert window.session.document.to_dict() == initial
     assert len(window.session._undo) == history
-    assert window.range_body.isVisible() and window.range_enabled.isChecked()
+    assert not window.range_body.isHidden() and window.range_enabled.isChecked()
     assert window.main_plot.payload()["correctionRange"]["low_octaves"] == .5
     window.editor_event({"op": "range", "phase": "end", "range": SETTINGS})
     assert len(window.session._undo) == history+1

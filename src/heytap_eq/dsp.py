@@ -64,6 +64,17 @@ def flatten_correction(doc, fs=48000):
     # Match dump_eq's numeric precision before deduplicating coincident grid/edge points.
     frequency = np.unique([float(f"{f:.9g}") for f in frequency])
     values = correction(doc, frequency, fs)
+    # Refine sharp PEQ features so logarithmic RAW interpolation follows the effective curve.
+    # Filter centres and transition knots above prevent a narrow feature from being skipped.
+    for _ in range(8):
+        middle = np.sqrt(frequency[:-1]*frequency[1:])
+        error = np.abs(correction(doc, middle, fs)-(values[:-1]+values[1:])/2)
+        if not np.any(error > .001):
+            break
+        frequency = np.unique(np.concatenate((frequency, [float(f"{f:.9g}") for f in middle[error > .001]])))
+        values = correction(doc, frequency, fs)
+    else:
+        raise ValueError("有效修正过于陡峭，无法可靠导出 RAW；请保存工程或调整滤波器")
     result = EQDocument(name=doc.name, raw=np.column_stack((frequency, values)).tolist(),
                         metadata={**doc.metadata, "HEYTAP_EFFECTIVE_CORRECTION": "1",
                                   "SAMPLE_RATE_HZ": str(fs),
