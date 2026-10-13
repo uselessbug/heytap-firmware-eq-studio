@@ -200,8 +200,11 @@ try {
   await page.evaluate(() => { window.fixture.correctionRange.enabled = false; window.studioUpdate(JSON.stringify(window.fixture)) })
   await page.waitForFunction(() => window.studioInspect().boundaries === 0)
   await page.evaluate(() => { window.fixture.correctionRange.enabled = true; window.studioUpdate(JSON.stringify(window.fixture)) })
-  await page.waitForFunction(() => window.studioInspect().boundaries === 2)
+  // The high boundary is outside this zoomed view; toggling must not move it into view.
+  await page.waitForFunction(() => window.studioInspect().boundaries === 1)
+  assert.equal(await page.evaluate(() => window.fixture.correctionRange.high_hz), 10000)
   await page.getByRole('button', { name: '复位', exact: true }).click()
+  await page.waitForFunction(() => window.studioInspect().boundaries === 2)
   assert.equal((await page.evaluate(() => window.fixture.correctionRange.low_hz)), 1000)
   await page.setViewportSize({ width: 640, height: 460 })
   await page.waitForTimeout(100)
