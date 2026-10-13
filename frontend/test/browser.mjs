@@ -210,6 +210,20 @@ try {
   await page.waitForTimeout(100)
   assert.equal(await page.locator('button[data-boundary]').count(), 2)
   await page.setViewportSize({ width: 1100, height: 680 })
+  await page.getByRole('button', { name: '复位', exact: true }).click()
+  const fullBox = await plot.boundingBox()
+  await page.mouse.move(fullBox.x + fullBox.width * .75, fullBox.y + fullBox.height * .2)
+  await page.mouse.down()
+  await page.mouse.move(fullBox.x + fullBox.width * .75 + 2, fullBox.y + fullBox.height * .2)
+  await page.mouse.up()
+  await page.evaluate(() => {
+    window.fixture.correctionRange.low_hz = 20
+    window.fixture.correctionRange.high_hz = 20000
+    window.fixture.rangeWeights = [[20, 1], [20000, 1]]
+    window.studioUpdate(JSON.stringify(window.fixture))
+  })
+  // Tiny log/power roundoff at an endpoint must not hide its handle.
+  await page.waitForFunction(() => window.studioInspect().boundaries === 2)
   await page.evaluate(() => { window.fixture.filters = []; window.fixture.correctionRange.enabled = false })
   await page.evaluate(() => {
     window.fixture.curves = []

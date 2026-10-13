@@ -298,7 +298,7 @@ function Editor() {
         </FrequencyResponseGraph>}
         {size && range?.enabled && ['low', 'high'].map(kind => {
           const value = range[kind + '_hz'], left = xAt(value, width, view)
-          if (left < 0 || left > width) return null
+          if (left < -1e-6 || left > width + 1e-6) return null
           return <React.Fragment key={kind}>
             <button type="button" className="range-boundary" data-boundary={kind} style={{ left: clamp(left, 6, width - 6),
               top: height * (closeBoundaries ? (kind === 'low' ? .75 : .25) : .5) - 22 }}
