@@ -11,7 +11,6 @@ from heytap_eq.gui import MainWindow
 from heytap_eq.measurements import Measurement
 from tests.test_gui_shell import pump, wait
 
-
 SETTINGS = {"enabled": True, "low_hz": 100., "high_hz": 8000., "low_octaves": .5, "high_octaves": 1.5}
 
 

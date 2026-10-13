@@ -16,9 +16,9 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from heytap_eq import theme as themes
 from heytap_eq.clipboard import MIME, PRESET_SCHEMA, copy_plan, decode_text, tuning_payload
 from heytap_eq.composition import View, compose
-from heytap_eq.correction_range import CorrectionRange
 from heytap_eq.configuration import config, configurations
-from heytap_eq.eq_formats import Filter, dump_eq, load_eq
+from heytap_eq.correction_range import CorrectionRange
+from heytap_eq.eq_formats import EQDocument, Filter, dump_eq, load_eq
 from heytap_eq.firmware_dsp import FILTER_TYPES
 from heytap_eq.flowmix import FlowmixClient
 from heytap_eq.gui_correction import CorrectionMixin

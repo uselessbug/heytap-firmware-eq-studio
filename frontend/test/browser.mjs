@@ -75,7 +75,7 @@ try {
   assert.deepEqual(await page.evaluate(() => window.studioInspect().view), zoomed)
   await page.evaluate(() => {
     window.fixture.filters[0].q = 24
-    window.studioUpdate(window.fixture)
+    window.studioUpdate(JSON.stringify(window.fixture))
   })
   await page.waitForTimeout(50)
   await page.mouse.wheel(0, 100)
@@ -117,7 +117,7 @@ try {
   await page.keyboard.press('Delete')
   await page.waitForFunction(() => window.fixture.filters.length === 0)
   // Axis hit areas are continuous; both dB axes use the same view and cursor anchor.
-  await page.evaluate(() => { window.fixture.splOffset = 80; window.studioUpdate(window.fixture) })
+  await page.evaluate(() => { window.fixture.splOffset = 80; window.studioUpdate(JSON.stringify(window.fixture)) })
   await page.getByRole('button', { name: '复位', exact: true }).click()
   const fullView = await page.evaluate(() => window.studioInspect().view)
   const axisX = await page.locator('.axis-x').boundingBox()
@@ -146,7 +146,7 @@ try {
   await page.evaluate(() => {
     window.fixture.correctionRange = { enabled: true, low_hz: 200, high_hz: 10000, low_octaves: .5, high_octaves: 1.5 }
     window.fixture.rangeWeights = [[20, 0], [140, 0], [200, .5], [300, 1], [5000, 1], [10000, .5], [17000, 0], [20000, 0]]
-    window.studioUpdate(window.fixture)
+    window.studioUpdate(JSON.stringify(window.fixture))
   })
   const boundary = page.locator('button[data-boundary="low"]')
   await boundary.waitFor()
@@ -181,7 +181,7 @@ try {
   await page.evaluate(() => {
     window.fixture.correctionRange.low_hz = 1000
     window.fixture.filters = [{ id: 3, frequency: 1000, gain: 12, q: .7, kind: 'PEAK', enabled: true }]
-    window.studioUpdate(window.fixture)
+    window.studioUpdate(JSON.stringify(window.fixture))
   })
   const overlappingNode = page.locator('[data-filter="0"] circle')
   const overlapBox = await overlappingNode.boundingBox()
@@ -189,9 +189,9 @@ try {
   await page.mouse.wheel(0, 100)
   await page.waitForFunction(() => window.fixture.filters[0].q > .7)
   assert.deepEqual(await page.evaluate(() => window.studioInspect().view), rangeBefore)
-  await page.evaluate(() => { window.fixture.correctionRange.enabled = false; window.studioUpdate(window.fixture) })
+  await page.evaluate(() => { window.fixture.correctionRange.enabled = false; window.studioUpdate(JSON.stringify(window.fixture)) })
   await page.waitForFunction(() => window.studioInspect().boundaries === 0)
-  await page.evaluate(() => { window.fixture.correctionRange.enabled = true; window.studioUpdate(window.fixture) })
+  await page.evaluate(() => { window.fixture.correctionRange.enabled = true; window.studioUpdate(JSON.stringify(window.fixture)) })
   await page.waitForFunction(() => window.studioInspect().boundaries === 2)
   await page.getByRole('button', { name: '复位', exact: true }).click()
   assert.equal((await page.evaluate(() => window.fixture.correctionRange.low_hz)), 1000)
@@ -203,7 +203,7 @@ try {
   await page.evaluate(() => {
     window.fixture.curves = []
     window.fixture.actions = [{ label: '导入测量', command: 'import_measurements' }]
-    window.studioUpdate(window.fixture)
+    window.studioUpdate(JSON.stringify(window.fixture))
   })
   await page.getByRole('button', { name: '导入测量' }).click()
   assert.deepEqual(await page.evaluate(() => window.events.at(-1)), { op: 'command', name: 'import_measurements' })
@@ -211,6 +211,14 @@ try {
   await mkdir(path.join(root, 'reports'), { recursive: true })
   await page.screenshot({ path: path.join(root, 'reports/dsssp-editor.png') })
   await writeFile(path.join(root, 'reports/frontend-interactions.json'), JSON.stringify({ status: 'passed', checks: ['log resampling', 'cursor zoom', 'double click add', 'live drag', 'wheel Q', 'zoom retained', 'zero gain edit', 'delete', 'theme tokens', 'high contrast', 'legend toggle', 'auto-fit', 'delete key', 'axis x zoom', 'both axis y zoom', 'boundary drag and keyboard', 'one gesture end', 'line-node priority', 'range visibility and reset', 'narrow window', 'empty-state command'], errors }, null, 2))
+} catch (error) {
+  await mkdir(path.join(root, 'reports'), { recursive: true })
+  const state = await page.evaluate(() => window.studioInspect?.()).catch(() => null)
+  const failure = { errors, state, error: String(error) }
+  await writeFile(path.join(root, 'reports/frontend-failure.json'), JSON.stringify(failure, null, 2))
+  await page.screenshot({ path: path.join(root, 'reports/frontend-failure.png') })
+  console.error(JSON.stringify(failure))
+  throw error
 } finally {
   await browser.close()
 }
