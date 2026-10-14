@@ -1,0 +1,80 @@
+from pathlib import Path
+import csv,json,html,hashlib,struct
+root=Path('deliverables/enco_x4_structure');e=root/'evidence'
+tags=['official112','official116','third113','third101'];labels=['官方 112','官方 116','第三方 113','第三方 101']
+layouts={k:json.loads((e/(k+'_layout.json')).read_text()) for k in tags}
+profiles={k:json.loads((e/(k+'_profiles.json')).read_text()) for k in tags}
+diffs={k:json.loads((e/('112_to_'+k+'_diff.json')).read_text()) for k in ['third113','third101']}
+
+def esc(x):return html.escape(str(x))
+def code(x):return '<code>'+esc(x)+'</code>'
+def hx(x):return f'0x{x:X}'
+def table(head,rows):
+ return '<div class="scroll"><table><thead><tr>'+''.join('<th>'+esc(x)+'</th>' for x in head)+'</tr></thead><tbody>'+''.join('<tr>'+''.join('<td>'+str(x)+'</td>' for x in row)+'</tr>' for row in rows)+'</tbody></table></div>'
+def section(title,body):return '<section><h2>'+title+'</h2>'+body+'</section>'
+parts=[]
+parts.append('<header><p class="eyebrow">ENCO X4 · BINARY FORMAT NOTES · 2026-10-08</p><h1>固件结构、校验与 EQ 参数布局</h1><p class="subtitle">四个固件的字节实测，以及第三方欢律 17.6.5 APK 的升级代码交叉验证</p></header>')
+parts.append('<div class="callout"><strong>当前已可复现拆包、校验和等长修改后的回封装。</strong><p>OPKG、分块 LZMA 和校验范围已经确定。内部 184 份 IIR/EQ 配置及四张引用表也已定位。官方 112 与 116 的整张 EQ 数据完全一致，第三方 113/101 均基于 112。具体 EQ 模式名称、滤波类型枚举以及设备端升级接受策略仍需进一步验证。</p></div>')
+parts.append(section('1. 样本与证据来源',table(['样本','OPKG 大小 / B','解压大小 / B','块数','实际标记版本'],[(labels[i],f"{layouts[k]['file_size']:,}",f"{layouts[k]['raw_size']:,}",len(layouts[k]['blocks']),'.'.join(layouts[k]['version_digits'])) for i,k in enumerate(tags)])+'<p>上传的 RAR 实际是 ZIP，两个成员采用 store 方法。解析器只使用实际字节，不依据扩展名。两个官方固件的完整 SHA-256 与 APK 的 <code>assets/hl_firmware_db.json</code> 中记录一致；第三方 APK 的记录不能单独证明来源真实性。</p>'+table(['样本','完整文件 SHA-256'],[(labels[i],code(layouts[k]['file_sha256'])) for i,k in enumerate(tags)])+'<p>参考 APK：<code>欢律_全能版17.6.5-深色模式.apk</code>，SHA-256：</p><p>'+code(hashlib.sha256(Path('upload/欢律_全能版17.6.5-深色模式.apk').read_bytes()).hexdigest())+'</p>'+table(['APK 类 / 源文件名','本次使用的证据'],[(code('com.oplus.melody.common.util.q / FirmwareUtils.kt'),'d() 选择 OPKG 协议；k() 读取主头；m() 读取节头；l() 读小端整数'),(code('com.oplus.melody.common.util.p$a / FirmwareFileDO.kt'),'主头字段名、构造器参数顺序'),(code('com.oplus.melody.common.util.p$b / FirmwareFileDO.kt'),'节头字段名，含 hash、hashCompress、sizeRaw、sizeCompress'),(code('y8.d$d / UpgradeStateMachine.java'),'升级请求包含原始哈希、压缩哈希、尺寸、版本等元数据'),(code('com.hl.firmwareimport.LocalFirmwareImporter'),'第三方本地导入会计算文件完整 SHA-256，并读取上述解析器的型号与版本')])+'<p>这些类来自修改版 APK；字段名称按 APK 命名，哈希覆盖范围则在四个固件中独立验证。</p>'))
+parts.append(section('2. 外层组织与偏移约定','<p>文中“包偏移”是 OPKG 文件内位置；“raw 偏移”是所有块解压并拼接后的镜像位置；“运行地址”是芯片代码使用的地址。三者不可混用。范围右端采用 <code>end_exclusive</code>。</p>'+table(['包范围','内容','大小'],[(code('0x0000–0x0040'),'OPKG magic + protocol + headerBodyLength + 主头体','64 B'),(code('0x0040–0x00D0'),'sectionBodyLength + ap.bin 节头体','144 B'),(code('0x00D0–EOF'),'33 或 34 个连续 LZMA 压缩块','变长')])+'<p><code>0x05</code> 的 55 是主头体长度，读取位置从 <code>0x09</code> 开始；不是总头长。<code>0x40</code> 的 140 同样是节头体长度，节头体从 <code>0x44</code> 开始。四个样本都只有一个节 <code>ap.bin</code>。</p>'))
+mainrows=[('0x00',4,'magic','OPKG'),('0x04',1,'protocolVersion','1'),('0x05',4,'headerBodyLength','55，LE uint32'),('0x09',1,'hashId','3；在这些样本中对应 SHA-256'),('0x0A',32,'pkgHash','SHA-256(package[0x2A:EOF])'),('0x2A',4,'pkgLen','文件总长 − 46；LE uint32'),('0x2E',1,'pkgType','1；更完整的枚举含义未确认'),('0x2F',4,'productId','0x06EC10；LE uint32'),('0x33',1,'manufacturer','0'),('0x34',2,'hardVersion','00 01，APK 解码为字符串 01'),('0x36',1,'sectionCount','1'),('0x37',9,'扩展/保留字节','本次样本全 00；语义未解析，回封装原样保留')]
+parts.append(section('3. OPKG 主头字段',table(['包偏移','字节数','APK 字段名 / 结构','值与覆盖范围'],[(code(a),b,code(c),esc(d)) for a,b,c,d in mainrows])+'<p>所有多字节整数使用 little-endian。<code>pkgLen</code> 从 <code>0x2E</code> 到 EOF 的长度，而包级哈希从 <code>0x2A</code> 开始计算，因此它还覆盖这个长度字段。</p>'))
+sectrows=[('0x40',4,'sectionBodyLength','140'),('0x44',1,'id','1'),('0x45',32,'name','ap.bin，NUL 填充'),('0x65',3,'softVersion','112 = 01 01 02；字节数字，非 ASCII'),('0x68',24,'buildTime','本次四个样本全 00，APK 解码为空字符串'),('0x80',4,'sizeCompress','所有块的完整大小之和，含各块头与 CRC32'),('0x84',4,'sizeRaw','所有块解压长度之和'),('0x88',32,'hash','SHA-256(完整拼接 raw.bin)'),('0xA8',4,'offset','0xD0，第一块的包偏移'),('0xAC',32,'hashCompress','SHA-256(各块 block[28:-4] 的拼接)'),('0xCC',4,'节头扩展字','01 00 00 00；APK 解析器未为此定义字段，保留原值')]
+parts.append(section('4. ap.bin 节头字段',table(['包偏移','字节数','字段','解释'],[(code(a),b,code(c),esc(d)) for a,b,c,d in sectrows])+'<p>构建日期要从 raw 镜像内的 <code>BUILD_DATE</code> 获取：它与节头中为空的 <code>buildTime</code> 是两个不同位置。</p>'))
+blockrows=[('+0x00',4,'magic','0x55AA66BB，磁盘字节 BB 66 AA 55'),('+0x04',4,'blockLength','32 + compressedLength + 4'),('+0x08',4,'headerLength','32'),('+0x0C',4,'totalBlocks','112 / 113 / 101 = 34；116 = 33'),('+0x10',4,'blockIndex','从 1 开始，连续编号'),('+0x14',4,'codec / 标志字','全部为 1；实际数据是 LZMA-alone，枚举完整含义未确认'),('+0x18',4,'rawLength','通常 0x40000；末块可能更短'),('+0x1C',4,'compressedLength','LZMA 流长度，包含 13 B 的 LZMA-alone 头'),('+0x20', '变长','LZMA-alone stream','5D 00 00 00 04 FF FF FF FF FF FF FF FF …'),('块尾 −4',4,'CRC32','LE uint32，CRC32(block[:-4])')]
+parts.append(section('5. 压缩块与 LZMA',table(['块内偏移','字节数','字段','解释'],[(code(a),b,code(c),esc(d)) for a,b,c,d in blockrows])+'<p>LZMA properties <code>0x5D</code> 解码为 <code>lc=3, lp=0, pb=2</code>；字典大小 <code>0x04000000</code>，即 64 MiB。LZMA 头内的解压长度为 8 个 <code>FF</code>，实际解压长度由块头给出。</p><p>112/113/101 的最后一块为 67,012 B；116 的最后一块为 262,072 B。第 n 块 raw 起点为 <code>(n−1) × 0x40000</code>。这只是压缩分片，程序函数、嵌入镜像或 EQ 记录不必与块边界对齐。</p>'))
+parts.append(section('6. 校验算法：修改时必须更新的内容','<pre><code>'+esc('''# 块尾 CRC32（标准 zlib.crc32 形式，小端保存）
+crc = zlib.crc32(block_header_32B + lzma_stream)
+
+# 原始镜像哈希
+raw_hash = SHA256(concat(decompressed_block_1, ..., decompressed_block_N))
+
+# 压缩内容哈希：每块只取压缩长度字段和 LZMA 流
+compress_hash = SHA256(concat(block_1[28:-4], ..., block_N[28:-4]))
+
+# 包级哈希：长度等字段和所有节/块均参与
+pkg_hash = SHA256(package[42:])
+pkg_len = len(package) - 46
+''')+'</code></pre><p>压缩内容哈希不含前 28 B 的块头，也不含块尾 CRC；其中的 <code>compressedLength</code> 必须保留。这一点已在四个固件中验证。更新顺序：改 raw → 重压受影响块 → 更新块尺寸与 CRC → 更新节尺寸/rawHash/compressHash → 更新 pkgLen/pkgHash。</p><p>APK 内下载记录或本地导入登记的完整文件 SHA-256 另算 <code>SHA256(package[0:])</code>，与包内的 <code>pkgHash</code> 不同。传输状态机还有传输层 CRC32；它不是磁盘格式里的块尾 CRC。</p>'))
+parts.append(section('7. raw 镜像与运行地址','<p>这是 BEST1702 的 OTA 内存镜像。主程序为 ARM Thumb，含 RTX5 构建信息，并嵌入多个 CP 子镜像及一个 Xtensa DSP 镜像。主程序加载到 <code>0x10028000</code>，对应 <code>FLASH_BASE + OTA_CODE_OFFSET</code>。</p><p><code>主程序 flash address = 0x10028000 + raw offset</code>；非缓存别名为 <code>0x30028000 + raw offset</code>。嵌入 CP/DSP 镜像还有自己的运行地址空间，需要单独解释。</p>'+table(['项目','官方 112 / 第三方 113 / 101','官方 116'],[('raw 长度',code('0x8505C4'),code('0x83FFB8')),('初始化数据的 raw 范围',code('0x80C600–0x8503FC'),code('0x7FBF60–0x83FDF0')),('复制到 RAM 的范围',code('0x201A94B0–0x201ED2AC'),code('0x201A94B0–0x201ED340')),('主构建信息 raw 起点',code('0x8503FC'),code('0x83FDF0')),('版本返回函数 raw 起点',code('0xA5958'),code('0xA6BC8'))])+'<p>启动代码的 LDR/STR 复制循环验证了初始化数据映射。因此 EQ 引用表在文件里的地址属于 .data 装载位置；程序引用的却是 RAM 地址。112 的 <code>0x84AE58</code> 运行时位于 <code>0x201E7D08</code>，不能只搜索其 flash 地址来寻找调用。</p>'+table(['嵌入构建','112 raw 构建信息起点','116 raw 构建信息起点','REV / 工程'],[(str(i+1),code(hx(layouts['official112']['embedded_build_metadata'][i]['raw_offset'])),code(hx(layouts['official116']['embedded_build_metadata'][i]['raw_offset'])),esc(layouts['official112']['embedded_build_metadata'][i]['fields']['REV_INFO'])) for i in range(7)])+'<p>112 中五个 CP 子镜像头依次位于 <code>0x2A44A0</code>、<code>0x30ED38</code>、<code>0x364148</code>、<code>0x4312C0</code>、<code>0x4D5638</code>，可见 <code>.code_seg_map</code> 描述；Xtensa 镜像头在 <code>0x61AF14</code>。这些嵌入镜像的段描述/重定位细节尚未全部解析，工具不会单独重建其内部格式。</p><p>固件声明 16 MiB flash；镜像内给出了 <code>__aud_start=0x30FEA000</code>、<code>__userdata_start=0x30FFC000</code>、<code>__factory_start=0x30FFF000</code>。这些地址超出此次 OTA raw 镜像覆盖范围，不能把此次 bin 当成包含出厂校准、用户记录的整片 flash 备份。</p>'))
+parts.append(section('8. EQ 数据表：已定位的 184 份配置',table(['项目','112 / 113 / 101','116'],[('EQ bank 起点',code(hx(profiles['official112']['bank_offset'])),code(hx(profiles['official116']['bank_offset']))),('EQ bank 结束（不含）',code(hx(profiles['official112']['bank_end_exclusive'])),code(hx(profiles['official116']['bank_end_exclusive']))),('记录数 × 固定长度','184 × 300 B','184 × 300 B'),('整个 bank 大小','55,200 B','55,200 B'),('整个 bank 的 SHA-256',code('4fe414fad4938f547db9fa2327462942c55014cfbb7a700a71e9f01e906ac866'),code('相同'))])+'<p><strong>官方 112 与 116 的 55,200 B EQ bank 完全相同，四张表的配置索引顺序也一致。</strong>这为把 101/113 的调音迁到 116 提供了明确的对应关系。迁移应按配置索引和已验证的新 bank 偏移处理。</p>'+table(['记录内偏移','类型','解释'],[(code('+0x00'),'float32','gain0，整体增益字段'),(code('+0x04'),'float32','gain1，整体增益字段'),(code('+0x08'),'uint32','num，激活滤波器段数，0–18'),(code('+0x0C'),'18 × 16 B','固定容量的滤波器槽位：type_id / gain / fc / Q')])+'<pre><code>'+esc('''struct IIRSlot {                 // 16 bytes, little-endian
+    uint32_t type_id;             // 枚举名称未确认
+    float gain;
+    float fc;
+    float Q;
+};
+struct IIRConfig {               // 300 = 12 + 18*16 bytes
+    float gain0;
+    float gain1;
+    uint32_t num;
+    IIRSlot slots[18];
+};
+''')+'</code></pre><p>布局由固定步长、有效段计数、184 条程序指针引用和全部第三方参数差异覆盖共同验证。gain/fc/Q 的语义与 <code>[ENCO EQM] ... iir num ... type ... freq ... gian ... Q</code> 日志一致。暂不把两个整体增益字段或两路表输出命名为左右耳/双单元。</p><p>112 的第一份配置在 <code>0x735758</code>：gain0/gain1 = −11，num = 2；首段 <code>type_id=4, gain≈0.1, fc=15000, Q≈0.7</code>，次段 <code>type_id=1, gain=10, fc=20000, Q=4</code>。113 将 num 改为 8，填充更多槽位。</p>'))
+parts.append(section('9. 四张引用表与地区分支',table(['名称（按日志及输出参数编号）','112 / 113 / 101 raw 偏移','116 raw 偏移','条目数'],[(esc(a['name']),code(hx(a['raw_offset'])),code(hx(b['raw_offset'])),'46 指针 + 1 个 NULL') for a,b in zip(profiles['official112']['tables'],profiles['official116']['tables'])])+'<p>112 中选择函数位于 raw <code>0xC3AC8</code>；分支参数等于 2 时打印 <code>[ENCO EQM] eq_list_india</code> 并选择 india 两表，否则打印 <code>eq_list_other</code> 并选择 other 两表。四表刚好引用全部 184 份配置各一次。</p><p>每张表有 46 个索引，前 45 个可按连续 9 个观察为五组，最后为索引 45。日志 <code>enco_audio_dyeq_get_eq_index, anc_mode: ... get eq_index ... from eq_id ...</code> 表明 EQ 选择会考虑 ANC 状态，但当前没有逐一确认这 9 个位置所对应的用户界面模式。因此这次结论是 EQ 参数改变；并未证明修改了 ANC 自适应算法或噪声消除滤波器。</p>'))
+parts.append(section('10. 第三方修改的完整范围',table(['112 →','全部 raw 差异','EQ 区差异','改动配置','每张引用表改动索引'],[('113','20,898 B','20,896 B','180 / 184','0–44，45 保持'),('101','2,455 B','2,450 B','36 / 184','9–17，其余保持')])+'<p>113 的全部 20,896 B 参数差异都落在该 EQ bank 内；101 的全部 2,450 B 参数差异也是如此。排除参数后，剩余字节是版本返回函数与末尾 SW_VER 的修改。113 未改变的配置索引是 90、91、182、183，对应四表的末项索引 45。</p>'+table(['版本变化','块','raw 改动字节数'],[('112 → 113','3 / 29 / 30 / 34','1 / 14,063 / 6,833 / 1'),('112 → 101','3 / 29 / 34','3 / 2,450 / 2')])+'<p>112/113/101 的构建日期、工程 REV、CP/DSP 构建信息和其余程序字节一致。116 的主程序与 CP 构建 REV 为 <code>a4b5c76</code>，是实际重构建；其 DSP 构建 REV 仍为 <code>5e30e80</code>，不能把“116 全部子组件均重新构建”作为结论。</p><p>三处版本信息分别是节头数字字节、主固件的版本返回代码、主构建文本 <code>SW_VER</code>。修改版本应单独同步处理；当前回封装工具不会自动改这三处。</p>'))
+parts.append(section('11. 工具用法与已运行验证','<pre><code>'+esc('''python opkg_tool.py inspect official112
+python opkg_tool.py unpack official112 unpacked112
+python opkg_tool.py profiles official112 --json profiles112.json
+python opkg_tool.py compare official112 third113.bin --json diff113.json
+python opkg_tool.py repack official112 edited_raw.bin rebuilt.opkg
+python validate_samples.py official112 official116 third113 third101
+''')+'</code></pre><p><code>opkg_tool.py</code> 仅需 Python 3.10+ 标准库。它保留未知字段和未改压缩块，只重新压缩改动的原始分片。输出前会重新解包并校验生成包。仅支持本次观察的单节 OPKG v1、LZMA 参数和等长 raw 修改；不允许修改输入原包或覆盖已有输出。</p>'+table(['验证','结果'],[('四个文件的包长 / 三个包内 SHA-256','全部通过'),('135 个压缩块的编号 / 长度 / CRC / LZMA 解压大小','全部通过'),('四个样本无修改回封装','完整文件逐字节相同'),('把 112 首段 gain 从约 0.1 改为 0.2（只在内存中）','重新压缩 Block 29，其余 33 块原字节保留；所有校验通过'),('修复包级哈希后注入块 CRC、rawHash、compressHash 损坏','分别拒绝；没有被外层 SHA 修复掩盖'),('112 / 116 EQ bank 与指针索引映射对比','完全一致'),('设备端实际刷写 / 听感 / 升级接受策略','未测试')])+'<p>交付文件没有改写用户的固件，也没有提供实际刷机包。修改测试仅证明离线字节、压缩和校验链路正确，无法证明任意参数、代码或版本组合会被设备接受。</p>'))
+parts.append(section('12. 尚未完全解析的部分','<ul><li>块 codec 字及节头最后 4 B 的完整枚举；主头 9 B 保留区的协议语义。</li><li>type_id 对应的具体滤波器名称，46 个 EQ 索引与界面预设/ANC 状态的逐项对应。</li><li>CP 的 .code_seg_map、Xtensa 镜像内部分段与重定位的全部语义。</li><li>设备端版本比较、双耳同步/回滚和 bootloader 校验路径。已观察的 OPKG 字段是哈希/CRC，并未据此断言设备不存在其他签名或启动校验。</li></ul><p>下一步修改最有把握的范围，是保持镜像长度和记录地址不变的 EQ 表编辑。184 份配置已完整导出，可按地区表、表索引和滤波器槽位进行精确对照。</p>'))
+parts.append('<footer>所有偏移、尺寸和校验结论来源于所列四个固件与上传 APK。完整 JSON、CSV 与 DEX/ARM 指令证据随工具包提供。</footer>')
+css='''*{box-sizing:border-box}body{margin:0;background:#f5f7fa;color:#192536;font:15px/1.7 system-ui,-apple-system,"Noto Sans CJK SC","Microsoft YaHei",sans-serif}main{max-width:1140px;margin:36px auto;background:white;padding:44px 52px;border:1px solid #dce3eb;border-radius:12px}h1{font-size:32px;line-height:1.3;margin:8px 0 12px}h2{font-size:22px;line-height:1.4;margin:0 0 20px;padding-top:6px;color:#183c66}p{margin:12px 0}.eyebrow{font-size:12px;letter-spacing:1.4px;color:#58728d}.subtitle{color:#607287}.callout{background:#eaf3ff;border-left:4px solid #2a6fba;padding:18px 22px;margin:30px 0}section{margin-top:38px;padding-top:24px;border-top:1px solid #e1e7ef}.scroll{overflow-x:auto;margin:18px 0}table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;background:#edf2f7;color:#344b65}th,td{padding:11px 13px;border:1px solid #dbe3ec;vertical-align:top}tr:nth-child(even) td{background:#fafbfd}code{font:12.5px/1.5 ui-monospace,"Cascadia Code",Consolas,monospace;overflow-wrap:anywhere;background:#eef2f6;padding:1px 4px;border-radius:3px}pre{background:#142335;color:#dceafa;padding:22px;overflow-x:auto;border-radius:6px;line-height:1.65}pre code{background:none;color:inherit;padding:0;overflow-wrap:normal}li{margin:7px 0}footer{margin-top:42px;border-top:1px solid #dce3eb;padding-top:18px;color:#64758a;font-size:12px}@media(max-width:800px){main{margin:0;border:0;border-radius:0;padding:24px 18px}h1{font-size:27px}th,td{padding:8px;font-size:12px}}@media print{body{background:white}main{margin:0;border:0;padding:0;max-width:none}section{break-before:auto}h2{break-after:avoid}.scroll{overflow:visible}tr{break-inside:avoid}pre{white-space:pre-wrap;background:#eef2f6;color:#142335}}'''
+report='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Enco X4 固件结构分析</title><style>'+css+'</style></head><body><main>'+''.join(parts)+'</main></body></html>'
+(root/'report.html').write_text(report,encoding='utf-8')
+# Export exact numeric fields, including inactive slots; JSON retains record identities.
+with (e/'eq_filters.csv').open('w',encoding='utf-8-sig',newline='') as f:
+ w=csv.writer(f);w.writerow(['sample','profile_index','raw_offset_hex','flash_address_hex','table','table_index','gain0','gain1','num','slot','active','type_id','gain','fc','Q'])
+ for tag in tags:
+  for c in profiles[tag]['profiles']:
+   m=c['memberships'][0]
+   for s in c['slots']:w.writerow([tag,c['profile_index'],hx(c['raw_offset']),hx(c['flash_address']),m['table'],m['table_index'],c['gain0'],c['gain1'],c['count'],s['slot'],s['active'],s['type_id'],s['gain'],s['fc'],s['q']])
+with (e/'eq_profile_diff.csv').open('w',encoding='utf-8-sig',newline='') as f:
+ w=csv.writer(f);w.writerow(['comparison','profile_index','raw_offset_hex','table','table_index','changed_bytes','before_num','after_num','before_gain0','before_gain1','after_gain0','after_gain1'])
+ for tag in diffs:
+  for c in diffs[tag]['changed_profiles']:
+   m=c['memberships'][0];w.writerow(['112_to_'+tag,c['profile_index'],hx(c['raw_offset']),m['table'],m['table_index'],c['changed_bytes'],c['before_count'],c['after_count'],*c['before_gains'],*c['after_gains']])
+validation=json.loads((e/'validation.json').read_text());validation.update({'official_112_116_eq_bank_bytes_identical':True,'official_112_116_eq_pointer_index_mapping_identical':True,'eq_bank_sha256':'4fe414fad4938f547db9fa2327462942c55014cfbb7a700a71e9f01e906ac866','eq_bank_size':55200,'apk_sha256':hashlib.sha256(Path('upload/欢律_全能版17.6.5-深色模式.apk').read_bytes()).hexdigest()});(e/'validation.json').write_text(json.dumps(validation,indent=2)+'\n')
+print('report characters',len(report),'csv rows',4*184*18,'profile diffs',180+36)

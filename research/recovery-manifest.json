@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "recovered_date": "2026-10-08",
+  "status": "recovered_cli_and_research_sources",
+  "python_source_count": 11,
+  "files": [
+    {
+      "path": "research/archives/enco_x4_eq_toolkit.zip",
+      "size": 861831,
+      "sha256": "c2bc64a39fdcb0b95ee95a70eec24ad382643dc84184e31c44c6c1c6732ac158",
+      "binary": true,
+      "git_blob_sha1": "d57e1e173d632ed81042e4256343110c1b7eb546"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/README.txt",
+      "size": 4119,
+      "sha256": "b3a213b668fd839206b1dfc6ce55c12e788062d613e38b93d0fb82b9f86468b4",
+      "binary": false,
+      "chars": 2500,
+      "git_blob_sha1": "ded9fa5d7491a9b3f25a4ae70789d3d22e3f1e0f"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/eq_tool.py",
+      "size": 21344,
+      "sha256": "7898d0c1163544f3eeaab6e52bb0611c04578f845a04e2b20610c0318a0c491c",
+      "binary": false,
+      "chars": 21286,
+      "git_blob_sha1": "a9012c6aed1af45cfbe5aa226a36229e85a407ad"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/evidence/apk_eq_config.json",
+      "size": 638,
+      "sha256": "6007f1224170d4cab8b44eac7ad612dcd576869de0312815ec0cf75510615154",
+      "binary": false,
+      "chars": 638,
+      "git_blob_sha1": "47e674763fcd9e0de9e66e41b5c011b542a59027"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/evidence/apk_eq_name_evidence.json",
+      "size": 956,
+      "sha256": "6df245c1f2696ca95da3d83ef829fc1b649f73030264ef94a508c8b912b7a57e",
+      "binary": false,
+      "chars": 914,
+      "git_blob_sha1": "a067e25b92846f8f1f68d9325de7a3d2a8d93499"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/evidence/arm_validation.json",
+      "size": 20283,
+      "sha256": "b8afe2275215fee5d97f8a834cd133d2b45674a65fd0c73397ccacff02ba46b9",
+      "binary": false,
+      "chars": 20283,
+      "git_blob_sha1": "5d99b963befbe0bed7cfc6dee6e0bdd5b0aa6a4f"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/evidence/firmware_eq_index_map.json",
+      "size": 5908,
+      "sha256": "e8504e7d08d07025064dc924a6f49124bb55a951ed04c102bb98699d37a2f8b3",
+      "binary": false,
+      "chars": 5908,
+      "git_blob_sha1": "0269c93437bbfd137fd53512a674a4dad9fb77f6"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/evidence/input_manifest.json",
+      "size": 933,
+      "sha256": "515e2ae317dc5c5e13d4d6c89ebd2cdb86c99cb714daa23ae77e57d976469cc0",
+      "binary": false,
+      "chars": 915,
+      "git_blob_sha1": "47a6c3b5bc0c5cd2d839401229e6f6238d3f3e8c"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/evidence/research_summary.json",
+      "size": 3911,
+      "sha256": "4e4c8934afa94d4745ee6c7f5d71860085ae0dc311db7b705e4bc068ad45f92c",
+      "binary": false,
+      "chars": 3851,
+      "git_blob_sha1": "58aff32b2e322457addda0a54d6d0e0813e470cf"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/evidence/tool_validation.json",
+      "size": 1461,
+      "sha256": "282cc475a2e00b7695e7c263bc98e4b61de6c8d0a06fc953c43a7cb1f5be98fa",
+      "binary": false,
+      "chars": 1461,
+      "git_blob_sha1": "9cbcd4a31221f927cdd9c1cfa1e7da1bb8221779"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/examples/Technics-AZ80-Optimized.txt",
+      "size": 1822,
+      "sha256": "83a7612388fc1210c56649e2d9915145906f69eaf32be19c5b4d95bb9f1faeba",
+      "binary": false,
+      "chars": 1794,
+      "git_blob_sha1": "1695175549cf2b8622060a026b00329bb21190a6"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/examples/Technics-AZ80.txt",
+      "size": 1343,
+      "sha256": "2f9f09e58e4a511e440860467ecb1c7bf4f9f4d1070931e7dfffc20abe1b7490",
+      "binary": false,
+      "chars": 1343,
+      "git_blob_sha1": "a2ada5f63ca0c5aeb9d77ce80675000ebfc4cf58"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/examples/az80_plan116.json",
+      "size": 196365,
+      "sha256": "adcda917398a7bea1fcf7c62af468c55f77308b7205f5349771b65ca702221df",
+      "binary": false,
+      "chars": 196347,
+      "git_blob_sha1": "468163581d479bd9eb373f1d770ed0ba1e6504eb"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/examples/optimized_plan116.json",
+      "size": 196127,
+      "sha256": "25c72c9616bfaa88067761f1afe1cb5f39ce5f357b714abc8e390875f6f1bf98",
+      "binary": false,
+      "chars": 196111,
+      "git_blob_sha1": "4a14af92f3bf33330f680dce46c6a096fb64df69"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/extract_realab.py",
+      "size": 2083,
+      "sha256": "7c974cd5f97a9f96a82cf5e34bd9b8ad0bcf88094e177794b533340ad75ed438",
+      "binary": false,
+      "chars": 2083,
+      "git_blob_sha1": "30fd5a509f96a41333933388d404f72318923aa6"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/mapping.json",
+      "size": 4258,
+      "sha256": "6826d3d9fc6d9bc11cadb5b6a16eaf2dc1acf420d21cb6ebe9e0985cdb768460",
+      "binary": false,
+      "chars": 4198,
+      "git_blob_sha1": "c3559c16017b75a3c47492b6125b39fd9ade80cf"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/measurement/manifest.json",
+      "size": 1456,
+      "sha256": "d7831b769c59da9170a3e8ef13747f5322bcfbb55dcc868f2496087635511df7",
+      "binary": false,
+      "chars": 1394,
+      "git_blob_sha1": "6943e7971ec6d17b009e5c1ed93fa4b7b0fb96c5"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/opkg_tool.py",
+      "size": 17092,
+      "sha256": "10482f70e5857a2a977066e6e29157e0e289b508c8cf587a14a3cc32979c8fa3",
+      "binary": false,
+      "chars": 17092,
+      "git_blob_sha1": "6b2e27ca797bce44aa9d2681aa636d52e7503aad"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/requirements.txt",
+      "size": 24,
+      "sha256": "3e7c285201aa9d481b7473f4b49a9dac75af78fbc0111d9666c7733d096f0735",
+      "binary": false,
+      "chars": 24,
+      "git_blob_sha1": "f861e404948c82de1c062ec1963a7eedd4632cd2"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/validate_tool.py",
+      "size": 4478,
+      "sha256": "8125b856ec04fc42db5f1733f1aed38299e0e09518a33f5469025127d1449f7a",
+      "binary": false,
+      "chars": 4478,
+      "git_blob_sha1": "75eb38fb39c5daa77ce04988729e1df1b561f0cd"
+    },
+    {
+      "path": "research/enco_x4_eq_toolkit/verify_arm.py",
+      "size": 5556,
+      "sha256": "13265389c0517b9378f326dfacf743b974bad5732bc443db142fa07a0e3926b6",
+      "binary": false,
+      "chars": 5556,
+      "git_blob_sha1": "7e742b54f6f14a7b1cde0f814260d9040e29efe4"
+    },
+    {
+      "path": "research/archives/enco_x4_structure_toolkit.zip",
+      "size": 195344,
+      "sha256": "0730bb9fbb2eed669755d4854263dc327a1b7e6d3c1c4a1d1c5033f7f8600e8b",
+      "binary": true,
+      "git_blob_sha1": "e5b9e21a803dc3a4784908e1132bd0cc127d0738"
+    },
+    {
+      "path": "research/enco_x4_structure/README.txt",
+      "size": 2360,
+      "sha256": "8983212c4f24dbf36f85158582d1640bf4cc6f0ac05d686e2bfbb48e5ceb3961",
+      "binary": false,
+      "chars": 1412,
+      "git_blob_sha1": "d2b4878cf079a9ba43ccc7c5811a5c5462986068"
+    },
+    {
+      "path": "research/enco_x4_structure/evidence/112_to_third101_diff.json",
+      "size": 78767,
+      "sha256": "d530f2ab41237dbd40684fb0127606666b811f8ff3c50099987aabf78ba717a2",
+      "binary": false,
+      "chars": 78767,
+      "git_blob_sha1": "da212e24f5d4125adea88a60427fbb460071e8a2"
+    },
+    {
+      "path": "research/enco_x4_structure/evidence/official112_layout.json",
+      "size": 17134,
+      "sha256": "cf35a165a0870da1de96bae2f21d98f75611bfab64876259d15da42ae2f0af8c",
+      "binary": false,
+      "chars": 17134,
+      "git_blob_sha1": "0a07a291b6f18459e5f0ef665c0aa4f6ead9d44c"
+    },
+    {
+      "path": "research/enco_x4_structure/evidence/official116_layout.json",
+      "size": 16754,
+      "sha256": "d74071683031865d5a8e15aa9f6cae4da2455d59769c663092ee8ff992bb406e",
+      "binary": false,
+      "chars": 16754,
+      "git_blob_sha1": "8dd06bede20c53540c9e2920e9ef82f706b9f778"
+    },
+    {
+      "path": "research/enco_x4_structure/evidence/third101_layout.json",
+      "size": 17134,
+      "sha256": "c89e9445976e3b3afd08c8b21aef059ab67b5b6f8cefe5e74557cf13e071490e",
+      "binary": false,
+      "chars": 17134,
+      "git_blob_sha1": "b59e34ae781b017d1ea9040a58a6b57be718e757"
+    },
+    {
+      "path": "research/enco_x4_structure/evidence/third113_layout.json",
+      "size": 17134,
+      "sha256": "98b64372be86ea2a2829fbadee5e732e4217ad40a9f4969eb1b078f0e27abb0c",
+      "binary": false,
+      "chars": 17134,
+      "git_blob_sha1": "ebc9bc2956127463435e14fd29fe2a169417d5be"
+    },
+    {
+      "path": "research/enco_x4_structure/evidence/validation.json",
+      "size": 848,
+      "sha256": "1a4ebbdf01a32eba6422ea3e71785157177d4c23a589260a25dda520578a5b0d",
+      "binary": false,
+      "chars": 848,
+      "git_blob_sha1": "4358394acf070f0edf5702aafe2942a4008a9f0d"
+    },
+    {
+      "path": "research/enco_x4_structure/opkg_tool.py",
+      "size": 17070,
+      "sha256": "d99e794ade5f8b106a3dfa37ee66f31056c008a24caba7c67084c4fb3c9651d4",
+      "binary": false,
+      "chars": 17070,
+      "git_blob_sha1": "fb6f770bf6d135ce5a6ad862f2dfc107e37740ef"
+    },
+    {
+      "path": "research/enco_x4_structure/validate_samples.py",
+      "size": 2528,
+      "sha256": "5494a6ca13dd4ff658b42de6f88f54f5260061b911e8c3e42058a0e6662e99e6",
+      "binary": false,
+      "chars": 2528,
+      "git_blob_sha1": "b207d16780b7c00d7049d8f9d487ab267868af35"
+    },
+    {
+      "path": "research/enco_x4_structure/MANIFEST.json",
+      "size": 3384,
+      "sha256": "02c076833ce0e1b16daa63c3bc93d80137875555f7ff352d102ea3f1c891817d",
+      "binary": false,
+      "chars": 3384,
+      "git_blob_sha1": "ec5b6a0830d1b7a9754a54a8d2fb951672bf85e4"
+    },
+    {
+      "path": "research/scripts/build_report.py",
+      "size": 21581,
+      "sha256": "866c18bf980624c53938a17d6df1e3f4b5d3b0852b266ba2a49f00214e866a8a",
+      "binary": false,
+      "chars": 16096,
+      "git_blob_sha1": "009b7b3e02ef98b40b2808e93403540bc1b11531"
+    },
+    {
+      "path": "research/scripts/dex_focus.py",
+      "size": 1117,
+      "sha256": "4b2ca12746df7247f70fb1b83a7cd2857887fe51f79a94e399a315b4d9b5096e",
+      "binary": false,
+      "chars": 1117,
+      "git_blob_sha1": "f351a90bb34553853236f6959315e8ee5e1ecf5b"
+    },
+    {
+      "path": "research/scripts/dex_scan.py",
+      "size": 1254,
+      "sha256": "40a01206739c6e2bcf3178a9ad2be3d9f499d6ae9d9c4e06e4cffdd54af30c6e",
+      "binary": false,
+      "chars": 1254,
+      "git_blob_sha1": "8e2780eee3772913713650c6f2b3a4c287ace5b4"
+    },
+    {
+      "path": "research/scripts/profile_scan.py",
+      "size": 1331,
+      "sha256": "cc0ee71511e4945a2a90ea4f153a5cc382ed7c62bf660f718cf6b27d565e5ff5",
+      "binary": false,
+      "chars": 1331,
+      "git_blob_sha1": "e8cfef369ec9c3c419ff594ea2c6a7fcd1000e81"
+    }
+  ],
+  "desktop_source_recovered": false,
+  "previous_reported_32_test_suite_recovered": false,
+  "notes": [
+    "恢复的 11 个 Python 源文件保持原字节不变。",
+    "完整工具包另存于 research/archives；包含报告、测量、反汇编和大型证据。",
+    "此前 GUI、Session、Flowmix API 客户端、版本修改补丁、32 项 pytest 和 Actions 配置未找到。",
+    "旧 CLI 只支持所提供的连续编号 Peak PEQ，不能当作已完成的通用 Flowmix 解析器。"
+  ]
+}

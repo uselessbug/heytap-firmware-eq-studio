@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heytap-firmware-eq-studio"
+version = "0.1.0"
+description = "Local HeyTap firmware EQ research desktop"
+requires-python = ">=3.11,<3.14"
+dependencies = ["numpy==2.2.6", "scipy==1.15.3", "PySide6==6.8.3"]
+
+[project.scripts]
+heytap-eq = "heytap_eq.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+heytap_eq = ["web/*", "data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+include = ["src/**/*.py", "tests/**/*.py", "scripts/**/*.py"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

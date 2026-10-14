@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "source_commit": "19eb7ff1c1d52862455fed62a1ed7fad7a386492",
+  "status": "reexecuted_on_recovered_cli_sources",
+  "eq_tool_validation": {
+    "parsing_pass": true,
+    "raw_rounding_max_difference_db": 0.050000000000000266,
+    "all_5_peqs_applied": true,
+    "allpass_magnitude_pass": true,
+    "packages": [
+      {
+        "sha256": "bfbaff835cab049076d909e1393388773526075e49befef74634b9832b29d7ad",
+        "selected_record_count": 72,
+        "changed_blocks": [
+          29,
+          30
+        ],
+        "raw_length_unchanged": true,
+        "outside_target_records_unchanged": true,
+        "all_opkg_checks_pass": true,
+        "on_device_test": false,
+        "version_changed": false,
+        "version": 112,
+        "changed_profile_count": 72,
+        "corrupted_opkg_rejected": true,
+        "overlapping_plans_rejected": true,
+        "modified_highpass_rejected": true,
+        "forged_fit_metrics_rejected": true,
+        "original_input_unchanged": true
+      },
+      {
+        "sha256": "38f4d9f7729f904ee0d89b113d178137c614e0a996e3852e8a7ae2db55fda1b4",
+        "selected_record_count": 72,
+        "changed_blocks": [
+          29
+        ],
+        "raw_length_unchanged": true,
+        "outside_target_records_unchanged": true,
+        "all_opkg_checks_pass": true,
+        "on_device_test": false,
+        "version_changed": false,
+        "version": 116,
+        "changed_profile_count": 72,
+        "corrupted_opkg_rejected": true,
+        "overlapping_plans_rejected": true,
+        "modified_highpass_rejected": true,
+        "forged_fit_metrics_rejected": true,
+        "original_input_unchanged": true
+      }
+    ],
+    "over_capacity_rejected": true
+  },
+  "structure_validation": {
+    "passed": true,
+    "samples": 4,
+    "total_blocks": 135,
+    "byte_exact_unchanged_roundtrip": true,
+    "eq_pointer_validation": true,
+    "official_112_116_eq_bank_identical": true,
+    "known_third_party_differences_verified": true,
+    "isolated_eq_edit_preserves_other_compressed_blocks": true,
+    "corruption_rejected": true
+  },
+  "recovered_files_git_blob_hashes_verified": 36,
+  "arm_emulation_reexecuted": false,
+  "desktop_32_pytest_reexecuted": false,
+  "version_getter_patch_reexecuted": false,
+  "github_actions_run": false,
+  "device_flash_test": false,
+  "note": "本次复跑的 EQ CLI 不修改版本号。此前版本 123 / 32 项测试属于源码未恢复的历史记录。",
+  "adapter_code_fingerprints": [
+    {
+      "version": "112",
+      "start": "0x30e78",
+      "end_exclusive": "0x31074",
+      "sha256": "b32a48278cf763913b5628d9ef1f945b66ff0b9dd070998ca35a33b5c2978dd0",
+      "matches": true
+    },
+    {
+      "version": "116",
+      "start": "0x30e78",
+      "end_exclusive": "0x31074",
+      "sha256": "5d0cb27c1e6ead6c2bc2b0b295d0d57909df3ca5515956b37cdb1b0d07adfd81",
+      "matches": true
+    },
+    {
+      "version": "112",
+      "start": "0x147c4c",
+      "end_exclusive": "0x14834c",
+      "sha256": "e061b11094721c77b44655e1b77b1f2f93b316212b69af61d7c0b8c3f3d865f6",
+      "matches": true
+    },
+    {
+      "version": "116",
+      "start": "0x14a60c",
+      "end_exclusive": "0x14ad0c",
+      "sha256": "1e40b745cf092e37de58d9150ee54a36152b00fe59685d72a49299ce325ffe16",
+      "matches": true
+    }
+  ]
+}
+

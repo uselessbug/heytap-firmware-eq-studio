@@ -1,0 +1,262 @@
+name: Desktop checks and Windows packages
+on:
+  # Every branch is checked so forks get feedback; the long Windows packaging runs only
+  # for the main development branch, pull requests and manual runs (see windows-package).
+  push:
+    branches: ['**']
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'CLAUDE.md'
+      - 'HANDOFF_*.md'
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+env:
+  PYTHONNOUSERSITE: '1'
+  PYTHONFAULTHANDLER: '1'
+  QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu
+  QTWEBENGINE_DISABLE_SANDBOX: '1'
+  QT_QUICK_BACKEND: software
+  HEYTAP_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+jobs:
+  check:
+    # PR runs must check the exact head before their dependent packaging jobs can run.
+    # Push / PR duplicates share the concurrency group; the newest run replaces the old one.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEYTAP_BUILD_SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build local graph assets
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npm test
+      - name: Browser interaction checks
+        if: runner.os == 'Linux'
+        working-directory: frontend
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:browser
+      - name: Linux GUI libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libopengl0 libxkbcommon0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxcb-randr0 libxcb-shape0 libxcb-sync1 libxcb-shm0 libxcb-xfixes0 libxcb-glx0 libx11-xcb1 libsm6 libice6 xvfb xauth fonts-noto-cjk
+      - name: Clean virtual environment
+        shell: bash
+        run: |
+          python -m venv .venv
+          if [ "$RUNNER_OS" = Windows ]; then cygpath -w "$PWD/.venv/Scripts" >> "$GITHUB_PATH"; else echo "$PWD/.venv/bin" >> "$GITHUB_PATH"; fi
+      - name: Locked dependencies
+        run: |
+          python -m pip install -r requirements-ci.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+          python -m pip check
+      - name: Linux Qt platform dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+          import PySide6
+          plugin = Path(PySide6.__file__).parent / "Qt/plugins/platforms/libqxcb.so"
+          result = subprocess.run(["ldd", str(plugin)], check=True, text=True, capture_output=True)
+          print(result.stdout)
+          assert "not found" not in result.stdout, "Missing Qt X11 runtime dependency"
+          PY
+      - name: Static checks and tests
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'windows' }}
+        run: |
+          python -m ruff check .
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a -s "-screen 0 1440x1000x24" python -m pytest -s --junitxml=reports/pytest.xml
+          else
+            python -m pytest --junitxml=reports/pytest.xml
+          fi
+      - name: Scaled Qt layout regression
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'windows' }}
+          QT_SCALE_FACTOR: '1.5'
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a -s "-screen 0 1920x1080x24" python -m pytest tests/test_gui_layout_preferences.py tests/test_gui_correction_range.py -k 'rail_width or range_real_webchannel_preview_and_screenshots' --junitxml=reports/scaled-layout.xml
+          else
+            python -m pytest tests/test_gui_layout_preferences.py tests/test_gui_correction_range.py -k 'rail_width or range_real_webchannel_preview_and_screenshots' --junitxml=reports/scaled-layout.xml
+          fi
+      - name: GUI event loop and screenshot
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: ${{ runner.os == 'Linux' && 'xcb' || 'windows' }}
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a -s "-screen 0 1440x1000x24" python -m heytap_eq.app --smoke-test --report reports/source-startup.json
+          else
+            python -m heytap_eq.app --smoke-test --report reports/source-startup.json
+          fi
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          report = json.loads(Path("reports/source-startup.json").read_text(encoding="utf-8"))
+          assert report["status"] == "passed" and report["window_visible"]
+          assert report["sha"] == os.environ["HEYTAP_BUILD_SHA"]
+          assert report["theme_layout_validated"] and len(report["theme_layouts"]) == 4
+          assert report["file_dialog_memory_validated"]
+          assert report["web_editor"]["theme"] == "dark"
+          assert report["web_editor"]["contrast"] == "standard"
+          PY
+      - name: Offline benchmark correctness
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+          MKL_NUM_THREADS: '1'
+        run: python -m heytap_eq.app --benchmark --report reports/source-benchmark.json
+      - name: PowerShell diagnostic syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/scripts/flowmix-probe.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) { $parseErrors | Format-List; exit 1 }
+      - name: Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checks-${{ runner.os }}-${{ env.HEYTAP_BUILD_SHA }}
+          path: reports/
+  windows-package:
+    needs: check
+    if: github.event_name != 'push' || github.ref_name == 'feat/python-desktop-studio'
+    strategy:
+      fail-fast: false
+      matrix:
+        packager: [pyinstaller, nuitka]
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEYTAP_BUILD_SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build local graph assets
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Clean virtual environment
+        shell: bash
+        run: |
+          python -m venv .venv
+          cygpath -w "$PWD/.venv/Scripts" >> "$GITHUB_PATH"
+      - name: Locked dependencies
+        run: |
+          python -m pip install -r requirements-ci.txt
+          python -m pip install --no-deps --no-build-isolation .
+          python -m pip check
+      - name: Locked Nuitka compiler
+        if: matrix.packager == 'nuitka'
+        run: |
+          python -m pip install -r requirements-nuitka.txt
+          python -m pip check
+      - name: Restore Nuitka compiler cache
+        if: matrix.packager == 'nuitka'
+        id: nuitka-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/AppData/Local/Nuitka
+          key: nuitka-windows-python311-${{ hashFiles('requirements-ci.txt', 'requirements-nuitka.txt') }}-${{ env.HEYTAP_BUILD_SHA }}
+          restore-keys: |
+            nuitka-windows-python311-${{ hashFiles('requirements-ci.txt', 'requirements-nuitka.txt') }}-
+      - name: Build portable desktop
+        id: build
+        run: python scripts/build_desktop.py ${{ matrix.packager }}
+      - name: Save Nuitka compiler cache
+        if: always() && matrix.packager == 'nuitka' && steps.build.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/AppData/Local/Nuitka
+          key: nuitka-windows-python311-${{ hashFiles('requirements-ci.txt', 'requirements-nuitka.txt') }}-${{ env.HEYTAP_BUILD_SHA }}
+      - name: Start actual frozen executable
+        run: python scripts/check_frozen.py --packager ${{ matrix.packager }}
+      - name: Upload startup evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-startup-${{ matrix.packager }}-${{ env.HEYTAP_BUILD_SHA }}
+          path: reports/
+      - name: Zip portable package
+        shell: pwsh
+        run: |
+          Compress-Archive dist/HeyTapFirmwareEQStudio dist/HeyTapFirmwareEQStudio-windows-${{ matrix.packager }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HeyTapFirmwareEQStudio-windows-${{ matrix.packager }}-${{ env.HEYTAP_BUILD_SHA }}
+          path: dist/HeyTapFirmwareEQStudio-windows-${{ matrix.packager }}.zip
+          compression-level: 0
+  compare-packages:
+    needs: windows-package
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEYTAP_BUILD_SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: HeyTapFirmwareEQStudio-windows-pyinstaller-${{ env.HEYTAP_BUILD_SHA }}
+          path: downloads/pyinstaller
+      - uses: actions/download-artifact@v4
+        with:
+          name: HeyTapFirmwareEQStudio-windows-nuitka-${{ env.HEYTAP_BUILD_SHA }}
+          path: downloads/nuitka
+      - name: Extract both portable packages
+        shell: pwsh
+        run: |
+          foreach ($packager in @("pyinstaller", "nuitka")) {
+            Expand-Archive "downloads/$packager/HeyTapFirmwareEQStudio-windows-$packager.zip" "packages/$packager"
+          }
+      - name: Compare actual executables on the same runner
+        run: python scripts/compare_packages.py
+      - name: Upload performance and compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-comparison-${{ env.HEYTAP_BUILD_SHA }}
+          path: reports/comparison/
+

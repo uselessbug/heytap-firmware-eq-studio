@@ -1,0 +1,1034 @@
+{
+  "sample_sha256": "d2007e5a2546870b98aa3e9e5588bb4ea22b658e1fbf3126926cc20d027bbd39",
+  "report_output_sha_matches": true,
+  "report_source_sha_matches": true,
+  "recognized": true,
+  "checks": {
+    "pkg_length": true,
+    "pkg_sha256": true,
+    "raw_sha256": true,
+    "compressed_sha256": true,
+    "all_block_crc32": true,
+    "all_lzma_sizes": true
+  },
+  "changed_bytes": 3044,
+  "changed_profiles": 18,
+  "changed_paths": [
+    "india_output1",
+    "other_output1"
+  ],
+  "outside_bank_unchanged": true,
+  "rows": [
+    {
+      "path": "other_output2",
+      "state": 0,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 1,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 2,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 3,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 4,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 5,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 6,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 7,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output2",
+      "state": 8,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 0,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 1,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 2,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 3,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 4,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 5,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 6,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 7,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "india_output2",
+      "state": 8,
+      "changed": false,
+      "hp_lp_ap_preserved_vs_baseline": false,
+      "gains_match_baseline": false,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 185.34987459582328,
+          "max_100_10k": 296.56197672196083,
+          "rms_audible": 10.823581868890829,
+          "max_audible": 27.76333298382902
+        },
+        "48000": {
+          "rms_100_10k": 185.0338035327145,
+          "max_100_10k": 296.1671339014067,
+          "rms_audible": 14.071454467781319,
+          "max_audible": 33.59011183700277
+        },
+        "96000": {
+          "rms_100_10k": 182.82117719208097,
+          "max_100_10k": 293.5106762829007,
+          "rms_audible": 25.260906756415892,
+          "max_audible": 55.185387369941125
+        }
+      },
+      "evaluated_for_fit_quality": false
+    },
+    {
+      "path": "other_output1",
+      "state": 0,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3951964264267221,
+          "max_100_10k": 1.6122785188296032,
+          "rms_audible": 0.5758760416195864,
+          "max_audible": 2.30573034736938
+        },
+        "48000": {
+          "rms_100_10k": 0.39268757200515464,
+          "max_100_10k": 1.5917746532176362,
+          "rms_audible": 0.5805445654598248,
+          "max_audible": 2.259253328820932
+        },
+        "96000": {
+          "rms_100_10k": 0.38416257491335626,
+          "max_100_10k": 1.4702439744212144,
+          "rms_audible": 0.6034985152786863,
+          "max_audible": 2.0897870364148847
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 1,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3908143564890045,
+          "max_100_10k": 1.6134754566580152,
+          "rms_audible": 0.5751512918556241,
+          "max_audible": 2.3055613217368567
+        },
+        "48000": {
+          "rms_100_10k": 0.38830332449425264,
+          "max_100_10k": 1.5937917970440707,
+          "rms_audible": 0.5798387847173097,
+          "max_audible": 2.258983815915996
+        },
+        "96000": {
+          "rms_100_10k": 0.3797801219842948,
+          "max_100_10k": 1.4753234660500527,
+          "rms_audible": 0.6028593855067051,
+          "max_audible": 2.0890769165007765
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 2,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3228461831926914,
+          "max_100_10k": 1.0394053416273628,
+          "rms_audible": 0.3682642414851078,
+          "max_audible": 1.749549913944822
+        },
+        "48000": {
+          "rms_100_10k": 0.321823929792049,
+          "max_100_10k": 1.0506959821929183,
+          "rms_audible": 0.3678766269580606,
+          "max_audible": 1.7495543861669542
+        },
+        "96000": {
+          "rms_100_10k": 0.3199521418265767,
+          "max_100_10k": 1.1025763464104053,
+          "rms_audible": 0.3679199936098256,
+          "max_audible": 1.749572533507985
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 3,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3916990743643179,
+          "max_100_10k": 1.6137960774390867,
+          "rms_audible": 0.5747740130916211,
+          "max_audible": 2.3001028314110634
+        },
+        "48000": {
+          "rms_100_10k": 0.38919005653669475,
+          "max_100_10k": 1.5941560501502927,
+          "rms_audible": 0.5794317047722967,
+          "max_audible": 2.2536196261254138
+        },
+        "96000": {
+          "rms_100_10k": 0.3806657720554705,
+          "max_100_10k": 1.4758878913124287,
+          "rms_audible": 0.6023175535186918,
+          "max_audible": 2.084030002927619
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 4,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3916990743643179,
+          "max_100_10k": 1.6137960774390867,
+          "rms_audible": 0.5747740130916211,
+          "max_audible": 2.3001028314110634
+        },
+        "48000": {
+          "rms_100_10k": 0.38919005653669475,
+          "max_100_10k": 1.5941560501502927,
+          "rms_audible": 0.5794317047722967,
+          "max_audible": 2.2536196261254138
+        },
+        "96000": {
+          "rms_100_10k": 0.3806657720554705,
+          "max_100_10k": 1.4758878913124287,
+          "rms_audible": 0.6023175535186918,
+          "max_audible": 2.084030002927619
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 5,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.39148287377384167,
+          "max_100_10k": 1.6136340493901185,
+          "rms_audible": 0.5750529998622868,
+          "max_audible": 2.3030244828512307
+        },
+        "48000": {
+          "rms_100_10k": 0.3889751351547195,
+          "max_100_10k": 1.593971074400271,
+          "rms_audible": 0.5797263740456589,
+          "max_audible": 2.256491170143604
+        },
+        "96000": {
+          "rms_100_10k": 0.3804603406651395,
+          "max_100_10k": 1.4755973856265456,
+          "rms_audible": 0.6026829563918,
+          "max_audible": 2.0867332807646624
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 6,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.39148287377384167,
+          "max_100_10k": 1.6136340493901185,
+          "rms_audible": 0.5750529998622868,
+          "max_audible": 2.3030244828512307
+        },
+        "48000": {
+          "rms_100_10k": 0.3889751351547195,
+          "max_100_10k": 1.593971074400271,
+          "rms_audible": 0.5797263740456589,
+          "max_audible": 2.256491170143604
+        },
+        "96000": {
+          "rms_100_10k": 0.3804603406651395,
+          "max_100_10k": 1.4755973856265456,
+          "rms_audible": 0.6026829563918,
+          "max_audible": 2.0867332807646624
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 7,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.39148287377384167,
+          "max_100_10k": 1.6136340493901185,
+          "rms_audible": 0.5750529998622868,
+          "max_audible": 2.3030244828512307
+        },
+        "48000": {
+          "rms_100_10k": 0.3889751351547195,
+          "max_100_10k": 1.593971074400271,
+          "rms_audible": 0.5797263740456589,
+          "max_audible": 2.256491170143604
+        },
+        "96000": {
+          "rms_100_10k": 0.3804603406651395,
+          "max_100_10k": 1.4755973856265456,
+          "rms_audible": 0.6026829563918,
+          "max_audible": 2.0867332807646624
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "other_output1",
+      "state": 8,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3998523455505307,
+          "max_100_10k": 1.530738271293787,
+          "rms_audible": 0.4394443598648263,
+          "max_audible": 1.652717971110099
+        },
+        "48000": {
+          "rms_100_10k": 0.3980669425950238,
+          "max_100_10k": 1.5178586704012602,
+          "rms_audible": 0.43594127023057244,
+          "max_audible": 1.6527240437934259
+        },
+        "96000": {
+          "rms_100_10k": 0.3924794625566412,
+          "max_100_10k": 1.4427711312045712,
+          "rms_audible": 0.425630213224389,
+          "max_audible": 1.6527487858415855
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 0,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3951964264267221,
+          "max_100_10k": 1.6122785188296032,
+          "rms_audible": 0.5758760416195864,
+          "max_audible": 2.30573034736938
+        },
+        "48000": {
+          "rms_100_10k": 0.39268757200515464,
+          "max_100_10k": 1.5917746532176362,
+          "rms_audible": 0.5805445654598248,
+          "max_audible": 2.259253328820932
+        },
+        "96000": {
+          "rms_100_10k": 0.38416257491335626,
+          "max_100_10k": 1.4702439744212144,
+          "rms_audible": 0.6034985152786863,
+          "max_audible": 2.0897870364148847
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 1,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3908143564890045,
+          "max_100_10k": 1.6134754566580152,
+          "rms_audible": 0.5751512918556241,
+          "max_audible": 2.3055613217368567
+        },
+        "48000": {
+          "rms_100_10k": 0.38830332449425264,
+          "max_100_10k": 1.5937917970440707,
+          "rms_audible": 0.5798387847173097,
+          "max_audible": 2.258983815915996
+        },
+        "96000": {
+          "rms_100_10k": 0.3797801219842948,
+          "max_100_10k": 1.4753234660500527,
+          "rms_audible": 0.6028593855067051,
+          "max_audible": 2.0890769165007765
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 2,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3228461831926914,
+          "max_100_10k": 1.0394053416273628,
+          "rms_audible": 0.3682642414851078,
+          "max_audible": 1.749549913944822
+        },
+        "48000": {
+          "rms_100_10k": 0.321823929792049,
+          "max_100_10k": 1.0506959821929183,
+          "rms_audible": 0.3678766269580606,
+          "max_audible": 1.7495543861669542
+        },
+        "96000": {
+          "rms_100_10k": 0.3199521418265767,
+          "max_100_10k": 1.1025763464104053,
+          "rms_audible": 0.3679199936098256,
+          "max_audible": 1.749572533507985
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 3,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3916990743643179,
+          "max_100_10k": 1.6137960774390867,
+          "rms_audible": 0.5747740130916211,
+          "max_audible": 2.3001028314110634
+        },
+        "48000": {
+          "rms_100_10k": 0.38919005653669475,
+          "max_100_10k": 1.5941560501502927,
+          "rms_audible": 0.5794317047722967,
+          "max_audible": 2.2536196261254138
+        },
+        "96000": {
+          "rms_100_10k": 0.3806657720554705,
+          "max_100_10k": 1.4758878913124287,
+          "rms_audible": 0.6023175535186918,
+          "max_audible": 2.084030002927619
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 4,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3916990743643179,
+          "max_100_10k": 1.6137960774390867,
+          "rms_audible": 0.5747740130916211,
+          "max_audible": 2.3001028314110634
+        },
+        "48000": {
+          "rms_100_10k": 0.38919005653669475,
+          "max_100_10k": 1.5941560501502927,
+          "rms_audible": 0.5794317047722967,
+          "max_audible": 2.2536196261254138
+        },
+        "96000": {
+          "rms_100_10k": 0.3806657720554705,
+          "max_100_10k": 1.4758878913124287,
+          "rms_audible": 0.6023175535186918,
+          "max_audible": 2.084030002927619
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 5,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.39148287377384167,
+          "max_100_10k": 1.6136340493901185,
+          "rms_audible": 0.5750529998622868,
+          "max_audible": 2.3030244828512307
+        },
+        "48000": {
+          "rms_100_10k": 0.3889751351547195,
+          "max_100_10k": 1.593971074400271,
+          "rms_audible": 0.5797263740456589,
+          "max_audible": 2.256491170143604
+        },
+        "96000": {
+          "rms_100_10k": 0.3804603406651395,
+          "max_100_10k": 1.4755973856265456,
+          "rms_audible": 0.6026829563918,
+          "max_audible": 2.0867332807646624
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 6,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.39148287377384167,
+          "max_100_10k": 1.6136340493901185,
+          "rms_audible": 0.5750529998622868,
+          "max_audible": 2.3030244828512307
+        },
+        "48000": {
+          "rms_100_10k": 0.3889751351547195,
+          "max_100_10k": 1.593971074400271,
+          "rms_audible": 0.5797263740456589,
+          "max_audible": 2.256491170143604
+        },
+        "96000": {
+          "rms_100_10k": 0.3804603406651395,
+          "max_100_10k": 1.4755973856265456,
+          "rms_audible": 0.6026829563918,
+          "max_audible": 2.0867332807646624
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 7,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.39148287377384167,
+          "max_100_10k": 1.6136340493901185,
+          "rms_audible": 0.5750529998622868,
+          "max_audible": 2.3030244828512307
+        },
+        "48000": {
+          "rms_100_10k": 0.3889751351547195,
+          "max_100_10k": 1.593971074400271,
+          "rms_audible": 0.5797263740456589,
+          "max_audible": 2.256491170143604
+        },
+        "96000": {
+          "rms_100_10k": 0.3804603406651395,
+          "max_100_10k": 1.4755973856265456,
+          "rms_audible": 0.6026829563918,
+          "max_audible": 2.0867332807646624
+        }
+      },
+      "evaluated_for_fit_quality": true
+    },
+    {
+      "path": "india_output1",
+      "state": 8,
+      "changed": true,
+      "hp_lp_ap_preserved_vs_baseline": true,
+      "gains_match_baseline": true,
+      "metrics": {
+        "44100": {
+          "rms_100_10k": 0.3998523455505307,
+          "max_100_10k": 1.530738271293787,
+          "rms_audible": 0.4394443598648263,
+          "max_audible": 1.652717971110099
+        },
+        "48000": {
+          "rms_100_10k": 0.3980669425950238,
+          "max_100_10k": 1.5178586704012602,
+          "rms_audible": 0.43594127023057244,
+          "max_audible": 1.6527240437934259
+        },
+        "96000": {
+          "rms_100_10k": 0.3924794625566412,
+          "max_100_10k": 1.4427711312045712,
+          "rms_audible": 0.425630213224389,
+          "max_audible": 1.6527487858415855
+        }
+      },
+      "evaluated_for_fit_quality": true
+    }
+  ],
+  "all_changed_paths_protected_filters_preserved": true,
+  "reference": "Optimized file RAW plus all five enabled PEQs; original per-path/state Dynaudio baseline; independent recomputation at three rates; input/report kept out of repository.",
+  "quality_scope": "The supplied file intentionally modifies only output1. Unchanged output2 comparisons are not fit-quality results or an acoustic-failure claim."
+}

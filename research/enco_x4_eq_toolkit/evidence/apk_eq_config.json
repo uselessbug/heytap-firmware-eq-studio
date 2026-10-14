@@ -1,0 +1,37 @@
+{
+  "product_id": "06EC10",
+  "name": "OPPO Enco X4",
+  "equalizerMode": [
+    {
+      "protocolIndex": 0,
+      "modeType": 42,
+      "tag": 3,
+      "summaryId": 11
+    },
+    {
+      "protocolIndex": 7,
+      "modeType": 43,
+      "tag": 3,
+      "summaryId": 12
+    },
+    {
+      "protocolIndex": 2,
+      "modeType": 28,
+      "tag": 3,
+      "summaryId": 3
+    },
+    {
+      "protocolIndex": 1,
+      "modeType": 46,
+      "tag": 3,
+      "summaryId": 2
+    },
+    {
+      "protocolIndex": 3,
+      "modeType": 29,
+      "tag": 3,
+      "summaryId": 4
+    }
+  ],
+  "source": "APK bundled configuration + DisplayContentUtils.d()"
+}

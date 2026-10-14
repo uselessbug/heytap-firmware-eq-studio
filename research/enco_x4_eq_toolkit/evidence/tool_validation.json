@@ -1,0 +1,48 @@
+{
+  "parsing_pass": true,
+  "raw_rounding_max_difference_db": 0.050000000000000266,
+  "all_5_peqs_applied": true,
+  "allpass_magnitude_pass": true,
+  "packages": [
+    {
+      "sha256": "bfbaff835cab049076d909e1393388773526075e49befef74634b9832b29d7ad",
+      "selected_record_count": 72,
+      "changed_blocks": [
+        29,
+        30
+      ],
+      "raw_length_unchanged": true,
+      "outside_target_records_unchanged": true,
+      "all_opkg_checks_pass": true,
+      "on_device_test": false,
+      "version_changed": false,
+      "version": 112,
+      "changed_profile_count": 72,
+      "corrupted_opkg_rejected": true,
+      "overlapping_plans_rejected": true,
+      "modified_highpass_rejected": true,
+      "forged_fit_metrics_rejected": true,
+      "original_input_unchanged": true
+    },
+    {
+      "sha256": "38f4d9f7729f904ee0d89b113d178137c614e0a996e3852e8a7ae2db55fda1b4",
+      "selected_record_count": 72,
+      "changed_blocks": [
+        29
+      ],
+      "raw_length_unchanged": true,
+      "outside_target_records_unchanged": true,
+      "all_opkg_checks_pass": true,
+      "on_device_test": false,
+      "version_changed": false,
+      "version": 116,
+      "changed_profile_count": 72,
+      "corrupted_opkg_rejected": true,
+      "overlapping_plans_rejected": true,
+      "modified_highpass_rejected": true,
+      "forged_fit_metrics_rejected": true,
+      "original_input_unchanged": true
+    }
+  ],
+  "over_capacity_rejected": true
+}

@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-08",
+  "host": "fr-api.ykload.cn",
+  "authentication": "APK measurement Bearer",
+  "user_agent": "okhttp/5.3.2",
+  "sources": {
+    "http_status": 200,
+    "count": 6,
+    "entry_keys": [
+      "name",
+      "displayName",
+      "description"
+    ]
+  },
+  "realab_brands": {
+    "http_status": 200,
+    "count": 106,
+    "entry_type": "string"
+  },
+  "realab_oppo_headphones": {
+    "http_status": 200,
+    "count": 10,
+    "identifier": "fileName",
+    "display": "originalName"
+  },
+  "realab_enco_x4": {
+    "http_status": 200,
+    "path_identifier": "OPPO_Enco_X4",
+    "conditions": [
+      {
+        "title": "OPPO Enco X4 - 丹拿原声_ANC on（B&K 5128）",
+        "points": 127,
+        "measurement_id": "m_3d52a11f6c7c644cbca01dff",
+        "content_version": "8fa3b34a311e6498dc7746a5782ce8f3273f68c1cb2f1736a6b794cd8bb5260e",
+        "frequency_min_hz": 20.0,
+        "frequency_max_hz": 19871.0
+      },
+      {
+        "title": "OPPO Enco X4 - 丹拿高解析_ANC on（B&K 5128）",
+        "points": 127,
+        "measurement_id": "m_d8f3082734a12d33c9dee06d",
+        "content_version": "b003e13aa0475b0a6844594398b169e6eb40524da00e3e67c84cc3b23b05baf9",
+        "frequency_min_hz": 20.0,
+        "frequency_max_hz": 19871.0
+      },
+      {
+        "title": "OPPO Enco X4 - 纯享人声_ANC on（B&K 5128）",
+        "points": 127,
+        "measurement_id": "m_97161036009fbb19cf37f982",
+        "content_version": "f401c1c32b03f076b1601b7e0e12120f18881fe5895c03e514e42638ce4c3b75",
+        "frequency_min_hz": 20.0,
+        "frequency_max_hz": 19871.0
+      },
+      {
+        "title": "OPPO Enco X4 - 清亮高音_ANC on（B&K 5128）",
+        "points": 127,
+        "measurement_id": "m_35b03e4946c1f2b61b6cec0b",
+        "content_version": "62f63f10d3b32b05f09e8ae286382eb2b7facdd76519aae0cb12f4957ef835ba",
+        "frequency_min_hz": 20.0,
+        "frequency_max_hz": 19871.0
+      },
+      {
+        "title": "OPPO Enco X4 - 澎湃低音_ANC on（B&K 5128）",
+        "points": 127,
+        "measurement_id": "m_19710d74fa48cbec877d5827",
+        "content_version": "6d7a3b8ce3652f07db8658220094db003f24fc5c890628616f12fd3ea49030d0",
+        "frequency_min_hz": 20.0,
+        "frequency_max_hz": 19871.0
+      }
+    ]
+  },
+  "raw_har_points_per_curve": 957,
+  "server_behavior_confirmed_only_for_this_read_path": true,
+  "credentials_in_report": false,
+  "controlled_sources_checks": {
+    "anonymous_default_agent": "HTTP 567 HTML",
+    "apk_bearer_default_agent": "HTTP 567 HTML",
+    "anonymous_okhttp_5_3_2": "HTTP 403 JSON",
+    "apk_bearer_okhttp_5_3_2": "HTTP 200 JSON"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "source_sha": "41a6dc195e3e9fe9a092b9ab408c280cb999ccad",
+  "workflow_run": 38052992928,
+  "workflow_url": "https://github.com/uselessbug/heytap-firmware-eq-studio/actions/runs/38052992928",
+  "status": "success",
+  "python_checks": {
+    "Linux": 40,
+    "Windows": 40
+  },
+  "frontend": {
+    "library": "DSSSP 0.8.0",
+    "math_tests": 3,
+    "browser_interactions": [
+      "log resampling",
+      "cursor zoom",
+      "double click add",
+      "live drag",
+      "wheel Q including Q above 20",
+      "zoom retained",
+      "zero gain edit",
+      "delete"
+    ]
+  },
+  "windows_artifact_id": 11669767539,
+  "windows_artifact_bytes": 229059051,
+  "source_startup": {
+    "status": "passed",
+    "frozen": false,
+    "qt": "6.8.3",
+    "qt_binding": "PySide6",
+    "sha": "41a6dc195e3e9fe9a092b9ab408c280cb999ccad",
+    "window_visible": true,
+    "screenshot": "source-startup.png",
+    "raw_points": 5,
+    "peq_filters": 1,
+    "measurements": 1,
+    "targets": 1,
+    "apk_dependency": false,
+    "service_configured": true,
+    "firmware_export_available": true,
+    "metadata_editor_available": true,
+    "project_schema": "heytap-project-v3",
+    "plot_engine": "DSSSP 0.8.0",
+    "web_editor": {
+      "ready": true,
+      "curves": 3,
+      "filters": 1,
+      "view": {
+        "minFreq": 20,
+        "maxFreq": 20000,
+        "minGain": -24,
+        "maxGain": 24
+      },
+      "svgPaths": 3,
+      "width": 918,
+      "height": 271,
+      "selected": null
+    }
+  },
+  "frozen_startup": {
+    "status": "passed",
+    "frozen": true,
+    "qt": "6.8.3",
+    "qt_binding": "PySide6",
+    "sha": "41a6dc195e3e9fe9a092b9ab408c280cb999ccad",
+    "window_visible": true,
+    "screenshot": "frozen-startup.png",
+    "raw_points": 5,
+    "peq_filters": 1,
+    "measurements": 1,
+    "targets": 1,
+    "apk_dependency": false,
+    "service_configured": true,
+    "firmware_export_available": true,
+    "metadata_editor_available": true,
+    "project_schema": "heytap-project-v3",
+    "plot_engine": "DSSSP 0.8.0",
+    "web_editor": {
+      "ready": true,
+      "curves": 3,
+      "filters": 1,
+      "view": {
+        "minFreq": 20,
+        "maxFreq": 20000,
+        "minGain": -24,
+        "maxGain": 24
+      },
+      "svgPaths": 3,
+      "width": 918,
+      "height": 271,
+      "selected": null
+    },
+    "executable_sha256": "01d9b9f251f5b226efc67c1bafc35236e0d1afecc50776432f9710b34da65ecf"
+  },
+  "acoustic_scope": "Selected measurement plus current correction; physical response cannot be reconstructed from firmware alone."
+}

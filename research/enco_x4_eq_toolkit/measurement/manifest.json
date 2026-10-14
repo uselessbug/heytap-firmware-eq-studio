@@ -1,0 +1,47 @@
+[
+  {
+    "name": "丹拿原声_ANC on（B&K 5128）",
+    "csv": "fr_0.csv",
+    "points": 957,
+    "url": "https://www.realab.com/data/1785309927032.html",
+    "title": "OPPO Enco X4",
+    "date": "2026-09-15 00:00:00",
+    "firmware_version": "not identified in the captured payload"
+  },
+  {
+    "name": "丹拿高解析_ANC on（B&K 5128）",
+    "csv": "fr_1.csv",
+    "points": 957,
+    "url": "https://www.realab.com/data/1785309927032.html",
+    "title": "OPPO Enco X4",
+    "date": "2026-09-15 00:00:00",
+    "firmware_version": "not identified in the captured payload"
+  },
+  {
+    "name": "纯享人声_ANC on（B&K 5128）",
+    "csv": "fr_2.csv",
+    "points": 957,
+    "url": "https://www.realab.com/data/1785309927032.html",
+    "title": "OPPO Enco X4",
+    "date": "2026-09-15 00:00:00",
+    "firmware_version": "not identified in the captured payload"
+  },
+  {
+    "name": "清亮高音_ANC on（B&K 5128）",
+    "csv": "fr_3.csv",
+    "points": 957,
+    "url": "https://www.realab.com/data/1785309927032.html",
+    "title": "OPPO Enco X4",
+    "date": "2026-09-15 00:00:00",
+    "firmware_version": "not identified in the captured payload"
+  },
+  {
+    "name": "澎湃低音_ANC on（B&K 5128）",
+    "csv": "fr_4.csv",
+    "points": 957,
+    "url": "https://www.realab.com/data/1785309927032.html",
+    "title": "OPPO Enco X4",
+    "date": "2026-09-15 00:00:00",
+    "firmware_version": "not identified in the captured payload"
+  }
+]

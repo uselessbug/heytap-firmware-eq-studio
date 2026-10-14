@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-09",
+  "results": [
+    {
+      "input_name": "sAnN-16128-1_all_112_0",
+      "input_sha256": "ffa7443f9c8a349a952176ad231fff73850d4e6be5a65ec2b97e9bbe13798729",
+      "output_sha256": "2f0a87b666bff1114a08f9e414311d41d06430b68b2580fa77dcc7663cdd4463",
+      "version": "127",
+      "changed_blocks": [
+        3,
+        34
+      ],
+      "eq_bank_unchanged": true,
+      "reopened_recognized": true,
+      "all_checks_passed": true,
+      "getter_bytes_match_generated": true,
+      "scope": "Real-image metadata serialization and repacking; getter execution validated separately in CI; no device test."
+    },
+    {
+      "input_name": "sAnN-16128-1_all_116_0",
+      "input_sha256": "e34a6f0982f45b855b2d7f3372080664dd1c47bbc9918f4dae2b818acd3b4680",
+      "output_sha256": "a849ce5f2ae51341371adcfc038819f504b7c4b81d06c86b4c38ca8a6817c866",
+      "version": "128",
+      "changed_blocks": [
+        3,
+        33
+      ],
+      "eq_bank_unchanged": true,
+      "reopened_recognized": true,
+      "all_checks_passed": true,
+      "getter_bytes_match_generated": true,
+      "scope": "Real-image metadata serialization and repacking; getter execution validated separately in CI; no device test."
+    },
+    {
+      "input_name": "OPPO_Enco_X4_112_AZ80_Optimized_v1.bin",
+      "input_sha256": "d2007e5a2546870b98aa3e9e5588bb4ea22b658e1fbf3126926cc20d027bbd39",
+      "output_sha256": "1dea096c9fd75b3d8b7faa30b90b9bebc586ff98e93fd49715722f5b6004ef91",
+      "version": "129",
+      "changed_blocks": [
+        3,
+        34
+      ],
+      "eq_bank_unchanged": true,
+      "reopened_recognized": true,
+      "all_checks_passed": true,
+      "getter_bytes_match_generated": true,
+      "scope": "Real-image metadata serialization and repacking; getter execution validated separately in CI; no device test."
+    }
+  ]
+}
