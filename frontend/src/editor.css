@@ -53,9 +53,13 @@ select.mini { font-size: 12px; padding: 1px 4px; border-radius: 6px; background:
 .range-hit { cursor: col-resize; touch-action: none; }
 button.range-boundary { position: absolute; width: 26px; height: 44px; transform: translateX(-50%); padding: 0; background: transparent;
   border: 0; border-radius: 0; cursor: col-resize; touch-action: none; }
+/* The larger button is only a hit target; focus belongs to the visible capsule. */
+button.range-boundary:focus-visible { outline: none; }
 .boundary-grip { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 10px; height: 34px;
   border: 1px solid var(--accent); border-radius: 20px; background: var(--surface); color: var(--accent); display: grid; place-items: center; }
-.range-boundary:hover .boundary-grip, .range-boundary:focus-visible .boundary-grip { background: var(--accent-soft); }
+.range-boundary:hover .boundary-grip, .range-boundary:focus-visible .boundary-grip {
+  background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--surface); }
+button.range-boundary:focus-visible .boundary-grip { outline: 2px solid var(--accent); outline-offset: 1px; }
 .boundary-tag { position: absolute; pointer-events: none; transform: translateX(-50%); color: var(--text); background: var(--surface);
   border: 1px solid var(--border); border-radius: 5px; padding: 2px 5px; font-size: 11px; white-space: nowrap; }
 [data-contrast="high"] .boundary-line { stroke-width: 2px; }
@@ -95,6 +99,7 @@ button.range-boundary { position: absolute; width: 26px; height: 44px; transform
 [data-contrast="high"] .plot { border-width: 2px; }
 [data-contrast="high"] button:focus-visible, [data-contrast="high"] select:focus-visible,
 [data-contrast="high"] input:focus-visible { outline-width: 3px; outline-offset: 2px; }
+[data-contrast="high"] button.range-boundary:focus-visible .boundary-grip { outline-width: 3px; outline-offset: 2px; }
 [data-contrast="high"] .chip.on { border-color: var(--text); }
 [data-contrast="high"] .chip:not(.on) .swatch { opacity: .6; }
 [data-contrast="high"] .notice.warn { border-color: var(--warn); }

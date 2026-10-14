@@ -41,6 +41,7 @@ await page.addInitScript(() => {
   }
 })
 try {
+  await mkdir(path.join(root, 'reports'), { recursive: true })
   await page.goto(pathToFileURL(path.join(root, 'src/heytap_eq/web/index.html')).href)
   await page.waitForFunction(() => window.studioInspect?.().svgPaths > 0)
   const plot = page.locator('.plot')
@@ -156,6 +157,7 @@ try {
   await page.mouse.move(boundaryBox.x + boundaryBox.width / 2, boundaryBox.y + boundaryBox.height / 2)
   await page.mouse.down()
   await page.mouse.move(boundaryBox.x + 80, boundaryBox.y + boundaryBox.height / 2, { steps: 6 })
+  await page.screenshot({ path: path.join(root, 'reports/frontend-boundary-drag.png') })
   await page.mouse.up()
   await page.waitForTimeout(100)
   const rangeEvents = await page.evaluate(n => window.events.filter(e => e.op === 'range').slice(n), rangeEventsBefore)
@@ -167,6 +169,7 @@ try {
   const committedLow = rangeEvents.at(-1).range.low_hz
   await boundary.press('ArrowRight')
   await page.waitForFunction(low => window.fixture.correctionRange.low_hz > low, committedLow)
+  await page.screenshot({ path: path.join(root, 'reports/frontend-boundary-keyboard.png') })
   await boundary.dblclick()
   assert.equal(await page.evaluate(() => window.fixture.filters.length), 0)
   // Thin-line hit target also drags; an overlapping PEQ node remains ahead of the line.

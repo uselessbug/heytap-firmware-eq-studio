@@ -88,6 +88,10 @@ def test_range_real_webchannel_preview_and_screenshots(tmp_path, qt_app):
         image = Path("reports")/f"correction-range-{mode}-{width}x{height}-scale-{scale}.png"
         image.parent.mkdir(exist_ok=True)
         assert window.grab().save(str(image))
+        window.main_plot.page().runJavaScript('document.querySelector("button[data-boundary=low]").focus()')
+        pump(250)
+        focused_image = image.with_name(image.stem+"-focus.png")
+        assert window.grab().save(str(focused_image))
     window.fit_target_button.setChecked(False)
     assert wait(qt_app, lambda: window.preview_worker is None)
     window.close()
